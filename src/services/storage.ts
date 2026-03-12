@@ -49,6 +49,61 @@ const initialBranches: Branch[] = [
         workingHours: { start: '08:00', end: '18:00' },
         address: 'حي الياسمين، الرياض',
         phone: '0500000004'
+    },
+    {
+        id: '5',
+        name: 'فرع السليمانية - صيانة ألمانية متقدمة',
+        latitude: 24.6930,
+        longitude: 46.7020,
+        category: 'صيانة عامة',
+        status: 'مفتوح',
+        workingHours: { start: '08:00', end: '20:00' },
+        address: 'حي السليمانية، شارع الأمير ممدوح بن عبدالعزيز، الرياض',
+        phone: '0500000005'
+    },
+    {
+        id: '6',
+        name: 'مركز المرسلات - تبديل زيوت وفلاتر',
+        latitude: 24.7455,
+        longitude: 46.6975,
+        category: 'غيار زيت',
+        status: 'مفتوح',
+        workingHours: { start: '09:00', end: '23:00' },
+        address: 'حي المرسلات، طريق أبي بكر الصديق، الرياض',
+        phone: '0500000006'
+    },
+    {
+        id: '7',
+        name: 'ورشة الروضة - ميزان إلكتروني وتلميع',
+        latitude: 24.7380,
+        longitude: 46.7760,
+        category: 'فحص شامل',
+        status: 'مغلق',
+        workingHours: { start: '10:00', end: '19:00' },
+        address: 'حي الروضة، طريق خريص، الرياض',
+        phone: '0500000007'
+    },
+    {
+        id: '8',
+        name: 'خدمات العقيق - تغيير بطاريات ومكيفات',
+        latitude: 24.7688,
+        longitude: 46.6095,
+        category: 'صيانة عامة',
+        status: 'مفتوح',
+        workingHours: { start: '07:30', end: '22:30' },
+        address: 'حي العقيق، طريق الملك فهد الفرعي، الرياض',
+        phone: '0500000008'
+    },
+    {
+        id: '9',
+        name: 'مركز الجزيرة الطارئ - ٢٤ ساعة',
+        latitude: 24.6465,
+        longitude: 46.7865,
+        category: 'صيانة عامة',
+        status: 'مفتوح',
+        workingHours: { start: '00:00', end: '23:59' },
+        address: 'حي الجزيرة، المخرج ١٥، الرياض',
+        phone: '0500000009'
     }
 ];
 

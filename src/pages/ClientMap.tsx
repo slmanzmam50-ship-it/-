@@ -287,8 +287,8 @@ const ClientMap: React.FC = () => {
             >
                 <ChangeView center={mapCenter} zoom={mapCenter[0] === 24.7136 ? 5 : 12} />
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                    attribution='&copy; <a href="https://www.google.com/intl/ar/help/terms_maps/">Google Maps</a>'
+                    url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ar"
                 />
 
                 {/* User Location Marker */}
