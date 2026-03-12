@@ -1,7 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import type { Branch, Category } from '../types';
-import { X, Save } from 'lucide-react';
+import { X, Save, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+const customIcon = L.divIcon({
+    className: 'custom-dot-marker',
+    html: `<div style="width: 20px; height: 20px; background: var(--primary-color); border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+});
+
+const ChangeView = ({ center }: { center: [number, number] }) => {
+    const map = useMap();
+    map.flyTo(center, map.getZoom());
+    return null;
+};
+
+const LocationMarker = ({ position, setPosition }: { position: [number, number], setPosition: (pos: [number, number]) => void }) => {
+    useMapEvents({
+        click(e) {
+            setPosition([e.latlng.lat, e.latlng.lng]);
+        },
+    });
+    return <Marker position={position} icon={customIcon} />;
+};
 
 interface BranchFormProps {
     branch?: Branch;
@@ -21,6 +46,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         address: '',
         phone: '',
     });
+    const [mapLink, setMapLink] = useState('');
 
     useEffect(() => {
         if (branch) {
@@ -35,6 +61,33 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         } else {
             setFormData({ ...formData, [name]: name === 'latitude' || name === 'longitude' ? parseFloat(value) : value });
         }
+    };
+
+    const handleExtractLocation = () => {
+        if (!mapLink.trim()) {
+            toast.error("يرجى إدخال الرابط أولاً");
+            return;
+        }
+
+        // Try finding @lat,lng
+        const matchAt = mapLink.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (matchAt) {
+            setFormData(prev => ({...prev, latitude: parseFloat(matchAt[1]), longitude: parseFloat(matchAt[2]) }));
+            toast.success("تم سحب الإحداثيات من الرابط بنجاح");
+            setMapLink('');
+            return;
+        }
+
+        // Try finding plain coordinates lat, lng
+        const matchComma = mapLink.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
+        if (matchComma) {
+             setFormData(prev => ({...prev, latitude: parseFloat(matchComma[1]), longitude: parseFloat(matchComma[2]) }));
+             toast.success("تم سحب الإحداثيات بنجاح");
+             setMapLink('');
+             return;
+        }
+
+        toast.error("لم نتمكن من استخراج الإحداثيات. تأكد أنه رابط خرائط جوجل صحيح أو إحداثيات مباشرة.");
     };
 
     const validateForm = (): boolean => {
@@ -99,16 +152,58 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                             style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>خط العرض (Latitude)</label>
-                            <input required type="number" step="any" name="latitude" value={formData.latitude} onChange={handleChange}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} />
+                    {/* Mini Map & Link Picker */}
+                    <div style={{ background: 'var(--bg-color)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            <MapPin size={18} style={{ verticalAlign: 'middle', marginLeft: '4px', color: 'var(--primary-color)' }} />
+                            تحديد موقع الفرع الاستراتيجي
+                        </label>
+                        
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem' }}>
+                            <input 
+                                type="text" 
+                                placeholder="لصق رابط (Google Maps) أو إحداثيات (مثال: 24.71, 46.67)" 
+                                value={mapLink} 
+                                onChange={(e) => setMapLink(e.target.value)}
+                                style={{ flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'left' }} 
+                            />
+                            <button type="button" onClick={handleExtractLocation} style={{ padding: '0 1.5rem', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontWeight: 'bold' }}>
+                                تحديد
+                            </button>
                         </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>خط الطول (Longitude)</label>
-                            <input required type="number" step="any" name="longitude" value={formData.longitude} onChange={handleChange}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} />
+
+                        <div style={{ height: '220px', width: '100%', borderRadius: 'var(--radius-md)', overflow: 'hidden', zIndex: 0, position: 'relative', border: '2px solid var(--border-color)' }}>
+                            <MapContainer 
+                                center={[formData.latitude || 24.7136, formData.longitude || 46.6753]} 
+                                zoom={13} 
+                                style={{ height: '100%', width: '100%' }}
+                            >
+                                <ChangeView center={[formData.latitude || 24.7136, formData.longitude || 46.6753]} />
+                                <TileLayer
+                                    attribution='&copy; Google Maps'
+                                    url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ar"
+                                />
+                                <LocationMarker 
+                                    position={[formData.latitude || 24.7136, formData.longitude || 46.6753]} 
+                                    setPosition={(pos) => setFormData(prev => ({...prev, latitude: pos[0], longitude: pos[1]}))} 
+                                />
+                            </MapContainer>
+                            <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, background: 'rgba(255,255,255,0.95)', color: 'var(--text-primary)', padding: '6px 12px', borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: 'bold', pointerEvents: 'none', boxShadow: 'var(--shadow-sm)' }}>
+                                👆 اضغط على الخريطة لاختيار نقطة دقيقة
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '13px', color: 'var(--text-secondary)' }}>خط العرض (Latitude)</label>
+                                <input required type="number" step="any" name="latitude" value={formData.latitude} onChange={handleChange}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '13px', color: 'var(--text-secondary)' }}>خط الطول (Longitude)</label>
+                                <input required type="number" step="any" name="longitude" value={formData.longitude} onChange={handleChange}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
+                            </div>
                         </div>
                     </div>
 
