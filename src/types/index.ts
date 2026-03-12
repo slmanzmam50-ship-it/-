@@ -17,8 +17,9 @@ export interface Branch {
     workingHours: WorkingHours;
     address: string;
     phone: string;
-    maxCapacity?: number; // Optional max capacity for congestion calculation
-    actualLoad?: number;  // Optional manual or sensor-based actual load
+    mapUrl?: string; // Original Google Maps link or source
+    maxCapacity?: number; 
+    actualLoad?: number;  
 }
 
 export interface NavigationIntent {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Branch, Category } from '../types';
-import { X, Save, MapPin } from 'lucide-react';
+import { X, Save, MapPin, Search as SearchIcon, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -45,8 +45,10 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         workingHours: { start: '08:00', end: '22:00' },
         address: '',
         phone: '',
+        mapUrl: '',
     });
-    const [mapLink, setMapLink] = useState('');
+    const [mapInput, setMapInput] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
 
     useEffect(() => {
         if (branch) {
@@ -63,46 +65,57 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         }
     };
 
-    const handleExtractLocation = () => {
-        if (!mapLink.trim()) {
-            toast.error("يرجى إدخال الرابط أولاً");
+    const handleSearchAddress = async () => {
+        if (!mapInput.trim()) return;
+        setIsSearching(true);
+        try {
+            // Use OpenStreetMap Nominatim API (Free, no key required for low volume)
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(mapInput)}`);
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                const first = data[0];
+                setFormData(prev => ({ ...prev, latitude: parseFloat(first.lat), longitude: parseFloat(first.lon) }));
+                toast.success(`تم العثور على الموقع: ${first.display_name.split(',')[0]} ✅`);
+            } else {
+                toast.error("لم نتمكن من العثور على هذا العنوان.");
+            }
+        } catch (error) {
+            toast.error("خطأ في الاتصال بخدمة البحث.");
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleExtractFromLink = () => {
+        const input = mapInput.trim();
+        if (!input) return;
+
+        // 1. Check for shortened links
+        if (input.includes("goo.gl") || input.includes("maps.app.goo.gl")) {
+            setFormData(prev => ({ ...prev, mapUrl: input })); // Save it anyway
+            toast.success("تم حفظ الرابط المختصر! تذكر الضغط على الخريطة لتحديد النقطة بدقة 👆");
             return;
         }
 
-        // 1. Check for shortened goo.gl links
-        if (mapLink.includes("goo.gl") || mapLink.includes("maps.app.goo.gl")) {
-            toast.error("الروابط المختصرة لا تحتوي على إحداثيات مباشرة. يرجى فتح الرابط ونسخ العنوان الكامل من المتصفح، أو نسخ الأرقام مباشرة.");
-            return;
-        }
-
-        // 2. Try better regex for @lat,lng (Google Maps format)
-        const matchAt = mapLink.match(/@(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+        // 2. Try regex for @lat,lng
+        const matchAt = input.match(/@(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
         if (matchAt) {
-            setFormData(prev => ({...prev, latitude: parseFloat(matchAt[1]), longitude: parseFloat(matchAt[2]) }));
-            toast.success("تم تحديد الموقع من الرابط بنجاح! ✅");
-            setMapLink('');
+            setFormData(prev => ({ ...prev, latitude: parseFloat(matchAt[1]), longitude: parseFloat(matchAt[2]), mapUrl: input }));
+            toast.success("تم استيراد الإحداثيات من الرابط! ✅");
             return;
         }
 
-        // 3. Try query parameters like ?q=lat,lng or ll=lat,lng
-        const matchQuery = mapLink.match(/[?&](?:q|ll|query)=?(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
-        if (matchQuery) {
-            setFormData(prev => ({...prev, latitude: parseFloat(matchQuery[1]), longitude: parseFloat(matchQuery[2]) }));
-            toast.success("تم سحب الإحداثيات من الاستعلام بنجاح! ✅");
-            setMapLink('');
-            return;
-        }
-
-        // 4. Try plain coordinates lat, lng (supports comma, space, or semicolon)
-        const matchPlain = mapLink.match(/(-?\d+\.\d+)[,\s|;]+(-?\d+\.\d+)/);
+        // 3. Try plain coordinates
+        const matchPlain = input.match(/(-?\d+\.\d+)[,\s|;]+(-?\d+\.\d+)/);
         if (matchPlain) {
-             setFormData(prev => ({...prev, latitude: parseFloat(matchPlain[1]), longitude: parseFloat(matchPlain[2]) }));
-             toast.success("تم استيراد الإحداثيات بنجاح! ✅");
-             setMapLink('');
+             setFormData(prev => ({ ...prev, latitude: parseFloat(matchPlain[1]), longitude: parseFloat(matchPlain[2]) }));
+             toast.success("تم التعرف على الإحداثيات! ✅");
              return;
         }
 
-        toast.error("لم نتمكن من العثور على أرقام الإحداثيات. تأكد من استخدام الرابط الكامل أو كتابة الأرقام مثل: 24.7, 46.6");
+        // If nothing matches, trigger address search instead
+        handleSearchAddress();
     };
 
     const validateForm = (): boolean => {
@@ -167,27 +180,50 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                             style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} />
                     </div>
 
-                    {/* Mini Map & Link Picker */}
-                    <div style={{ background: 'var(--bg-color)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                            <MapPin size={18} style={{ verticalAlign: 'middle', marginLeft: '4px', color: 'var(--primary-color)' }} />
-                            تحديد موقع الفرع الاستراتيجي
-                        </label>
+                    {/* Intelligent Location Selection */}
+                    <div style={{ background: 'var(--bg-color)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <label style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <MapPin size={20} color="var(--primary-color)" />
+                                تحديد موقع الفرع (ذكي)
+                            </label>
+                            {formData.mapUrl && (
+                                <a href={formData.mapUrl} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontWeight: 600 }}>
+                                    <ExternalLink size={12} /> معاينة الرابط المحفوظ
+                                </a>
+                            )}
+                        </div>
                         
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem' }}>
-                            <input 
-                                type="text" 
-                                placeholder="لصق رابط (Google Maps) أو إحداثيات (مثال: 24.71, 46.67)" 
-                                value={mapLink} 
-                                onChange={(e) => setMapLink(e.target.value)}
-                                style={{ flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'left' }} 
-                            />
-                            <button type="button" onClick={handleExtractLocation} style={{ padding: '0 1.5rem', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontWeight: 'bold' }}>
-                                تحديد
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <div style={{ position: 'absolute', right: '12px', color: 'var(--text-secondary)', pointerEvents: 'none' }}>
+                                    <SearchIcon size={18} />
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="ابحث بالاسم (مثال: حي الشفا) أو الصق الرابط الكامل" 
+                                    value={mapInput} 
+                                    onChange={(e) => setMapInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleExtractFromLink())}
+                                    style={{ width: '100%', padding: '0.75rem 2.5rem 0.75rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)', fontSize: '14px' }} 
+                                />
+                            </div>
+                            <button 
+                                type="button" 
+                                onClick={handleExtractFromLink} 
+                                disabled={isSearching}
+                                style={{ 
+                                    padding: '0 1.5rem', background: 'var(--primary-color)', color: 'white', 
+                                    border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', 
+                                    fontWeight: 'bold', fontSize: '14px', whiteSpace: 'nowrap',
+                                    transition: 'all 0.2s', opacity: isSearching ? 0.7 : 1
+                                }}
+                            >
+                                {isSearching ? 'جاري البحث..' : 'تحديد'}
                             </button>
                         </div>
 
-                        <div style={{ height: '220px', width: '100%', borderRadius: 'var(--radius-md)', overflow: 'hidden', zIndex: 0, position: 'relative', border: '2px solid var(--border-color)' }}>
+                        <div style={{ height: '240px', width: '100%', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '2px solid var(--border-color)', position: 'relative' }}>
                             <MapContainer 
                                 center={[formData.latitude || 24.7136, formData.longitude || 46.6753]} 
                                 zoom={13} 
@@ -203,12 +239,10 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                     setPosition={(pos) => setFormData(prev => ({...prev, latitude: pos[0], longitude: pos[1]}))} 
                                 />
                             </MapContainer>
-                            <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, background: 'rgba(255,255,255,0.95)', color: 'var(--text-primary)', padding: '6px 12px', borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: 'bold', pointerEvents: 'none', boxShadow: 'var(--shadow-sm)' }}>
-                                👆 اضغط على الخريطة لاختيار نقطة دقيقة
+                            <div style={{ position: 'absolute', bottom: '15px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(0,0,0,0.6)', color: 'white', padding: '6px 16px', borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: 'bold', pointerEvents: 'none', backdropFilter: 'blur(4px)' }}>
+                                👈 قم بتحريك أو الضغط على الخريطة للدقة
                             </div>
                         </div>
-
-
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
