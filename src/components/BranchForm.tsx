@@ -63,63 +63,46 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         }
     };
 
-    const handleExtractLocation = async () => {
+    const handleExtractLocation = () => {
         if (!mapLink.trim()) {
             toast.error("يرجى إدخال الرابط أولاً");
             return;
         }
 
-        let linkToProcess = mapLink;
-
-        // If it's a short maps link, try to expand it via CORS proxy
-        if (linkToProcess.includes('goo.gl') || linkToProcess.includes('maps.app.goo.gl')) {
-            toast.loading("جاري فك الرابط المختصر واستخراج الموقع...", { id: 'extract-loc' });
-            try {
-                const response = await fetch(`https://api.codetabs.com/v1/proxy?quest=${linkToProcess}`);
-                const text = await response.text();
-                // The proxy returns Google's redirect page which has the full URL in the <title> tag
-                const titleMatch = text.match(/<title>(.*?)<\/title>/);
-                if (titleMatch && titleMatch[1]) {
-                    linkToProcess = titleMatch[1]; // The extracted long URL
-                } else {
-                    // Fallback to searching the whole html text
-                    linkToProcess = text;
-                }
-            } catch (error) {
-                console.error("Error expanding short link", error);
-                toast.error("فشلنا في فك الرابط المختصر. يرجى لصق الرابط الطويل من المتصفح مباشرة.", { id: 'extract-loc' });
-                return;
-            }
+        // 1. Check for shortened goo.gl links
+        if (mapLink.includes("goo.gl") || mapLink.includes("maps.app.goo.gl")) {
+            toast.error("الروابط المختصرة لا تحتوي على إحداثيات مباشرة. يرجى فتح الرابط ونسخ العنوان الكامل من المتصفح، أو نسخ الأرقام مباشرة.");
+            return;
         }
 
-        // Try finding @lat,lng (format in long Google Maps URLs)
-        const matchAt = linkToProcess.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        // 2. Try better regex for @lat,lng (Google Maps format)
+        const matchAt = mapLink.match(/@(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
         if (matchAt) {
             setFormData(prev => ({...prev, latitude: parseFloat(matchAt[1]), longitude: parseFloat(matchAt[2]) }));
-            toast.success("تم سحب الإحداثيات بنجاح", { id: 'extract-loc' });
+            toast.success("تم تحديد الموقع من الرابط بنجاح! ✅");
             setMapLink('');
             return;
         }
 
-        // Formats like /place/.../24.7136,46.6753
-        const matchPlace = linkToProcess.match(/place\/.*?(-?\d+\.\d+)[,\/]+(-?\d+\.\d+)/);
-        if (matchPlace) {
-            setFormData(prev => ({...prev, latitude: parseFloat(matchPlace[1]), longitude: parseFloat(matchPlace[2]) }));
-            toast.success("تم سحب الإحداثيات بنجاح", { id: 'extract-loc' });
+        // 3. Try query parameters like ?q=lat,lng or ll=lat,lng
+        const matchQuery = mapLink.match(/[?&](?:q|ll|query)=?(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+        if (matchQuery) {
+            setFormData(prev => ({...prev, latitude: parseFloat(matchQuery[1]), longitude: parseFloat(matchQuery[2]) }));
+            toast.success("تم سحب الإحداثيات من الاستعلام بنجاح! ✅");
             setMapLink('');
             return;
         }
 
-        // Try finding plain coordinates lat, lng typed directly by user
-        const matchComma = linkToProcess.match(/(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/);
-        if (matchComma) {
-             setFormData(prev => ({...prev, latitude: parseFloat(matchComma[1]), longitude: parseFloat(matchComma[2]) }));
-             toast.success("تم سحب الإحداثيات بنجاح", { id: 'extract-loc' });
+        // 4. Try plain coordinates lat, lng (supports comma, space, or semicolon)
+        const matchPlain = mapLink.match(/(-?\d+\.\d+)[,\s|;]+(-?\d+\.\d+)/);
+        if (matchPlain) {
+             setFormData(prev => ({...prev, latitude: parseFloat(matchPlain[1]), longitude: parseFloat(matchPlain[2]) }));
+             toast.success("تم استيراد الإحداثيات بنجاح! ✅");
              setMapLink('');
              return;
         }
 
-        toast.error("لم نتمكن من استخراج الإحداثيات. تأكد أنه رابط خرائط جوجل صحيح.", { id: 'extract-loc' });
+        toast.error("لم نتمكن من العثور على أرقام الإحداثيات. تأكد من استخدام الرابط الكامل أو كتابة الأرقام مثل: 24.7, 46.6");
     };
 
     const validateForm = (): boolean => {
