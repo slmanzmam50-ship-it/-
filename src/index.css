@@ -114,47 +114,77 @@ button:hover {
   margin: 16px;
 }
 
-/* Animated Markers */
-@keyframes pulseGreen {
+/* Animated Markers (Pure CSS Dots) */
+.custom-dot-marker {
+  background: transparent;
+  border: none;
+}
+
+.dot-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  border: 2px solid white;
+}
+
+.dot-open {
+  background-color: var(--success);
+}
+
+.dot-closed {
+  background-color: var(--error);
+}
+
+/* Pulse animation for OPEN branches */
+.dot-open::after {
+  content: '';
+  position: absolute;
+  top: -4px; /* match offset based on border/size */
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--success);
+  animation: pulseGreenRing 2s infinite ease-out;
+  opacity: 0;
+}
+
+@keyframes pulseGreenRing {
   0% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0.7));
+    transform: scale(0.8);
+    opacity: 0.8;
   }
-
-  50% {
-    transform: scale(1.05);
-    filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0));
-  }
-
   100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0));
+    transform: scale(2.5);
+    opacity: 0;
   }
 }
 
-@keyframes pulseRed {
+/* Subtle pulse for CLOSED branches */
+.dot-closed::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--error);
+  animation: pulseRedRing 3s infinite ease-out;
+  opacity: 0;
+}
+
+@keyframes pulseRedRing {
   0% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0.7));
+    transform: scale(0.9);
+    opacity: 0.5;
   }
-
-  50% {
-    transform: scale(1.05);
-    filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0));
-  }
-
   100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0));
+    transform: scale(1.5);
+    opacity: 0;
   }
-}
-
-.marker-pulse-green {
-  animation: pulseGreen 2s infinite;
-}
-
-.marker-pulse-red {
-  animation: pulseRed 2s infinite;
 }
 
 a {
@@ -164,4 +194,33 @@ a {
 
 a:hover {
   color: var(--primary-hover);
+}
+
+/* --- Premium Map UI Improvements --- */
+.premium-popup .leaflet-popup-content-wrapper {
+  background: var(--surface-color);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  box-shadow: var(--shadow-lg);
+}
+
+.premium-popup .leaflet-popup-content {
+  margin: 14px;
+}
+
+.premium-popup .leaflet-popup-tip {
+  background: var(--surface-color);
+  box-shadow: var(--shadow-md);
+}
+
+.popup-call-btn:hover {
+  background: var(--primary-hover) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* Hide default select arrow for a custom one */
+.search-panel select option {
+  background: var(--surface-color);
+  color: var(--text-primary);
 }

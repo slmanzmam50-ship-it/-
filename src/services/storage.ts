@@ -1,6 +1,6 @@
-import type { Branch } from '../types';
+import type { Branch, NavigationIntent } from '../types';
 import { db } from './firebase';
-import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc, query, where } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 
 const COLLECTION_NAME = 'branches';
@@ -116,5 +116,50 @@ export const deleteBranch = async (id: string): Promise<void> => {
     } catch (error) {
         console.error("Error deleting branch:", error);
         throw error;
+    }
+};
+
+// --- Navigation Intents (Hybrid Congestion System) ---
+const INTENTS_COLLECTION = 'active_navigators';
+
+export const addNavigationIntent = async (branchId: string, etaMinutes: number): Promise<string> => {
+    try {
+        const id = uuidv4();
+        const now = Date.now();
+        // Add a 10-minute buffer to the ETA, after which it expires if the user hasn't arrived
+        const expiresAt = now + ((etaMinutes + 10) * 60000); 
+
+        const intent: NavigationIntent = {
+            id,
+            branchId,
+            createdAt: now,
+            etaMinutes,
+            expiresAt
+        };
+
+        await setDoc(doc(db, INTENTS_COLLECTION, id), intent);
+        return id;
+    } catch (error) {
+        console.error("Error adding navigation intent:", error);
+        throw error;
+    }
+};
+
+export const getActiveNavigatorsCount = async (branchId: string): Promise<number> => {
+    try {
+        const now = Date.now();
+        // We only want intents that haven't expired yet
+        const q = query(
+            collection(db, INTENTS_COLLECTION),
+            where("branchId", "==", branchId),
+            where("expiresAt", ">", now)
+        );
+
+        const querySnapshot = await getDocs(q);
+        // Valid active navigators intended for this branch
+        return querySnapshot.size;
+    } catch (error) {
+        console.error("Error fetching active navigators:", error);
+        return 0;
     }
 };

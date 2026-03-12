@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getBranches } from '../services/storage';
+import { getBranches, getActiveNavigatorsCount, addNavigationIntent } from '../services/storage';
 import type { Branch } from '../types';
-import { Navigation } from 'lucide-react';
+import { Navigation, MapPin, Clock, Phone, Search, SlidersHorizontal, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Fix typical React Leaflet icon issue
@@ -15,31 +15,23 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Create custom icons for open/closed status
-const openIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-    className: 'marker-pulse-green'
-});
+// Create pure CSS animated dot markers
+const createDotIcon = (status: string) => {
+    return L.divIcon({
+        className: 'custom-dot-marker',
+        html: `<div class="dot-indicator ${status === 'مفتوح' ? 'dot-open' : 'dot-closed'}"></div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        popupAnchor: [0, -12]
+    });
+};
 
-const closedIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-    className: 'marker-pulse-red'
-});
-
-// Component to dynamically set map center
+// Component to dynamically set map center with smooth flyTo animation
 const ChangeView = ({ center, zoom }: { center: [number, number], zoom: number }) => {
     const map = useMap();
-    map.setView(center, zoom);
+    useEffect(() => {
+        map.flyTo(center, zoom, { duration: 1.5 });
+    }, [center, zoom, map]);
     return null;
 };
 
@@ -49,14 +41,37 @@ const ClientMap: React.FC = () => {
     const [mapCenter, setMapCenter] = useState<[number, number]>([24.7136, 46.6753]); // Default Riyadh
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [congestionData, setCongestionData] = useState<Record<string, number>>({});
 
     useEffect(() => {
         const loadBranches = async () => {
             const data = await getBranches();
             setBranches(data);
+
+            const counts: Record<string, number> = {};
+            for (const b of data) {
+                counts[b.id] = await getActiveNavigatorsCount(b.id);
+            }
+            setCongestionData(counts);
         };
         loadBranches();
     }, []);
+
+    const getCongestionLevel = (branch: Branch, activeIntents: number) => {
+        if (branch.status === 'مغلق') return { label: 'مغلق 🔴', color: 'var(--error)' };
+
+        const capacity = branch.maxCapacity || 10;
+        const currentLoad = branch.actualLoad || 0;
+        const loadScore = currentLoad + (activeIntents * 0.3); // intent weight 0.3
+        const percentage = loadScore / capacity;
+
+        // If >= 75% load, show strong orange/warning instead of red error.
+        if (percentage >= 0.75) return { label: 'مزدحم 🟠', color: 'var(--warning)' };
+        // If >= 40% load, show light orange/yellow.
+        if (percentage >= 0.40) return { label: 'متوسط 🟡', color: '#fbbf24' }; // lighter yellow-orange 
+        // Default
+        return { label: 'هادئ 🟢', color: 'var(--success)' };
+    };
 
     // Haversine formula to calculate distance between two lat/lng coordinates in km
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -111,6 +126,31 @@ const ClientMap: React.FC = () => {
         }
     };
 
+    const handleNavigate = async (branch: Branch) => {
+        if (!userLoc) {
+            toast.error('يرجى تحديد موقعك أولاً لنتمكن من توجيهك بشكل دقيق');
+            return;
+        }
+
+        toast.loading('جاري تجهيز المسار وتسجيلك...', { id: 'nav-toast' });
+        const distance = calculateDistance(userLoc[0], userLoc[1], branch.latitude, branch.longitude);
+        // Assuming ~40 km/h average speed = 0.66 km per minute
+        const etaMinutes = Math.max(5, Math.ceil(distance / 0.66));
+
+        try {
+            await addNavigationIntent(branch.id, etaMinutes);
+            toast.success(`رافقتك السلامة! الوقت المتوقع: ${etaMinutes} دقيقة`, { id: 'nav-toast' });
+            
+            // Optimistically update local congestion data
+            setCongestionData(prev => ({ ...prev, [branch.id]: (prev[branch.id] || 0) + 1 }));
+
+            // Open Google Maps
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`, '_blank');
+        } catch (error) {
+            toast.error('حدث خطأ أثناء الاتصال', { id: 'nav-toast' });
+        }
+    };
+
     const filteredBranches = branches.filter(branch => {
         const matchesSearch = branch.name.includes(searchQuery) || branch.category.includes(searchQuery);
         const matchesCategory = categoryFilter === 'all' || branch.category === categoryFilter;
@@ -120,61 +160,96 @@ const ClientMap: React.FC = () => {
     return (
         <div style={{ height: 'calc(100vh - 80px)', width: '100%', padding: '1rem', position: 'relative' }}>
 
-            {/* Search and Filter Panel (Overlay) */}
-            <div className="glass" style={{
+            {/* Search and Filter Panel (Modern Floating) */}
+            <div className="glass search-panel" style={{
                 position: 'absolute',
-                top: '2rem',
-                left: '2rem',
+                top: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
                 zIndex: 1000,
-                padding: '1rem',
-                borderRadius: 'var(--radius-lg)',
+                padding: '12px 16px',
+                borderRadius: 'var(--radius-full)',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '0.5rem',
-                width: '300px',
-                maxWidth: 'calc(100vw - 4rem)'
+                alignItems: 'center',
+                gap: '12px',
+                width: '90%',
+                maxWidth: '500px',
+                boxShadow: 'var(--shadow-lg)'
             }}>
+                <Search size={20} color="var(--text-secondary)" />
                 <input
                     type="text"
                     placeholder="ابحث عن فرع أو خدمة..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
+                    style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-primary)', fontSize: '16px' }}
                 />
-                <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
-                >
-                    <option value="all">جميع التصنيفات</option>
-                    <option value="صيانة عامة">صيانة عامة</option>
-                    <option value="غيار زيت">غيار زيت</option>
-                    <option value="إطارات">إطارات</option>
-                    <option value="فحص شامل">فحص شامل</option>
-                </select>
-                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '0.5rem' }}>
-                    تم العثور على {filteredBranches.length} فرع
+                <div style={{ width: '1px', height: '24px', background: 'var(--border-color)' }}></div>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        style={{ 
+                            border: 'none', background: 'transparent', outline: 'none', 
+                            color: 'var(--text-primary)', cursor: 'pointer', appearance: 'none', 
+                            fontWeight: 500, fontSize: '14px', paddingLeft: '8px', paddingRight: '22px'
+                        }}
+                    >
+                        <option value="all">جميع الفئات</option>
+                        <option value="صيانة عامة">صيانة عامة</option>
+                        <option value="غيار زيت">غيار زيت</option>
+                        <option value="إطارات">إطارات</option>
+                        <option value="فحص شامل">فحص شامل</option>
+                    </select>
+                    <SlidersHorizontal size={16} color="var(--text-secondary)" style={{ position: 'absolute', right: '0', pointerEvents: 'none' }} />
                 </div>
             </div>
+
+            {/* Empty State Feedback */}
+            {filteredBranches.length === 0 && (
+                <div className="glass" style={{
+                    position: 'absolute',
+                    top: '90px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 1000,
+                    padding: '12px 24px',
+                    borderRadius: 'var(--radius-full)',
+                    color: 'var(--warning)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontWeight: 'bold',
+                    boxShadow: 'var(--shadow-md)'
+                }}>
+                    <Info size={20} />
+                    عذراً، لم نجد فروع مطابقة لبحثك
+                </div>
+            )}
 
             <button
                 onClick={handleLocateMe}
                 className="glass"
                 style={{
                     position: 'absolute',
-                    bottom: '2rem',
-                    right: '2rem',
+                    bottom: '30px',
+                    right: '20px',
                     zIndex: 1000,
-                    padding: '12px',
+                    width: '48px',
+                    height: '48px',
                     borderRadius: '50%',
                     border: 'none',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'var(--primary-color)',
+                    color: 'var(--surface-color)',
+                    background: 'var(--primary-color)',
                     boxShadow: 'var(--shadow-lg)',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s, background 0.2s'
                 }}
+                onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary-hover)'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'var(--primary-color)'}
                 title="تحديد موقعي"
             >
                 <Navigation size={24} />
@@ -205,36 +280,78 @@ const ClientMap: React.FC = () => {
                     <Marker
                         key={branch.id}
                         position={[branch.latitude, branch.longitude]}
-                        icon={branch.status === 'مفتوح' ? openIcon : closedIcon}
+                        icon={createDotIcon(branch.status)}
                     >
-                        <Popup>
-                            <div style={{ textAlign: 'right', direction: 'rtl' }}>
-                                <h3 style={{ margin: '0 0 5px', color: 'var(--primary-color)' }}>{branch.name}</h3>
-                                <p style={{ margin: '0 0 5px', fontSize: '14px' }}>
-                                    <strong>التصنيف:</strong> {branch.category}
-                                </p>
-                                <p style={{ margin: '0 0 5px', fontSize: '14px' }}>
-                                    <strong>الحالة:</strong>
+                        <Popup className="premium-popup">
+                            <div style={{ textAlign: 'right', direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <h3 style={{ margin: '0', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '16px', fontWeight: 'bold' }}>
+                                        <MapPin size={18} /> {branch.name}
+                                    </h3>
+                                </div>
+                                
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', marginTop: '4px' }}>
                                     <span style={{
+                                        background: branch.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                                         color: branch.status === 'مفتوح' ? 'var(--success)' : 'var(--error)',
-                                        fontWeight: 'bold',
-                                        marginRight: '5px'
+                                        padding: '4px 10px',
+                                        borderRadius: 'var(--radius-full)',
+                                        fontWeight: 'bold'
                                     }}>
                                         {branch.status}
                                     </span>
+                                    <span style={{ color: 'var(--text-secondary)' }}>•</span>
+                                    <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{branch.category}</span>
+                                </div>
+
+                                {/* Hybrid Congestion UI */}
+                                {branch.status === 'مفتوح' && (
+                                    <div style={{ background: 'var(--bg-color)', padding: '6px 10px', borderRadius: 'var(--radius-md)', fontSize: '13px', marginTop: '4px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>حالة الفرع:</span>
+                                        <span style={{ fontWeight: 'bold', color: getCongestionLevel(branch, congestionData[branch.id] || 0).color }}>
+                                            {getCongestionLevel(branch, congestionData[branch.id] || 0).label}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', marginTop: '6px', color: 'var(--text-primary)' }}>
+                                    <Clock size={16} color="var(--text-secondary)" />
+                                    <span>{branch.workingHours.start} - {branch.workingHours.end}</span>
+                                </div>
+
+                                <p style={{ margin: '6px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                                    {branch.address}
                                 </p>
-                                <p style={{ margin: '0 0 5px', fontSize: '14px' }}>
-                                    <strong>أوقات العمل:</strong> {branch.workingHours.start} - {branch.workingHours.end}
-                                </p>
-                                <p style={{ margin: '0 0 5px', fontSize: '14px' }}>
-                                    <strong>العنوان:</strong> {branch.address}
-                                </p>
-                                <a
-                                    href={`tel:${branch.phone}`}
-                                    style={{ display: 'block', marginTop: '10px', background: 'var(--primary-color)', color: 'white', padding: '5px 10px', borderRadius: '4px', textAlign: 'center', textDecoration: 'none' }}
-                                >
-                                    اتصال
-                                </a>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '12px' }}>
+                                    <button
+                                        onClick={() => handleNavigate(branch)}
+                                        className="popup-call-btn"
+                                        style={{ 
+                                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px',
+                                            background: 'var(--primary-color)', color: 'white', border: 'none',
+                                            padding: '8px 12px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                                            fontWeight: 'bold', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)'
+                                        }}
+                                    >
+                                        <Navigation size={16} />
+                                        الاتجاه
+                                    </button>
+                                    <a
+                                        href={`tel:${branch.phone}`}
+                                        className="popup-call-btn"
+                                        style={{ 
+                                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px',
+                                            background: 'var(--bg-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)',
+                                            padding: '8px 12px', borderRadius: 'var(--radius-md)', 
+                                            textDecoration: 'none', fontWeight: 'bold',
+                                            transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)'
+                                        }}
+                                    >
+                                        <Phone size={16} />
+                                        اتصال
+                                    </a>
+                                </div>
                             </div>
                         </Popup>
                     </Marker>

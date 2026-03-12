@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getBranches, addBranch, updateBranch, deleteBranch } from '../services/storage';
+import { getBranches, addBranch, updateBranch, deleteBranch, getActiveNavigatorsCount } from '../services/storage';
 import type { Branch } from '../types';
 import BranchForm from '../components/BranchForm';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
@@ -11,14 +11,24 @@ const AdminDashboard: React.FC = () => {
     const [editingBranch, setEditingBranch] = useState<Branch | undefined>(undefined);
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
+    const [navigatorsCount, setNavigatorsCount] = useState<Record<string, number>>({});
 
     useEffect(() => {
         loadBranches();
+        // Set up polling to refresh active navigators every minute
+        const interval = setInterval(loadBranches, 60000);
+        return () => clearInterval(interval);
     }, []);
 
     const loadBranches = async () => {
         const data = await getBranches();
         setBranches(data);
+
+        const counts: Record<string, number> = {};
+        for (const b of data) {
+            counts[b.id] = await getActiveNavigatorsCount(b.id);
+        }
+        setNavigatorsCount(counts);
     }
 
     const handleSaveBranch = async (branchData: Omit<Branch, 'id'> | Branch) => {
@@ -128,6 +138,7 @@ const AdminDashboard: React.FC = () => {
                                 <th style={{ padding: '1rem' }}>الاسم</th>
                                 <th style={{ padding: '1rem' }}>التصنيف</th>
                                 <th style={{ padding: '1rem' }}>الحالة</th>
+                                <th style={{ padding: '1rem' }}>في الطريق 🧭</th>
                                 <th style={{ padding: '1rem' }}>أوقات العمل</th>
                                 <th style={{ padding: '1rem', textAlign: 'center' }}>إجراءات</th>
                             </tr>
@@ -151,6 +162,16 @@ const AdminDashboard: React.FC = () => {
                                             }}>
                                                 {branch.status}
                                             </span>
+                                        </td>
+                                        <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                                            {navigatorsCount[branch.id] > 0 ? (
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                    {navigatorsCount[branch.id]} سيارة
+                                                    <span style={{ width: '8px', height: '8px', background: 'var(--warning)', borderRadius: '50%', display: 'inline-block', animation: 'pulseRed 2s infinite' }}></span>
+                                                </span>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-secondary)', fontWeight: 'normal' }}>0</span>
+                                            )}
                                         </td>
                                         <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{branch.workingHours.start} - {branch.workingHours.end}</td>
                                         <td style={{ padding: '1rem', textAlign: 'center' }}>
