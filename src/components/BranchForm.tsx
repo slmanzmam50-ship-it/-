@@ -208,18 +208,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                             </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '13px', color: 'var(--text-secondary)' }}>خط العرض (Latitude)</label>
-                                <input required type="number" step="any" name="latitude" value={formData.latitude} onChange={handleChange}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '13px', color: 'var(--text-secondary)' }}>خط الطول (Longitude)</label>
-                                <input required type="number" step="any" name="longitude" value={formData.longitude} onChange={handleChange}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
-                            </div>
-                        </div>
+
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
