@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getBranches, addBranch, updateBranch, deleteBranch, getActiveNavigatorsCount } from '../services/storage';
-import type { Branch } from '../types';
+import { getBranches, addBranch, updateBranch, deleteBranch, getActiveNavigatorsCount, getCategories, addCategory, deleteCategory } from '../services/storage';
+import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -12,6 +12,10 @@ const AdminDashboard: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [navigatorsCount, setNavigatorsCount] = useState<Record<string, number>>({});
+    
+    // Category management state
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [newCategoryName, setNewCategoryName] = useState('');
 
     useEffect(() => {
         loadBranches();
@@ -21,8 +25,12 @@ const AdminDashboard: React.FC = () => {
     }, []);
 
     const loadBranches = async () => {
-        const data = await getBranches();
+        const [data, cats] = await Promise.all([
+            getBranches(),
+            getCategories()
+        ]);
         setBranches(data);
+        setCategories(cats);
 
         const counts: Record<string, number> = {};
         for (const b of data) {
@@ -61,6 +69,30 @@ const AdminDashboard: React.FC = () => {
                 await loadBranches();
             } catch (error) {
                 toast.error('حدث خطأ أثناء الحذف');
+            }
+        }
+    };
+
+    const handleAddCategory = async () => {
+        if (!newCategoryName.trim()) return;
+        try {
+            await addCategory(newCategoryName.trim());
+            toast.success('تم إضافة التصنيف بنجاح');
+            setNewCategoryName('');
+            await loadBranches();
+        } catch (error) {
+            toast.error('حدث خطأ أثناء إضافة التصنيف');
+        }
+    };
+
+    const handleDeleteCategory = async (id: string) => {
+        if (window.confirm('هل أنت متأكد من حذف هذا التصنيف؟')) {
+            try {
+                await deleteCategory(id);
+                toast.success('تم حذف التصنيف بنجاح');
+                await loadBranches();
+            } catch (error) {
+                toast.error('حدث خطأ أثناء حذف التصنيف');
             }
         }
     };
@@ -107,10 +139,9 @@ const AdminDashboard: React.FC = () => {
                         style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
                     >
                         <option value="all">جميع التصنيفات</option>
-                        <option value="صيانة عامة">صيانة عامة</option>
-                        <option value="غيار زيت">غيار زيت</option>
-                        <option value="إطارات">إطارات</option>
-                        <option value="فحص شامل">فحص شامل</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                        ))}
                     </select>
                 </div>
             </div>
@@ -201,8 +232,42 @@ const AdminDashboard: React.FC = () => {
                     branch={editingBranch}
                     onSave={handleSaveBranch}
                     onClose={() => setIsFormOpen(false)}
+                    categories={categories}
                 />
             )}
+
+            <div className="glass" style={{ marginTop: '2rem', padding: '1.5rem', borderRadius: 'var(--radius-lg)' }}>
+                <h2 style={{ margin: '0 0 1rem 0' }}>إدارة التصنيفات</h2>
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                    <input
+                        type="text"
+                        placeholder="اسم التصنيف الجديد..."
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        style={{ flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
+                    />
+                    <button
+                        onClick={handleAddCategory}
+                        style={{
+                            background: 'var(--success)', color: 'white', padding: '0.75rem 1.5rem',
+                            borderRadius: 'var(--radius-md)', border: 'none', fontWeight: 700,
+                            display: 'flex', alignItems: 'center', gap: '0.5rem'
+                        }}
+                    >
+                        <Plus size={18} /> إضافة
+                    </button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+                    {categories.map(cat => (
+                        <div key={cat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-color)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                            <span style={{ fontWeight: 500 }}>{cat.name}</span>
+                            <button onClick={() => handleDeleteCategory(cat.id)} style={{ background: 'none', border: 'none', color: 'var(--error)' }} title="حذف">
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };

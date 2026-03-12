@@ -1,4 +1,4 @@
-import type { Branch, NavigationIntent } from '../types';
+import type { Branch, NavigationIntent, Category } from '../types';
 import { db } from './firebase';
 import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc, query, where } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
@@ -52,15 +52,31 @@ const initialBranches: Branch[] = [
     }
 ];
 
-// Seed initial data if the database is completely empty
-// Using a specific document to check if we have seeded so we don't duplicate
+// --- Categories Management ---
+const CATEGORIES_COLLECTION = 'categories';
+
+const initialCategories: Category[] = [
+    { id: 'cat1', name: 'صيانة عامة' },
+    { id: 'cat2', name: 'غيار زيت' },
+    { id: 'cat3', name: 'إطارات' },
+    { id: 'cat4', name: 'فحص شامل' }
+];
+
 const seedDatabaseIfNeeded = async () => {
     try {
-        const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
-        if (querySnapshot.empty) {
+        const branchSnapshot = await getDocs(collection(db, COLLECTION_NAME));
+        if (branchSnapshot.empty) {
             console.log("Database is empty, seeding initial branches...");
             for (const branch of initialBranches) {
                 await setDoc(doc(db, COLLECTION_NAME, branch.id), branch);
+            }
+        }
+
+        const categorySnapshot = await getDocs(collection(db, CATEGORIES_COLLECTION));
+        if (categorySnapshot.empty) {
+            console.log("Seeding initial categories...");
+            for (const cat of initialCategories) {
+                await setDoc(doc(db, CATEGORIES_COLLECTION, cat.id), cat);
             }
         }
     } catch (error) {
@@ -161,5 +177,41 @@ export const getActiveNavigatorsCount = async (branchId: string): Promise<number
     } catch (error) {
         console.error("Error fetching active navigators:", error);
         return 0;
+    }
+};
+
+// --- Export Category CRUD ---
+export const getCategories = async (): Promise<Category[]> => {
+    try {
+        const querySnapshot = await getDocs(collection(db, CATEGORIES_COLLECTION));
+        const categories: Category[] = [];
+        querySnapshot.forEach((doc) => {
+            categories.push(doc.data() as Category);
+        });
+        return categories;
+    } catch (error) {
+        console.error("Error fetching categories:", error);
+        return [];
+    }
+};
+
+export const addCategory = async (name: string): Promise<Category> => {
+    try {
+        const id = uuidv4();
+        const newCat: Category = { id, name };
+        await setDoc(doc(db, CATEGORIES_COLLECTION, id), newCat);
+        return newCat;
+    } catch (error) {
+        console.error("Error adding category:", error);
+        throw error;
+    }
+};
+
+export const deleteCategory = async (id: string): Promise<void> => {
+    try {
+        await deleteDoc(doc(db, CATEGORIES_COLLECTION, id));
+    } catch (error) {
+        console.error("Error deleting category:", error);
+        throw error;
     }
 };

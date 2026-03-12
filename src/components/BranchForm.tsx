@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Branch } from '../types';
+import type { Branch, Category } from '../types';
 import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -7,9 +7,10 @@ interface BranchFormProps {
     branch?: Branch;
     onSave: (branch: Omit<Branch, 'id'> | Branch) => void;
     onClose: () => void;
+    categories: Category[];
 }
 
-const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose }) => {
+const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, categories }) => {
     const [formData, setFormData] = useState<Omit<Branch, 'id'>>({
         name: '',
         latitude: 24.7136,
@@ -116,10 +117,9 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose }) => {
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>التصنيف</label>
                             <select name="category" value={formData.category} onChange={handleChange}
                                 style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}>
-                                <option value="صيانة عامة">صيانة عامة</option>
-                                <option value="غيار زيت">غيار زيت</option>
-                                <option value="إطارات">إطارات</option>
-                                <option value="فحص شامل">فحص شامل</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                ))}
                             </select>
                         </div>
                         <div>

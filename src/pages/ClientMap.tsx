@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getBranches, getActiveNavigatorsCount, addNavigationIntent } from '../services/storage';
-import type { Branch } from '../types';
+import { getBranches, getActiveNavigatorsCount, addNavigationIntent, getCategories } from '../services/storage';
+import type { Branch, Category } from '../types';
 import { Navigation, MapPin, Clock, Phone, Search, SlidersHorizontal, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -42,11 +42,16 @@ const ClientMap: React.FC = () => {
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [congestionData, setCongestionData] = useState<Record<string, number>>({});
+    const [categories, setCategories] = useState<Category[]>([]);
 
     useEffect(() => {
-        const loadBranches = async () => {
-            const data = await getBranches();
+        const loadData = async () => {
+            const [data, cats] = await Promise.all([
+                getBranches(),
+                getCategories()
+            ]);
             setBranches(data);
+            setCategories(cats);
 
             const counts: Record<string, number> = {};
             for (const b of data) {
@@ -54,7 +59,7 @@ const ClientMap: React.FC = () => {
             }
             setCongestionData(counts);
         };
-        loadBranches();
+        loadData();
     }, []);
 
     const getCongestionLevel = (branch: Branch, activeIntents: number) => {
@@ -196,10 +201,9 @@ const ClientMap: React.FC = () => {
                         }}
                     >
                         <option value="all">جميع الفئات</option>
-                        <option value="صيانة عامة">صيانة عامة</option>
-                        <option value="غيار زيت">غيار زيت</option>
-                        <option value="إطارات">إطارات</option>
-                        <option value="فحص شامل">فحص شامل</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                        ))}
                     </select>
                     <SlidersHorizontal size={16} color="var(--text-secondary)" style={{ position: 'absolute', right: '0', pointerEvents: 'none' }} />
                 </div>
@@ -227,40 +231,61 @@ const ClientMap: React.FC = () => {
                 </div>
             )}
 
+            {/* Floating 'Locate Nearest Branch' Button */}
             <button
                 onClick={handleLocateMe}
                 className="glass"
                 style={{
                     position: 'absolute',
                     bottom: '30px',
-                    right: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
                     zIndex: 1000,
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '50%',
+                    padding: '14px 24px',
+                    borderRadius: 'var(--radius-full)',
                     border: 'none',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    gap: '10px',
                     color: 'var(--surface-color)',
                     background: 'var(--primary-color)',
                     boxShadow: 'var(--shadow-lg)',
                     cursor: 'pointer',
-                    transition: 'transform 0.2s, background 0.2s'
+                    fontWeight: 'bold',
+                    fontSize: '15px',
+                    transition: 'all 0.3s ease',
+                    whiteSpace: 'nowrap'
                 }}
-                onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary-hover)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'var(--primary-color)'}
-                title="تحديد موقعي"
+                onMouseOver={(e) => {
+                    e.currentTarget.style.background = 'var(--primary-hover)';
+                    e.currentTarget.style.transform = 'translateX(-50%) translateY(-3px)';
+                    e.currentTarget.style.boxShadow = '0 15px 25px -5px rgba(43, 92, 255, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'var(--primary-color)';
+                    e.currentTarget.style.transform = 'translateX(-50%)';
+                    e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+                }}
+                title="البحث عن أقرب فرع"
             >
-                <Navigation size={24} />
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Navigation size={20} style={{ animation: 'pulseGreenRing 2s infinite' }} />
+                </div>
+                توجيهي لأقرب فرع
             </button>
 
             <MapContainer
                 center={mapCenter}
-                zoom={12}
+                zoom={5} // Zoomed out to show whole SA
+                minZoom={5} // Prevent zooming out to the whole world
+                maxBounds={[
+                    [16.3, 34.5], // South West coordinates (near Jizan/Red Sea)
+                    [32.2, 55.6]  // North East coordinates (near Kuwait/Arabian Gulf)
+                ]}
+                maxBoundsViscosity={1.0} // Strong bounce-back effect
                 style={{ height: '100%', width: '100%', borderRadius: '12px', boxShadow: 'var(--shadow-md)' }}
             >
-                <ChangeView center={mapCenter} zoom={12} />
+                <ChangeView center={mapCenter} zoom={mapCenter[0] === 24.7136 ? 5 : 12} />
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                     url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"

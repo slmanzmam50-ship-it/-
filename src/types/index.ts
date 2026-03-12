@@ -1,4 +1,4 @@
-export type BranchCategory = 'صيانة عامة' | 'غيار زيت' | 'إطارات' | 'فحص شامل';
+export type BranchCategory = string;
 export type BranchStatus = 'مفتوح' | 'مغلق';
 export type CongestionLevel = 'متاح' | 'متوسط' | 'مزدحم';
 
@@ -27,4 +27,9 @@ export interface NavigationIntent {
     createdAt: number; // ms timestamp
     etaMinutes: number;
     expiresAt: number; // ms timestamp (createdAt + (etaMinutes + 10) * 60000)
+}
+
+export interface Category {
+    id: string;
+    name: string;
 }
