@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Branch } from '../types';
 import { X, Save } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface BranchFormProps {
     branch?: Branch;
@@ -35,12 +36,41 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose }) => {
         }
     };
 
+    const validateForm = (): boolean => {
+        // Validation 1: Phone number (Saudi format starting with 05 and length 10 digits)
+        const phoneRegex = /^05\d{8}$/;
+        if (!phoneRegex.test(formData.phone)) {
+            toast.error('رقم الهاتف غير صحيح. يجب أن يبدأ بـ 05 ويتكون من 10 أرقام.');
+            return false;
+        }
+
+        // Validation 2: Time Logic (end time > start time) strictly for same day assumption
+        const start = new Date(`1970-01-01T${formData.workingHours.start}:00Z`);
+        const end = new Date(`1970-01-01T${formData.workingHours.end}:00Z`);
+
+        // Handle midnight cases or crossed days if necessary, but generally we prevent end <= start
+        // unless they are 24-hours, but this is a simple check:
+        if (end <= start && formData.workingHours.end !== '00:00') {
+            toast.error('وقت الإنتهاء يجب أن يكون بعد وقت البدء.');
+            return false;
+        }
+
+        return true;
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (branch) {
-            onSave({ ...formData, id: branch.id } as Branch);
-        } else {
-            onSave(formData);
+
+        if (!validateForm()) return;
+
+        try {
+            if (branch) {
+                onSave({ ...formData, id: branch.id } as Branch);
+            } else {
+                onSave(formData);
+            }
+        } catch (error) {
+            toast.error('حدث خطأ أثناء حفظ الفرع. جرب لاحقاً.');
         }
     };
 

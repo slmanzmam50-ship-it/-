@@ -1,7 +1,9 @@
 import type { Branch } from '../types';
+import { db } from './firebase';
+import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 
-const STORAGE_KEY = 'khaldi_branches';
+const COLLECTION_NAME = 'branches';
 
 const initialBranches: Branch[] = [
     {
@@ -50,57 +52,69 @@ const initialBranches: Branch[] = [
     }
 ];
 
-export const getBranches = (): Branch[] => {
+// Seed initial data if the database is completely empty
+// Using a specific document to check if we have seeded so we don't duplicate
+const seedDatabaseIfNeeded = async () => {
     try {
-        const data = localStorage.getItem(STORAGE_KEY);
-
-        // If no data at all, populate and return initial
-        if (!data) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(initialBranches));
-            return initialBranches;
+        const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+        if (querySnapshot.empty) {
+            console.log("Database is empty, seeding initial branches...");
+            for (const branch of initialBranches) {
+                await setDoc(doc(db, COLLECTION_NAME, branch.id), branch);
+            }
         }
-
-        const parsedData = JSON.parse(data);
-
-        // If data exists but is an empty array (produced by previous bugs or manual clears), 
-        // force populate it again so the user sees something.
-        if (Array.isArray(parsedData) && parsedData.length === 0) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(initialBranches));
-            return initialBranches;
-        }
-
-        // Make sure we are actually returning an array of branches
-        if (Array.isArray(parsedData) && parsedData.length > 0) {
-            return parsedData as Branch[];
-        }
-
-        // Fallback if data is corrupted (e.g. an object instead of array)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialBranches));
-        return initialBranches;
-
     } catch (error) {
-        console.error("Error reading from localStorage", error);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialBranches));
-        return initialBranches;
+        console.error("Error checking/seeding DB:", error);
+    }
+}
+
+// Call once on load, not awaiting
+seedDatabaseIfNeeded();
+
+export const getBranches = async (): Promise<Branch[]> => {
+    try {
+        const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+        const branches: Branch[] = [];
+        querySnapshot.forEach((doc) => {
+            branches.push({ id: doc.id, ...doc.data() } as Branch);
+        });
+
+        // Return sorted or just the array
+        return branches;
+    } catch (error) {
+        console.error("Error fetching branches from Firestore:", error);
+        return [];
     }
 };
 
-export const addBranch = (branch: Omit<Branch, 'id'>): Branch => {
-    const branches = getBranches();
-    const newBranch = { ...branch, id: uuidv4() };
-    branches.push(newBranch);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(branches));
-    return newBranch;
+export const addBranch = async (branch: Omit<Branch, 'id'>): Promise<Branch> => {
+    try {
+        const newId = uuidv4();
+        const newBranch = { ...branch, id: newId };
+        await setDoc(doc(db, COLLECTION_NAME, newId), newBranch);
+        return newBranch;
+    } catch (error) {
+        console.error("Error adding branch:", error);
+        throw error;
+    }
 };
 
-export const updateBranch = (updatedBranch: Branch): void => {
-    let branches = getBranches();
-    branches = branches.map(b => b.id === updatedBranch.id ? updatedBranch : b);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(branches));
+export const updateBranch = async (updatedBranch: Branch): Promise<void> => {
+    try {
+        const branchRef = doc(db, COLLECTION_NAME, updatedBranch.id);
+        const { id, ...dataToUpdate } = updatedBranch; // Remove id from payload
+        await updateDoc(branchRef, dataToUpdate);
+    } catch (error) {
+        console.error("Error updating branch:", error);
+        throw error;
+    }
 };
 
-export const deleteBranch = (id: string): void => {
-    let branches = getBranches();
-    branches = branches.filter(b => b.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(branches));
+export const deleteBranch = async (id: string): Promise<void> => {
+    try {
+        await deleteDoc(doc(db, COLLECTION_NAME, id));
+    } catch (error) {
+        console.error("Error deleting branch:", error);
+        throw error;
+    }
 };

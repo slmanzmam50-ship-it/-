@@ -3,25 +3,39 @@ import { getBranches, addBranch, updateBranch, deleteBranch } from '../services/
 import type { Branch } from '../types';
 import BranchForm from '../components/BranchForm';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const AdminDashboard: React.FC = () => {
     const [branches, setBranches] = useState<Branch[]>([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingBranch, setEditingBranch] = useState<Branch | undefined>(undefined);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
     useEffect(() => {
-        setBranches(getBranches());
+        loadBranches();
     }, []);
 
-    const handleSaveBranch = (branchData: Omit<Branch, 'id'> | Branch) => {
-        if ('id' in branchData) {
-            updateBranch(branchData as Branch);
-        } else {
-            addBranch(branchData);
+    const loadBranches = async () => {
+        const data = await getBranches();
+        setBranches(data);
+    }
+
+    const handleSaveBranch = async (branchData: Omit<Branch, 'id'> | Branch) => {
+        try {
+            if ('id' in branchData) {
+                await updateBranch(branchData as Branch);
+                toast.success('تم تعديل الفرع بنجاح');
+            } else {
+                await addBranch(branchData);
+                toast.success('تم إضافة الفرع بنجاح');
+            }
+            await loadBranches();
+            setIsFormOpen(false);
+            setEditingBranch(undefined);
+        } catch (error) {
+            toast.error('حدث خطأ أثناء حفظ الفرع');
         }
-        setBranches(getBranches());
-        setIsFormOpen(false);
-        setEditingBranch(undefined);
     };
 
     const handleEdit = (branch: Branch) => {
@@ -29,10 +43,15 @@ const AdminDashboard: React.FC = () => {
         setIsFormOpen(true);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (window.confirm('هل أنت متأكد من حذف هذا الفرع؟')) {
-            deleteBranch(id);
-            setBranches(getBranches());
+            try {
+                await deleteBranch(id);
+                toast.success('تم حذف الفرع بنجاح');
+                await loadBranches();
+            } catch (error) {
+                toast.error('حدث خطأ أثناء الحذف');
+            }
         }
     };
 
@@ -59,6 +78,31 @@ const AdminDashboard: React.FC = () => {
                 >
                     <Plus size={20} /> إضافة فرع جديد
                 </button>
+            </div>
+
+            <div className="glass" style={{ marginBottom: '2rem', padding: '1.5rem', borderRadius: 'var(--radius-lg)', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 300px' }}>
+                    <input
+                        type="text"
+                        placeholder="ابحث بالاسم أو رقم الهاتف..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
+                    />
+                </div>
+                <div style={{ flex: '0 0 auto', minWidth: '200px' }}>
+                    <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
+                    >
+                        <option value="all">جميع التصنيفات</option>
+                        <option value="صيانة عامة">صيانة عامة</option>
+                        <option value="غيار زيت">غيار زيت</option>
+                        <option value="إطارات">إطارات</option>
+                        <option value="فحص شامل">فحص شامل</option>
+                    </select>
+                </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
@@ -89,30 +133,36 @@ const AdminDashboard: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {branches.map(branch => (
-                                <tr key={branch.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '1rem', fontWeight: 500 }}>{branch.name}</td>
-                                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{branch.category}</td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <span style={{
-                                            padding: '4px 8px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600,
-                                            background: branch.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                            color: branch.status === 'مفتوح' ? 'var(--success)' : 'var(--error)'
-                                        }}>
-                                            {branch.status}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{branch.workingHours.start} - {branch.workingHours.end}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                        <button onClick={() => handleEdit(branch)} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', marginRight: '10px' }} title="تعديل">
-                                            <Edit2 size={18} />
-                                        </button>
-                                        <button onClick={() => handleDelete(branch.id)} style={{ background: 'none', border: 'none', color: 'var(--error)' }} title="حذف">
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {branches
+                                .filter(branch => {
+                                    const matchesSearch = branch.name.includes(searchQuery) || branch.phone.includes(searchQuery);
+                                    const matchesCategory = categoryFilter === 'all' || branch.category === categoryFilter;
+                                    return matchesSearch && matchesCategory;
+                                })
+                                .map(branch => (
+                                    <tr key={branch.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <td style={{ padding: '1rem', fontWeight: 500 }}>{branch.name}</td>
+                                        <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{branch.category}</td>
+                                        <td style={{ padding: '1rem' }}>
+                                            <span style={{
+                                                padding: '4px 8px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600,
+                                                background: branch.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                color: branch.status === 'مفتوح' ? 'var(--success)' : 'var(--error)'
+                                            }}>
+                                                {branch.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{branch.workingHours.start} - {branch.workingHours.end}</td>
+                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                            <button onClick={() => handleEdit(branch)} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', marginRight: '10px' }} title="تعديل">
+                                                <Edit2 size={18} />
+                                            </button>
+                                            <button onClick={() => handleDelete(branch.id)} style={{ background: 'none', border: 'none', color: 'var(--error)' }} title="حذف">
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
                             {branches.length === 0 && (
                                 <tr>
                                     <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>

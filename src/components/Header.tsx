@@ -1,9 +1,15 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Map, Settings } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Map, Settings, LogOut } from 'lucide-react';
 
 const Header: React.FC = () => {
     const location = useLocation();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        localStorage.removeItem('isAuthenticated');
+        navigate('/login');
+    };
 
     return (
         <header className="glass" style={{
@@ -21,11 +27,16 @@ const Header: React.FC = () => {
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>مراكز خدمة الخالدي</h2>
             </div>
 
-            <nav>
+            <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 {location.pathname === '/admin' ? (
-                    <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-                        <Map size={20} /> الخريطة
-                    </Link>
+                    <>
+                        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
+                            <Map size={20} /> الخريطة
+                        </Link>
+                        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500, background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer' }}>
+                            <LogOut size={20} /> خروج
+                        </button>
+                    </>
                 ) : (
                     <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
                         الإدارة <Settings size={20} />
