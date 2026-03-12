@@ -120,8 +120,11 @@ const initialCategories: Category[] = [
 const seedDatabaseIfNeeded = async () => {
     try {
         const branchSnapshot = await getDocs(collection(db, COLLECTION_NAME));
-        if (branchSnapshot.empty) {
-            console.log("Database is empty, seeding initial branches...");
+        // Force update the new branches (IDs 5-9) regardless if empty
+        const maxExpectedBranches = initialBranches.length; 
+        
+        if (branchSnapshot.empty || branchSnapshot.size < maxExpectedBranches) {
+            console.log("Seeding/Updating branches...");
             for (const branch of initialBranches) {
                 await setDoc(doc(db, COLLECTION_NAME, branch.id), branch);
             }
