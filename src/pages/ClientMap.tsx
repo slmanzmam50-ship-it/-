@@ -167,7 +167,7 @@ const ClientMap: React.FC = () => {
         <div style={{ height: 'calc(100vh - 80px)', width: '100%', display: 'flex', flexDirection: 'column', background: 'var(--navy-deep)' }}>
             
             {/* Dark Navy Header Section */}
-            <div style={{ 
+            <div className="branch-directory-header" style={{ 
                 background: 'var(--navy-deep)', 
                 padding: '1.5rem 1rem 1rem', 
                 borderBottom: '1px solid rgba(255,255,255,0.05)',
@@ -190,6 +190,7 @@ const ClientMap: React.FC = () => {
                         placeholder="ابحث عن مدينتك أو خدمتك..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        className="search-input-mobile"
                         style={{ 
                             width: '100%', 
                             padding: '12px 48px 12px 16px', 
@@ -216,6 +217,7 @@ const ClientMap: React.FC = () => {
                 }}>
                     <button 
                         onClick={() => setViewMode('map')}
+                        className="toggle-button-mobile"
                         style={{ 
                             flex: 1, 
                             padding: '8px', 
@@ -233,6 +235,7 @@ const ClientMap: React.FC = () => {
                     </button>
                     <button 
                         onClick={() => setViewMode('list')}
+                        className="toggle-button-mobile"
                         style={{ 
                             flex: 1, 
                             padding: '8px', 
@@ -278,6 +281,7 @@ const ClientMap: React.FC = () => {
                         <button
                             key={cat.id}
                             onClick={() => setCategoryFilter(cat.name)}
+                            className="pill-button-mobile"
                             style={{
                                 padding: '6px 20px',
                                 borderRadius: 'var(--radius-full)',
@@ -461,7 +465,7 @@ const ClientMap: React.FC = () => {
                             </div>
                         ) : (
                             filteredBranches.map(branch => (
-                                <div key={branch.id} className="glass" style={{ 
+                                <div key={branch.id} className="glass branch-card-mobile" style={{ 
                                     padding: '1.25rem', 
                                     borderRadius: 'var(--radius-lg)', 
                                     background: 'var(--navy-surface)',
@@ -488,7 +492,7 @@ const ClientMap: React.FC = () => {
                                             <Layers size={16} /> {branch.categories?.join('، ')}
                                         </div>
                                     </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                                    <div className="action-buttons-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                                         <button onClick={() => { setMapCenter([branch.latitude, branch.longitude]); setViewMode('map'); }} style={{ background: 'var(--primary-color)', border: 'none', color: 'white', padding: '8px', borderRadius: 'var(--radius-md)', fontWeight: 700 }}>الخريطة</button>
                                         <a href={`https://wa.me/966${branch.phone.startsWith('0') ? branch.phone.substring(1) : branch.phone}`} target="_blank" rel="noreferrer" style={{ background: '#25D366', color: 'white', textAlign: 'center', padding: '8px', borderRadius: 'var(--radius-md)', fontWeight: 700 }}>واتساب</a>
                                         <a href={`tel:${branch.phone}`} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', textAlign: 'center', padding: '8px', borderRadius: 'var(--radius-md)', fontWeight: 700 }}>اتصال</a>

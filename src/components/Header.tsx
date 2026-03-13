@@ -24,7 +24,7 @@ const Header: React.FC = () => {
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Map size={28} color="var(--primary-color)" />
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>مراكز خدمة الخالدي</h2>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>مراكز خدمة سلمان زمام الخالدي</h2>
             </div>
 
             <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
