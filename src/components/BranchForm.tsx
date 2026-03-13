@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Branch, Category } from '../types';
-import { X, Save, MapPin, Search as SearchIcon, ExternalLink } from 'lucide-react';
+import { X, Save, MapPin, Search as SearchIcon, ExternalLink, Navigation } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -49,6 +49,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
     });
     const [mapInput, setMapInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
+    const [showManual, setShowManual] = useState(false);
 
     useEffect(() => {
         if (branch) {
@@ -116,6 +117,24 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
 
         // If nothing matches, trigger address search instead
         handleSearchAddress();
+    };
+
+    const handleGetCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            toast.error("متصفحك لا يدعم خاصية تحديد الموقع.");
+            return;
+        }
+        toast.loading("جاري جلب موقعك الحالي...", { id: 'geo' });
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setFormData(prev => ({ ...prev, latitude: position.coords.latitude, longitude: position.coords.longitude }));
+                toast.success("تم تحديد موقعك الحالي بنجاح! ✅", { id: 'geo' });
+            },
+            (error) => {
+                toast.error("فشلنا في الحصول على موقعك. تأكد من تفعيل الـ GPS والسماح للمتصفح.", { id: 'geo' });
+            },
+            { enableHighAccuracy: true }
+        );
     };
 
     const validateForm = (): boolean => {
@@ -213,13 +232,24 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                 onClick={handleExtractFromLink} 
                                 disabled={isSearching}
                                 style={{ 
-                                    padding: '0 1.5rem', background: 'var(--primary-color)', color: 'white', 
+                                    padding: '0 1.2rem', background: 'var(--primary-color)', color: 'white', 
                                     border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', 
                                     fontWeight: 'bold', fontSize: '14px', whiteSpace: 'nowrap',
                                     transition: 'all 0.2s', opacity: isSearching ? 0.7 : 1
                                 }}
                             >
                                 {isSearching ? 'جاري البحث..' : 'تحديد'}
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={handleGetCurrentLocation}
+                                title="استخدم موقعي الحالي"
+                                style={{ 
+                                    padding: '0 0.75rem', background: 'var(--bg-color)', color: 'var(--primary-color)', 
+                                    border: '1px solid var(--primary-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer'
+                                }}
+                            >
+                                <Navigation size={20} />
                             </button>
                         </div>
 
@@ -239,9 +269,35 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                     setPosition={(pos) => setFormData(prev => ({...prev, latitude: pos[0], longitude: pos[1]}))} 
                                 />
                             </MapContainer>
-                            <div style={{ position: 'absolute', bottom: '15px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(0,0,0,0.6)', color: 'white', padding: '6px 16px', borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: 'bold', pointerEvents: 'none', backdropFilter: 'blur(4px)' }}>
-                                👈 قم بتحريك أو الضغط على الخريطة للدقة
+                            <div style={{ position: 'absolute', bottom: '15px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(255,255,255,0.9)', color: 'black', padding: '6px 16px', borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: 'bold', pointerEvents: 'none', boxShadow: 'var(--shadow-md)', border: '1px solid var(--border-color)' }}>
+                                👈 حرك الخريطة أو اضغط لتغيير الموقع بدقة
                             </div>
+                        </div>
+
+                        {/* Manual Entry Toggle */}
+                        <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '0.5rem' }}>
+                            <button 
+                                type="button" 
+                                onClick={() => setShowManual(!showManual)}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                            >
+                                {showManual ? 'إخفاء الإحداثيات اليدوية' : 'أدخل الإحداثيات يدوياً (للمتقدمين)'}
+                            </button>
+                            
+                            {showManual && (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                    <div>
+                                        <label style={{ fontSize: '11px', display: 'block', marginBottom: '2px' }}>خط العرض</label>
+                                        <input type="number" step="any" name="latitude" value={formData.latitude} onChange={handleChange}
+                                            style={{ width: '100%', padding: '0.4rem', fontSize: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '11px', display: 'block', marginBottom: '2px' }}>خط الطول</label>
+                                        <input type="number" step="any" name="longitude" value={formData.longitude} onChange={handleChange}
+                                            style={{ width: '100%', padding: '0.4rem', fontSize: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
