@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getBranches, addBranch, updateBranch, deleteBranch, getActiveNavigatorsCount, getCategories, addCategory, deleteCategory, seedDatabaseIfNeeded } from '../services/storage';
+import { getBranches, addBranch, updateBranch, deleteBranch, getCategories, addCategory, deleteCategory, seedDatabaseIfNeeded } from '../services/storage';
 import { testFirebaseConnection } from '../services/firebase';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
@@ -86,10 +86,6 @@ const AdminDashboard: React.FC = () => {
             addLog(`Loaded ${branchData.length} branches and ${catData.length} categories.`);
             setBranches(branchData);
             setCategories(catData);
-
-            if (branchData.length > 0) {
-                loadNavigatorCounts(branchData);
-            }
         } catch (error: any) {
             addLog(`General LoadData Error: ${error.message}`);
         }
