@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, deleteDoc, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAdTZKrSsTVIQndTRCsrRjNMydn9ITSDVY",
@@ -10,9 +10,13 @@ const firebaseConfig = {
     appId: "1:750725696422:web:2e63633a124ad70754dd67"
 };
 
-// Initialize Firebase (no analytics - it's optional and causes errors if not enabled)
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+
+// Use initializeFirestore to enable long-polling (helps if streams are blocked)
+export const db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+});
 
 // --- Firebase Connection Test ---
 export const testFirebaseConnection = async (): Promise<{ canRead: boolean; canWrite: boolean; error?: string }> => {
@@ -22,12 +26,21 @@ export const testFirebaseConnection = async (): Promise<{ canRead: boolean; canW
     let error: string | undefined;
 
     try {
-        await setDoc(testDocRef, { timestamp: Date.now() });
+        // Simple timeout for the write operation specifically
+        const writePromise = setDoc(testDocRef, { timestamp: Date.now(), source: 'connection_test' });
+        await Promise.race([
+            writePromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Write Timeout')), 4000))
+        ]);
         canWrite = true;
+
         const snap = await getDoc(testDocRef);
         canRead = snap.exists();
-        await deleteDoc(testDocRef);
+        
+        // Cleanup (don't await, don't care if it fails)
+        deleteDoc(testDocRef).catch(() => {});
     } catch (e: any) {
+        console.error("Test connection error:", e);
         const code = e?.code || '';
         if (code.includes('permission-denied')) {
             error = 'PERMISSION_DENIED';
