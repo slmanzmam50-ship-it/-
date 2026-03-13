@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getBranches, addBranch, updateBranch, deleteBranch, getActiveNavigatorsCount, getCategories, addCategory, deleteCategory } from '../services/storage';
+import { getBranches, addBranch, updateBranch, deleteBranch, getActiveNavigatorsCount, getCategories, addCategory, deleteCategory, seedDatabaseIfNeeded } from '../services/storage';
 import { testFirebaseConnection } from '../services/firebase';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
@@ -25,38 +25,57 @@ const AdminDashboard: React.FC = () => {
     const [firebaseError, setFirebaseError] = useState<string | null>(null);
 
     useEffect(() => {
-        checkFirebaseAndLoad();
+        initializeDashboard();
     }, []);
 
-    const checkFirebaseAndLoad = async () => {
+    const initializeDashboard = async () => {
         setIsLoading(true);
         setFirebaseStatus('checking');
 
-        // Test Firebase connection first
-        const result = await testFirebaseConnection();
+        try {
+            // Step 1: Test Firebase connection (with 5s timeout)
+            const result = await Promise.race([
+                testFirebaseConnection(),
+                new Promise<{ canRead: boolean; canWrite: boolean; error: string }>(
+                    resolve => setTimeout(() => resolve({ canRead: false, canWrite: false, error: 'TIMEOUT' }), 5000)
+                )
+            ]);
 
-        if (result.canWrite && result.canRead) {
-            setFirebaseStatus('ok');
-            setFirebaseError(null);
-            await loadBranches();
-        } else {
-            setFirebaseStatus('error');
-            if (result.error === 'PERMISSION_DENIED') {
-                setFirebaseError('صلاحيات Firestore مغلقة. يجب فتح قواعد الحماية (Security Rules) من لوحة تحكم Firebase.');
-            } else if (result.error === 'FIRESTORE_NOT_CREATED') {
-                setFirebaseError('لم يتم إنشاء قاعدة بيانات Firestore بعد. قم بإنشائها من لوحة تحكم Firebase أولاً.');
+            if (result.canWrite && result.canRead) {
+                setFirebaseStatus('ok');
+                setFirebaseError(null);
+
+                // Step 2: Seed database if empty (controlled, not auto)
+                await seedDatabaseIfNeeded();
+
+                // Step 3: Load data
+                await loadData();
             } else {
-                setFirebaseError(`خطأ في الاتصال بـ Firebase: ${result.error}`);
+                setFirebaseStatus('error');
+                if (result.error === 'TIMEOUT') {
+                    setFirebaseError('انتهت مهلة الاتصال بـ Firebase. تحقق من أن Firestore Database مُنشأة ومن إعدادات القواعد.');
+                } else if (result.error === 'PERMISSION_DENIED') {
+                    setFirebaseError('صلاحيات Firestore مغلقة. يجب فتح قواعد الحماية (Security Rules) من لوحة تحكم Firebase.');
+                } else if (result.error === 'FIRESTORE_NOT_CREATED') {
+                    setFirebaseError('لم يتم إنشاء قاعدة بيانات Firestore بعد. قم بإنشائها من لوحة تحكم Firebase أولاً.');
+                } else {
+                    setFirebaseError(`خطأ في الاتصال: ${result.error}`);
+                }
+                // Still try to load what we can
+                try { await loadData(); } catch { /* ok */ }
             }
-            // Still try to load what we can
-            try { await loadBranches(); } catch { /* ignore */ }
+        } catch (err) {
+            console.error("Dashboard init error:", err);
+            setFirebaseStatus('error');
+            setFirebaseError('حدث خطأ غير متوقع. حاول إعادة تحميل الصفحة.');
+        } finally {
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
     };
 
-    const loadBranches = async () => {
+    const loadData = async () => {
         try {
+            // Load branches and categories in parallel
             const [data, cats] = await Promise.all([
                 getBranches(),
                 getCategories()
@@ -64,15 +83,27 @@ const AdminDashboard: React.FC = () => {
             setBranches(data);
             setCategories(cats);
 
-            const counts: Record<string, number> = {};
-            for (const b of data) {
-                counts[b.id] = await getActiveNavigatorsCount(b.id);
+            // Load navigator counts in background (don't block UI)
+            if (data.length > 0) {
+                loadNavigatorCounts(data);
             }
-            setNavigatorsCount(counts);
         } catch (error) {
             console.error("Error loading data:", error);
         }
-    }
+    };
+
+    // Load navigator counts WITHOUT blocking the UI
+    const loadNavigatorCounts = async (branchList: Branch[]) => {
+        const counts: Record<string, number> = {};
+        for (const b of branchList) {
+            try {
+                counts[b.id] = await getActiveNavigatorsCount(b.id);
+            } catch {
+                counts[b.id] = 0;
+            }
+        }
+        setNavigatorsCount(counts);
+    };
 
     const handleSaveBranch = async (branchData: Omit<Branch, 'id'> | Branch) => {
         try {
@@ -83,16 +114,15 @@ const AdminDashboard: React.FC = () => {
                 await addBranch(branchData);
                 toast.success('تم إضافة الفرع بنجاح ✅');
             }
-            await loadBranches();
+            await loadData();
             setIsFormOpen(false);
             setEditingBranch(undefined);
         } catch (error: any) {
             console.error("Save branch error:", error);
-            if (error?.code?.includes('permission-denied')) {
-                toast.error('خطأ: صلاحيات Firebase مغلقة. افتح Security Rules.');
-            } else {
-                toast.error('حدث خطأ أثناء حفظ الفرع. تحقق من اتصال الإنترنت وإعدادات Firebase.');
-            }
+            const msg = error?.code?.includes('permission-denied')
+                ? 'خطأ: صلاحيات Firebase مغلقة. افتح Security Rules.'
+                : 'حدث خطأ أثناء حفظ الفرع. تحقق من اتصال الإنترنت.';
+            toast.error(msg);
         }
     };
 
@@ -106,13 +136,9 @@ const AdminDashboard: React.FC = () => {
             try {
                 await deleteBranch(id);
                 toast.success('تم حذف الفرع بنجاح');
-                await loadBranches();
+                await loadData();
             } catch (error: any) {
-                if (error?.code?.includes('permission-denied')) {
-                    toast.error('خطأ: صلاحيات Firebase مغلقة.');
-                } else {
-                    toast.error('حدث خطأ أثناء الحذف');
-                }
+                toast.error(error?.code?.includes('permission-denied') ? 'خطأ: صلاحيات Firebase مغلقة.' : 'حدث خطأ أثناء الحذف');
             }
         }
     };
@@ -123,16 +149,12 @@ const AdminDashboard: React.FC = () => {
             toast.error('يرجى كتابة اسم التصنيف أولاً');
             return;
         }
-
-        // Check for duplicate
         if (categories.some(c => c.name === name)) {
             toast.error('هذا التصنيف موجود بالفعل');
             return;
         }
 
         setIsAddingCategory(true);
-
-        // Optimistic update
         const tempId = `temp-${Date.now()}`;
         const prevCategories = [...categories];
         setCategories(prev => [...prev, { id: tempId, name }]);
@@ -141,16 +163,16 @@ const AdminDashboard: React.FC = () => {
         try {
             await addCategory(name);
             toast.success(`تم إضافة التصنيف "${name}" بنجاح ✅`);
-            await loadBranches();
+            // Refresh categories only (fast operation)
+            const freshCats = await getCategories();
+            setCategories(freshCats);
         } catch (error: any) {
             console.error("Failed to add category:", error);
             setCategories(prevCategories);
             setNewCategoryName(name);
-            if (error?.code?.includes('permission-denied')) {
-                toast.error('خطأ: صلاحيات Firebase مغلقة. يجب فتح Security Rules.');
-            } else {
-                toast.error('فشل في إضافة التصنيف. تحقق من الاتصال بالإنترنت.');
-            }
+            toast.error(error?.code?.includes('permission-denied')
+                ? 'خطأ: صلاحيات Firebase مغلقة. يجب فتح Security Rules.'
+                : 'فشل في إضافة التصنيف. تحقق من الاتصال بالإنترنت.');
         } finally {
             setIsAddingCategory(false);
         }
@@ -158,19 +180,14 @@ const AdminDashboard: React.FC = () => {
 
     const handleDeleteCategory = async (id: string) => {
         if (window.confirm('هل أنت متأكد من حذف هذا التصنيف؟')) {
-            const prevCategories = [...categories];
-            setCategories(prev => prev.filter(c => c.id !== id));
+            const prev = [...categories];
+            setCategories(c => c.filter(x => x.id !== id));
             try {
                 await deleteCategory(id);
                 toast.success('تم حذف التصنيف بنجاح');
-                await loadBranches();
             } catch (error: any) {
-                setCategories(prevCategories);
-                if (error?.code?.includes('permission-denied')) {
-                    toast.error('خطأ: صلاحيات Firebase مغلقة.');
-                } else {
-                    toast.error('حدث خطأ أثناء حذف التصنيف');
-                }
+                setCategories(prev);
+                toast.error(error?.code?.includes('permission-denied') ? 'خطأ: صلاحيات Firebase مغلقة.' : 'حدث خطأ أثناء حذف التصنيف');
             }
         }
     };
@@ -186,7 +203,7 @@ const AdminDashboard: React.FC = () => {
     return (
         <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
 
-            {/* Firebase Status Banner */}
+            {/* Firebase Diagnostic Banner */}
             {firebaseStatus === 'checking' && (
                 <div style={{
                     background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)',
@@ -215,9 +232,9 @@ const AdminDashboard: React.FC = () => {
                         1. اذهب إلى <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" style={{ color: 'var(--primary-color)' }}>Firebase Console</a><br />
                         2. اختر مشروع <strong>slman-zmam</strong><br />
                         3. من القائمة اختر <strong>Firestore Database</strong><br />
-                        4. إذا لم تكن قاعدة البيانات موجودة، اضغط <strong>Create Database</strong> واختر <strong>Start in test mode</strong><br />
-                        5. إذا كانت موجودة، اذهب لتبويب <strong>Rules</strong> وغيّر القاعدة إلى:
-                        <pre style={{ background: 'rgba(0,0,0,0.05)', padding: '0.5rem', borderRadius: '6px', marginTop: '0.5rem', direction: 'ltr', textAlign: 'left' }}>
+                        4. إذا لم تكن موجودة → <strong>Create Database</strong> → اختر <strong>Start in test mode</strong><br />
+                        5. إذا كانت موجودة → تبويب <strong>Rules</strong> → غيّر إلى:
+                        <pre style={{ background: 'rgba(0,0,0,0.05)', padding: '0.5rem', borderRadius: '6px', marginTop: '0.5rem', direction: 'ltr', textAlign: 'left', fontSize: '0.85rem' }}>
 {`rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -230,7 +247,7 @@ service cloud.firestore {
                         6. اضغط <strong>Publish</strong>
                     </div>
                     <button
-                        onClick={checkFirebaseAndLoad}
+                        onClick={initializeDashboard}
                         style={{
                             background: 'var(--primary-color)', color: 'white', border: 'none',
                             padding: '0.75rem 1.5rem', borderRadius: 'var(--radius-md)', fontWeight: 700,
@@ -258,13 +275,13 @@ service cloud.firestore {
                 <h1 style={{ margin: 0 }}>لوحة إدارة الفروع</h1>
                 <button
                     onClick={openNewForm}
-                    disabled={firebaseStatus === 'error'}
+                    disabled={firebaseStatus !== 'ok'}
                     style={{
                         display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        background: firebaseStatus === 'error' ? '#9ca3af' : 'var(--primary-color)', color: 'white',
+                        background: firebaseStatus !== 'ok' ? '#9ca3af' : 'var(--primary-color)', color: 'white',
                         padding: '0.75rem 1.5rem', borderRadius: 'var(--radius-md)',
                         border: 'none', fontWeight: 700,
-                        cursor: firebaseStatus === 'error' ? 'not-allowed' : 'pointer'
+                        cursor: firebaseStatus !== 'ok' ? 'not-allowed' : 'pointer'
                     }}
                 >
                     <Plus size={20} /> إضافة فرع جديد
@@ -274,31 +291,23 @@ service cloud.firestore {
             {/* Search & Filter */}
             <div className="glass" style={{ marginBottom: '2rem', padding: '1.5rem', borderRadius: 'var(--radius-lg)', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <div style={{ flex: '1 1 300px' }}>
-                    <input
-                        type="text"
-                        placeholder="ابحث بالاسم أو رقم الهاتف..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                    <input type="text" placeholder="ابحث بالاسم أو رقم الهاتف..."
+                        value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                         style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
                     />
                 </div>
                 <div style={{ flex: '0 0 auto', minWidth: '200px' }}>
-                    <select
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
-                        style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
-                    >
+                    <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}>
                         <option value="all">جميع التصنيفات</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.name}>{cat.name}</option>
-                        ))}
+                        {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                     </select>
                 </div>
             </div>
 
             {/* Stats Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>إجمالي الفروع</h3>
@@ -309,8 +318,7 @@ service cloud.firestore {
                         </div>
                     </div>
                 </div>
-                
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>الفروع المفتوحة</h3>
@@ -321,8 +329,7 @@ service cloud.firestore {
                         </div>
                     </div>
                 </div>
-
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>الفروع المغلقة</h3>
@@ -335,7 +342,7 @@ service cloud.firestore {
                 </div>
             </div>
 
-            {/* Loading indicator */}
+            {/* Loading */}
             {isLoading && (
                 <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
                     <Loader2 size={40} style={{ animation: 'spin 1s linear infinite', marginBottom: '1rem' }} />
@@ -371,7 +378,7 @@ service cloud.firestore {
                                                 <div style={{ fontWeight: 600 }}>{branch.name}</div>
                                                 {branch.mapUrl && (
                                                     <a href={branch.mapUrl} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: 'var(--primary-color)', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', marginTop: '4px' }}>
-                                                        <ExternalLink size={12} /> مشاهدة الرابط الخارجي
+                                                        <ExternalLink size={12} /> مشاهدة الموقع
                                                     </a>
                                                 )}
                                             </td>
@@ -386,7 +393,7 @@ service cloud.firestore {
                                                 </span>
                                             </td>
                                             <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
-                                                {navigatorsCount[branch.id] > 0 ? (
+                                                {(navigatorsCount[branch.id] || 0) > 0 ? (
                                                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                                         {navigatorsCount[branch.id]} سيارة
                                                         <span style={{ width: '8px', height: '8px', background: 'var(--warning)', borderRadius: '50%', display: 'inline-block', animation: 'pulseRed 2s infinite' }}></span>
@@ -409,9 +416,7 @@ service cloud.firestore {
                                 {branches.length === 0 && !isLoading && (
                                     <tr>
                                         <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                                            {firebaseStatus === 'error'
-                                                ? 'لا يمكن تحميل البيانات. تحقق من إعدادات Firebase أعلاه.'
-                                                : 'لا توجد فروع مضافة حالياً.'}
+                                            {firebaseStatus === 'error' ? 'لا يمكن تحميل البيانات. تحقق من إعدادات Firebase أعلاه.' : 'لا توجد فروع مضافة حالياً. اضغط "إضافة فرع جديد" للبدء.'}
                                         </td>
                                     </tr>
                                 )}
@@ -441,17 +446,17 @@ service cloud.firestore {
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(); }}
-                        disabled={firebaseStatus === 'error'}
+                        disabled={firebaseStatus !== 'ok'}
                         style={{ flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
                     />
                     <button
                         onClick={handleAddCategory}
-                        disabled={isAddingCategory || firebaseStatus === 'error'}
+                        disabled={isAddingCategory || firebaseStatus !== 'ok'}
                         style={{
-                            background: (isAddingCategory || firebaseStatus === 'error') ? '#9ca3af' : 'var(--success)', color: 'white', padding: '0.75rem 1.5rem',
+                            background: (isAddingCategory || firebaseStatus !== 'ok') ? '#9ca3af' : 'var(--success)', color: 'white', padding: '0.75rem 1.5rem',
                             borderRadius: 'var(--radius-md)', border: 'none', fontWeight: 700,
                             display: 'flex', alignItems: 'center', gap: '0.5rem',
-                            cursor: (isAddingCategory || firebaseStatus === 'error') ? 'not-allowed' : 'pointer',
+                            cursor: (isAddingCategory || firebaseStatus !== 'ok') ? 'not-allowed' : 'pointer',
                             transition: 'all 0.3s ease'
                         }}
                     >
@@ -480,9 +485,7 @@ service cloud.firestore {
                         </div>
                     ))}
                     {categories.length === 0 && (
-                        <p style={{ color: 'var(--text-secondary)', gridColumn: '1 / -1' }}>
-                            لا توجد تصنيفات بعد
-                        </p>
+                        <p style={{ color: 'var(--text-secondary)', gridColumn: '1 / -1' }}>لا توجد تصنيفات بعد</p>
                     )}
                 </div>
             </div>

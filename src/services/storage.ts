@@ -1,10 +1,12 @@
 import type { Branch, NavigationIntent, Category } from '../types';
 import { db } from './firebase';
-import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc, query, where } from 'firebase/firestore';
-import { v4 as uuidv4 } from 'uuid';
+import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc, query, where, addDoc } from 'firebase/firestore';
 
 const COLLECTION_NAME = 'branches';
+const CATEGORIES_COLLECTION = 'categories';
+const INTENTS_COLLECTION = 'active_navigators';
 
+// --- Initial seed data ---
 const initialBranches: Branch[] = [
     {
         id: '1',
@@ -49,78 +51,8 @@ const initialBranches: Branch[] = [
         workingHours: { start: '08:00', end: '18:00' },
         address: 'حي الياسمين، الرياض',
         phone: '0500000004'
-    },
-    {
-        id: '5',
-        name: 'فرع السليمانية - صيانة ألمانية متقدمة',
-        latitude: 24.6930,
-        longitude: 46.7020,
-        category: 'صيانة عامة',
-        status: 'مفتوح',
-        workingHours: { start: '08:00', end: '20:00' },
-        address: 'حي السليمانية، شارع الأمير ممدوح بن عبدالعزيز، الرياض',
-        phone: '0500000005'
-    },
-    {
-        id: '6',
-        name: 'مركز المرسلات - تبديل زيوت وفلاتر',
-        latitude: 24.7455,
-        longitude: 46.6975,
-        category: 'غيار زيت',
-        status: 'مفتوح',
-        workingHours: { start: '09:00', end: '23:00' },
-        address: 'حي المرسلات، طريق أبي بكر الصديق، الرياض',
-        phone: '0500000006'
-    },
-    {
-        id: '7',
-        name: 'ورشة الروضة - ميزان إلكتروني وتلميع',
-        latitude: 24.7380,
-        longitude: 46.7760,
-        category: 'فحص شامل',
-        status: 'مغلق',
-        workingHours: { start: '10:00', end: '19:00' },
-        address: 'حي الروضة، طريق خريص، الرياض',
-        phone: '0500000007'
-    },
-    {
-        id: '8',
-        name: 'خدمات العقيق - تغيير بطاريات ومكيفات',
-        latitude: 24.7688,
-        longitude: 46.6095,
-        category: 'صيانة عامة',
-        status: 'مفتوح',
-        workingHours: { start: '07:30', end: '22:30' },
-        address: 'حي العقيق، طريق الملك فهد الفرعي، الرياض',
-        phone: '0500000008'
-    },
-    {
-        id: '9',
-        name: 'مركز الجزيرة الطارئ - ٢٤ ساعة',
-        latitude: 24.6465,
-        longitude: 46.7865,
-        category: 'صيانة عامة',
-        status: 'مفتوح',
-        workingHours: { start: '00:00', end: '23:59' },
-        address: 'حي الجزيرة، المخرج ١٥، الرياض',
-        phone: '0500000009'
-    },
-    {
-        id: 'demo-smart-branch',
-        name: 'فرع تجريبي (موقع ذكي)',
-        latitude: 24.7236,
-        longitude: 46.6853,
-        category: 'صيانة عامة',
-        status: 'مفتوح',
-        workingHours: { start: '08:00', end: '22:00' },
-        address: 'الرياض - حي الرائد',
-        phone: '0501234567',
-        mapUrl: 'https://www.google.com/maps/@24.7236,46.6853,15z'
     }
 ];
-
-// --- Categories Management ---
-const CATEGORIES_COLLECTION = 'categories';
 
 const initialCategories: Category[] = [
     { id: 'cat1', name: 'صيانة عامة' },
@@ -129,14 +61,16 @@ const initialCategories: Category[] = [
     { id: 'cat4', name: 'فحص شامل' }
 ];
 
-const seedDatabaseIfNeeded = async () => {
+// --- Controlled seeding (called explicitly, not on module load) ---
+let hasSeeded = false;
+export const seedDatabaseIfNeeded = async () => {
+    if (hasSeeded) return;
+    hasSeeded = true;
+    
     try {
         const branchSnapshot = await getDocs(collection(db, COLLECTION_NAME));
-        // Force update the new branches (IDs 5-9) regardless if empty
-        const maxExpectedBranches = initialBranches.length; 
-        
-        if (branchSnapshot.empty || branchSnapshot.size < maxExpectedBranches) {
-            console.log("Seeding/Updating branches...");
+        if (branchSnapshot.empty) {
+            console.log("Seeding initial branches...");
             for (const branch of initialBranches) {
                 await setDoc(doc(db, COLLECTION_NAME, branch.id), branch);
             }
@@ -150,110 +84,114 @@ const seedDatabaseIfNeeded = async () => {
             }
         }
     } catch (error) {
-        console.error("Error checking/seeding DB:", error);
+        console.error("Error seeding DB:", error);
+        hasSeeded = false; // Allow retry
     }
 }
 
-// Call once on load, not awaiting
-seedDatabaseIfNeeded();
+// --- Helper: Promise with timeout ---
+const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+    return Promise.race([
+        promise,
+        new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+    ]);
+};
 
+// --- Branches CRUD ---
 export const getBranches = async (): Promise<Branch[]> => {
     try {
-        const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+        const querySnapshot = await withTimeout(
+            getDocs(collection(db, COLLECTION_NAME)),
+            8000,
+            null
+        );
+        if (!querySnapshot) {
+            console.warn("getBranches timed out");
+            return [];
+        }
         const branches: Branch[] = [];
         querySnapshot.forEach((doc) => {
             branches.push({ id: doc.id, ...doc.data() } as Branch);
         });
-
-        // Return sorted or just the array
         return branches;
     } catch (error) {
-        console.error("Error fetching branches from Firestore:", error);
+        console.error("Error fetching branches:", error);
         return [];
     }
 };
 
 export const addBranch = async (branch: Omit<Branch, 'id'>): Promise<Branch> => {
-    try {
-        const newId = uuidv4();
-        const newBranch = { ...branch, id: newId };
-        await setDoc(doc(db, COLLECTION_NAME, newId), newBranch);
-        return newBranch;
-    } catch (error) {
-        console.error("Error adding branch:", error);
-        throw error;
-    }
+    const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const newBranch = { ...branch, id: newId };
+    await setDoc(doc(db, COLLECTION_NAME, newId), newBranch);
+    return newBranch;
 };
 
 export const updateBranch = async (updatedBranch: Branch): Promise<void> => {
-    try {
-        const branchRef = doc(db, COLLECTION_NAME, updatedBranch.id);
-        const { id, ...dataToUpdate } = updatedBranch; // Remove id from payload
-        await updateDoc(branchRef, dataToUpdate);
-    } catch (error) {
-        console.error("Error updating branch:", error);
-        throw error;
-    }
+    const branchRef = doc(db, COLLECTION_NAME, updatedBranch.id);
+    const { id, ...dataToUpdate } = updatedBranch;
+    await updateDoc(branchRef, dataToUpdate);
 };
 
 export const deleteBranch = async (id: string): Promise<void> => {
-    try {
-        await deleteDoc(doc(db, COLLECTION_NAME, id));
-    } catch (error) {
-        console.error("Error deleting branch:", error);
-        throw error;
-    }
+    await deleteDoc(doc(db, COLLECTION_NAME, id));
 };
 
-// --- Navigation Intents (Hybrid Congestion System) ---
-const INTENTS_COLLECTION = 'active_navigators';
-
+// --- Navigation Intents ---
 export const addNavigationIntent = async (branchId: string, etaMinutes: number): Promise<string> => {
-    try {
-        const id = uuidv4();
-        const now = Date.now();
-        // Add a 10-minute buffer to the ETA, after which it expires if the user hasn't arrived
-        const expiresAt = now + ((etaMinutes + 10) * 60000); 
+    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const now = Date.now();
+    const expiresAt = now + ((etaMinutes + 10) * 60000);
 
-        const intent: NavigationIntent = {
-            id,
-            branchId,
-            createdAt: now,
-            etaMinutes,
-            expiresAt
-        };
+    const intent: NavigationIntent = {
+        id,
+        branchId,
+        createdAt: now,
+        etaMinutes,
+        expiresAt
+    };
 
-        await setDoc(doc(db, INTENTS_COLLECTION, id), intent);
-        return id;
-    } catch (error) {
-        console.error("Error adding navigation intent:", error);
-        throw error;
-    }
+    await setDoc(doc(db, INTENTS_COLLECTION, id), intent);
+    return id;
 };
 
 export const getActiveNavigatorsCount = async (branchId: string): Promise<number> => {
     try {
-        const now = Date.now();
-        // We only want intents that haven't expired yet
-        const q = query(
-            collection(db, INTENTS_COLLECTION),
-            where("branchId", "==", branchId),
-            where("expiresAt", ">", now)
+        // Use a simple query instead of compound query to avoid needing composite index
+        const querySnapshot = await withTimeout(
+            getDocs(collection(db, INTENTS_COLLECTION)),
+            3000,
+            null
         );
-
-        const querySnapshot = await getDocs(q);
-        // Valid active navigators intended for this branch
-        return querySnapshot.size;
+        if (!querySnapshot) return 0;
+        
+        const now = Date.now();
+        let count = 0;
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.branchId === branchId && data.expiresAt > now) {
+                count++;
+            }
+        });
+        return count;
     } catch (error) {
-        console.error("Error fetching active navigators:", error);
+        console.error("Error fetching navigators:", error);
         return 0;
     }
 };
 
-// --- Export Category CRUD ---
+// --- Category CRUD ---
 export const getCategories = async (): Promise<Category[]> => {
     try {
-        const querySnapshot = await getDocs(collection(db, CATEGORIES_COLLECTION));
+        const querySnapshot = await withTimeout(
+            getDocs(collection(db, CATEGORIES_COLLECTION)),
+            8000,
+            null
+        );
+        if (!querySnapshot) {
+            console.warn("getCategories timed out");
+            return [];
+        }
         const categories: Category[] = [];
         querySnapshot.forEach((doc) => {
             categories.push({ id: doc.id, ...doc.data() } as Category);
@@ -266,22 +204,12 @@ export const getCategories = async (): Promise<Category[]> => {
 };
 
 export const addCategory = async (name: string): Promise<Category> => {
-    try {
-        const id = uuidv4();
-        const newCat: Category = { id, name };
-        await setDoc(doc(db, CATEGORIES_COLLECTION, id), newCat);
-        return newCat;
-    } catch (error) {
-        console.error("Error adding category:", error);
-        throw error;
-    }
+    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const newCat: Category = { id, name };
+    await setDoc(doc(db, CATEGORIES_COLLECTION, id), newCat);
+    return newCat;
 };
 
 export const deleteCategory = async (id: string): Promise<void> => {
-    try {
-        await deleteDoc(doc(db, CATEGORIES_COLLECTION, id));
-    } catch (error) {
-        console.error("Error deleting category:", error);
-        throw error;
-    }
+    await deleteDoc(doc(db, CATEGORIES_COLLECTION, id));
 };
