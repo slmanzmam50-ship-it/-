@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getBranches, addBranch, updateBranch, deleteBranch, getActiveNavigatorsCount, getCategories, addCategory, deleteCategory } from '../services/storage';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboard: React.FC = () => {
@@ -183,7 +183,14 @@ const AdminDashboard: React.FC = () => {
                                 })
                                 .map(branch => (
                                     <tr key={branch.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                        <td style={{ padding: '1rem', fontWeight: 500 }}>{branch.name}</td>
+                                        <td style={{ padding: '1rem' }}>
+                                            <div style={{ fontWeight: 600 }}>{branch.name}</div>
+                                            {branch.mapUrl && (
+                                                <a href={branch.mapUrl} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: 'var(--primary-color)', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', marginTop: '4px' }}>
+                                                    <ExternalLink size={12} /> مشاهدة الرابط الخارجي
+                                                </a>
+                                            )}
+                                        </td>
                                         <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{branch.category}</td>
                                         <td style={{ padding: '1rem' }}>
                                             <span style={{

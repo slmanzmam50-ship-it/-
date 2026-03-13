@@ -104,6 +104,18 @@ const initialBranches: Branch[] = [
         workingHours: { start: '00:00', end: '23:59' },
         address: 'حي الجزيرة، المخرج ١٥، الرياض',
         phone: '0500000009'
+    },
+    {
+        id: 'demo-smart-branch',
+        name: 'فرع تجريبي (موقع ذكي)',
+        latitude: 24.7236,
+        longitude: 46.6853,
+        category: 'صيانة عامة',
+        status: 'مفتوح',
+        workingHours: { start: '08:00', end: '22:00' },
+        address: 'الرياض - حي الرائد',
+        phone: '0501234567',
+        mapUrl: 'https://www.google.com/maps/@24.7236,46.6853,15z'
     }
 ];
 
