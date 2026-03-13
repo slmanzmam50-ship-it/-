@@ -16,6 +16,7 @@ const AdminDashboard: React.FC = () => {
     // Category management state
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategoryName, setNewCategoryName] = useState('');
+    const [isAddingCategory, setIsAddingCategory] = useState(false);
 
     useEffect(() => {
         loadBranches();
@@ -75,13 +76,30 @@ const AdminDashboard: React.FC = () => {
 
     const handleAddCategory = async () => {
         if (!newCategoryName.trim()) return;
+        
+        const categoryName = newCategoryName.trim();
+        setIsAddingCategory(true);
+        console.log("Attempting to add category:", categoryName);
+        
+        // Optimistic update
+        const tempId = Date.now().toString();
+        const prevCategories = [...categories];
+        setCategories(prev => [...prev, { id: tempId, name: categoryName }]);
+        setNewCategoryName('');
+
         try {
-            await addCategory(newCategoryName.trim());
+            await addCategory(categoryName);
+            console.log("Category added successfully");
             toast.success('تم إضافة التصنيف بنجاح');
-            setNewCategoryName('');
-            await loadBranches();
+            await loadBranches(); // Refresh to get the real ID and sync
         } catch (error) {
-            toast.error('حدث خطأ أثناء إضافة التصنيف');
+            console.error("Failed to add category:", error);
+            // Rollback on error
+            setCategories(prevCategories);
+            setNewCategoryName(categoryName);
+            toast.error('حدث خطأ أثناء إضافة التصنيف. تأكد من إعدادات الحماية في Firebase.');
+        } finally {
+            setIsAddingCategory(false);
         }
     };
 
@@ -278,13 +296,21 @@ const AdminDashboard: React.FC = () => {
                     />
                     <button
                         onClick={handleAddCategory}
+                        disabled={isAddingCategory}
                         style={{
-                            background: 'var(--success)', color: 'white', padding: '0.75rem 1.5rem',
+                            background: isAddingCategory ? '#9ca3af' : 'var(--success)', color: 'white', padding: '0.75rem 1.5rem',
                             borderRadius: 'var(--radius-md)', border: 'none', fontWeight: 700,
-                            display: 'flex', alignItems: 'center', gap: '0.5rem'
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            cursor: isAddingCategory ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.3s ease'
                         }}
                     >
-                        <Plus size={18} /> إضافة
+                        {isAddingCategory ? (
+                            <span className="animate-spin" style={{ display: 'inline-block', width: '18px', height: '18px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%' }}></span>
+                        ) : (
+                            <Plus size={18} />
+                        )}
+                        {isAddingCategory ? 'جاري الإضافة...' : 'إضافة'}
                     </button>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
