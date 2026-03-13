@@ -23,7 +23,17 @@ const Header: React.FC = () => {
             borderBottom: '1px solid var(--border-color)',
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Map size={28} color="var(--primary-color)" />
+                <img 
+                    src="/logo.png" 
+                    alt="Logo" 
+                    style={{ 
+                        width: '40px', 
+                        height: '40px', 
+                        borderRadius: '50%', 
+                        objectFit: 'cover',
+                        border: '2px solid var(--primary-color)'
+                    }} 
+                />
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>مراكز خدمة سلمان زمام الخالدي</h2>
             </div>
 
