@@ -130,7 +130,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                 setFormData(prev => ({ ...prev, latitude: position.coords.latitude, longitude: position.coords.longitude }));
                 toast.success("تم تحديد موقعك الحالي بنجاح! ✅", { id: 'geo' });
             },
-            (error) => {
+            () => {
                 toast.error("فشلنا في الحصول على موقعك. تأكد من تفعيل الـ GPS والسماح للمتصفح.", { id: 'geo' });
             },
             { enableHighAccuracy: true }
