@@ -3,7 +3,7 @@ import { getBranches, addBranch, updateBranch, deleteBranch, getCategories, addC
 import { testFirebaseConnection } from '../services/firebase';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, LayoutDashboard, WifiOff, Loader2, Bug, Layers, Search, Check, X as CloseIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, LayoutDashboard, WifiOff, Loader2, Bug, Layers, Search, Check, X as CloseIcon, Eye, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboard: React.FC = () => {
@@ -24,6 +24,7 @@ const AdminDashboard: React.FC = () => {
     const [debugLogs, setDebugLogs] = useState<string[]>([]);
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [categoryEditName, setCategoryEditName] = useState('');
+    const [viewingCategory, setViewingCategory] = useState<string | null>(null);
 
     const addLog = useCallback((msg: string) => {
         const time = new Date().toLocaleTimeString();
@@ -309,6 +310,54 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     )}
                 </>
+            ) : viewingCategory ? (
+                <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <button 
+                                onClick={() => setViewingCategory(null)}
+                                style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                                <ArrowRight size={20} />
+                            </button>
+                            <h2 style={{ margin: 0 }}>فروع {viewingCategory}</h2>
+                        </div>
+                    </div>
+
+                    <div className="glass" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+                            <thead style={{ background: 'rgba(59,130,246,0.05)' }}>
+                                <tr>
+                                    <th style={{ padding: '1rem' }}>الاسم</th>
+                                    <th style={{ padding: '1rem' }}>الحالة</th>
+                                    <th style={{ padding: '1rem' }}>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {branches.filter(b => b.category === viewingCategory).length === 0 ? (
+                                    <tr><td colSpan={3} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>لا توجد فروع في هذا التصنيف.</td></tr>
+                                ) : (
+                                    branches.filter(b => b.category === viewingCategory).map(b => (
+                                        <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                            <td style={{ padding: '1rem', fontWeight: 600 }}>{b.name}</td>
+                                            <td style={{ padding: '1rem' }}>
+                                                <span style={{ padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)', background: b.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: b.status === 'مفتوح' ? 'var(--success)' : 'var(--error)', fontSize: '0.85rem', fontWeight: 600 }}>
+                                                    {b.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '1rem' }}>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button onClick={() => { setEditingBranch(b); setIsFormOpen(true); }} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s' }}><Edit2 size={18} /></button>
+                                                    <button onClick={() => handleDelete(b.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '0.5rem', borderRadius: 'var(--radius-sm)', transition: 'background 0.2s' }}><Trash2 size={18} /></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             ) : (
                 <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -378,6 +427,13 @@ const AdminDashboard: React.FC = () => {
                                                         style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '0.4rem' }}
                                                     >
                                                         <Edit2 size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setViewingCategory(c.name)} 
+                                                        style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', padding: '0.4rem' }}
+                                                        title="عرض الفروع"
+                                                    >
+                                                        <Eye size={16} />
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDeleteCategory(c.id)} 
