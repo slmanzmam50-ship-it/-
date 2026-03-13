@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getBranches, getActiveNavigatorsCount, addNavigationIntent, getCategories } from '../services/storage';
 import type { Branch, Category } from '../types';
-import { Navigation, MapPin, Clock, Phone, Search, SlidersHorizontal, AlertCircle, MessageCircle } from 'lucide-react';
+import { Navigation, MapPin, Clock, Phone, Search, AlertCircle, MessageCircle, Map as MapIcon, List, Layers } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Fix typical React Leaflet icon issue
@@ -43,6 +43,7 @@ const ClientMap: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [congestionData, setCongestionData] = useState<Record<string, number>>({});
     const [categories, setCategories] = useState<Category[]>([]);
+    const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
     useEffect(() => {
         const loadData = async () => {
@@ -163,241 +164,341 @@ const ClientMap: React.FC = () => {
     });
 
     return (
-        <div style={{ height: 'calc(100vh - 80px)', width: '100%', padding: '1rem', position: 'relative' }}>
-
-            {/* Search and Filter Panel (Modern Floating) */}
-            <div className="glass search-panel" style={{
-                position: 'absolute',
-                top: '24px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 1000,
-                padding: '14px 20px',
-                borderRadius: 'var(--radius-full)',
+        <div style={{ height: 'calc(100vh - 80px)', width: '100%', display: 'flex', flexDirection: 'column', background: 'var(--navy-deep)' }}>
+            
+            {/* Dark Navy Header Section */}
+            <div style={{ 
+                background: 'var(--navy-deep)', 
+                padding: '1.5rem 1rem 1rem', 
+                borderBottom: '1px solid rgba(255,255,255,0.05)',
                 display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                width: '92%',
-                maxWidth: '550px',
-                boxShadow: 'var(--shadow-lg)',
-                border: '1px solid rgba(255,255,255,0.1)'
+                flexDirection: 'column',
+                gap: '1.25rem',
+                zIndex: 1001
             }}>
-                <Search size={20} color="var(--text-secondary)" />
-                <input
-                    type="text"
-                    placeholder="ابحث عن فرع أو خدمة..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-primary)', fontSize: '16px' }}
-                />
-                <div style={{ width: '1px', height: '28px', background: 'var(--border-color)' }}></div>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                    <select
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
+                {/* Title */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'white' }}>
+                    <MapPin size={24} color="var(--accent-orange)" />
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>دليل الفروع</h1>
+                </div>
+
+                {/* Search Bar */}
+                <div style={{ position: 'relative', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
+                    <Search size={20} color="var(--text-secondary)" style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+                    <input
+                        type="text"
+                        placeholder="ابحث عن مدينتك أو خدمتك..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         style={{ 
-                            border: 'none', background: 'transparent', outline: 'none', 
-                            color: 'var(--text-primary)', cursor: 'pointer', appearance: 'none', 
-                            fontWeight: 600, fontSize: '14px', paddingLeft: '8px', paddingRight: '24px'
+                            width: '100%', 
+                            padding: '12px 48px 12px 16px', 
+                            borderRadius: 'var(--radius-full)', 
+                            border: 'none', 
+                            background: 'white', 
+                            fontSize: '16px',
+                            color: 'var(--navy-deep)',
+                            outline: 'none',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                        }}
+                    />
+                </div>
+
+                {/* View Mode Toggle */}
+                <div style={{ 
+                    display: 'flex', 
+                    background: 'rgba(255,255,255,0.1)', 
+                    borderRadius: 'var(--radius-md)', 
+                    padding: '4px',
+                    width: '100%',
+                    maxWidth: '400px',
+                    margin: '0 auto'
+                }}>
+                    <button 
+                        onClick={() => setViewMode('map')}
+                        style={{ 
+                            flex: 1, 
+                            padding: '8px', 
+                            borderRadius: 'var(--radius-md)', 
+                            border: 'none',
+                            background: viewMode === 'map' ? 'var(--accent-orange)' : 'transparent',
+                            color: 'white',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
                         }}
                     >
-                        <option value="all">جميع الفئات</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.name}>{cat.name}</option>
-                        ))}
-                    </select>
-                    <SlidersHorizontal size={16} color="var(--primary-color)" style={{ position: 'absolute', right: '0', pointerEvents: 'none' }} />
+                        <MapIcon size={18} /> الخريطة
+                    </button>
+                    <button 
+                        onClick={() => setViewMode('list')}
+                        style={{ 
+                            flex: 1, 
+                            padding: '8px', 
+                            borderRadius: 'var(--radius-md)', 
+                            border: 'none',
+                            background: viewMode === 'list' ? 'var(--accent-orange)' : 'transparent',
+                            color: 'white',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}
+                    >
+                        <List size={18} /> القائمة
+                    </button>
+                </div>
+
+                {/* Category Pills */}
+                <div style={{ 
+                    display: 'flex', 
+                    gap: '8px', 
+                    overflowX: 'auto', 
+                    padding: '4px 0',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none'
+                }}>
+                    <button
+                        onClick={() => setCategoryFilter('all')}
+                        style={{
+                            padding: '6px 20px',
+                            borderRadius: 'var(--radius-full)',
+                            border: 'none',
+                            background: categoryFilter === 'all' ? 'var(--accent-orange)' : 'rgba(255,255,255,0.1)',
+                            color: 'white',
+                            whiteSpace: 'nowrap',
+                            fontSize: '14px',
+                            fontWeight: 600
+                        }}
+                    >
+                        الكل
+                    </button>
+                    {categories.map(cat => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setCategoryFilter(cat.name)}
+                            style={{
+                                padding: '6px 20px',
+                                borderRadius: 'var(--radius-full)',
+                                border: 'none',
+                                background: categoryFilter === cat.name ? 'var(--accent-orange)' : 'rgba(255,255,255,0.1)',
+                                color: 'white',
+                                whiteSpace: 'nowrap',
+                                fontSize: '14px',
+                                fontWeight: 600
+                            }}
+                        >
+                            {cat.name}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Empty State Feedback */}
-            {filteredBranches.length === 0 && (
-                <div className="glass" style={{
-                    position: 'absolute',
-                    top: '100px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    zIndex: 1000,
-                    padding: '14px 28px',
-                    borderRadius: 'var(--radius-full)',
-                    color: 'var(--error)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontWeight: 800,
-                    boxShadow: 'var(--shadow-md)',
-                    border: '1px solid var(--error)'
-                }}>
-                    <AlertCircle size={20} />
-                    عذراً، لم نجد فروع مطابقة لبحثك
-                </div>
-            )}
+            {/* Main Content */}
+            <div style={{ flex: 1, position: 'relative' }}>
+                {viewMode === 'map' ? (
+                    <>
+                        <MapContainer
+                            center={mapCenter}
+                            zoom={5}
+                            minZoom={5}
+                            maxBounds={[
+                                [16.3, 34.5],
+                                [32.2, 55.6]
+                            ]}
+                            maxBoundsViscosity={1.0}
+                            style={{ height: '100%', width: '100%' }}
+                        >
+                            <ChangeView center={mapCenter} zoom={mapCenter[0] === 24.7136 ? 5 : 12} />
+                            <TileLayer
+                                attribution='&copy; <a href="https://www.google.com/intl/ar/help/terms_maps/">Google Maps</a>'
+                                url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ar"
+                            />
 
-            {/* Floating 'Locate Nearest Branch' Button */}
-            <button
-                onClick={handleLocateMe}
-                style={{
-                    position: 'absolute',
-                    bottom: '40px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    zIndex: 1000,
-                    padding: '16px 32px',
-                    borderRadius: 'var(--radius-full)',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    color: 'white',
-                    background: 'var(--grad-primary)',
-                    boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.5)',
-                    cursor: 'pointer',
-                    fontWeight: 800,
-                    fontSize: '16px',
-                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    whiteSpace: 'nowrap'
-                }}
-                onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'translateX(-50%) translateY(-5px) scale(1.05)';
-                    e.currentTarget.style.boxShadow = '0 20px 30px -5px rgba(59, 130, 246, 0.6)';
-                }}
-                onMouseOut={(e) => {
-                    e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.5)';
-                }}
-                title="البحث عن أقرب فرع"
-            >
-                <Navigation size={22} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
-                توجيهي لأقرب فرع
-            </button>
+                            {userLoc && (
+                                <Marker position={userLoc}>
+                                    <Popup>
+                                        <strong>موقعك الحالي</strong>
+                                    </Popup>
+                                </Marker>
+                            )}
 
-            <MapContainer
-                center={mapCenter}
-                zoom={5} // Zoomed out to show whole SA
-                minZoom={5} // Prevent zooming out to the whole world
-                maxBounds={[
-                    [16.3, 34.5], // South West coordinates (near Jizan/Red Sea)
-                    [32.2, 55.6]  // North East coordinates (near Kuwait/Arabian Gulf)
-                ]}
-                maxBoundsViscosity={1.0} // Strong bounce-back effect
-                style={{ height: '100%', width: '100%', borderRadius: '12px', boxShadow: 'var(--shadow-md)' }}
-            >
-                <ChangeView center={mapCenter} zoom={mapCenter[0] === 24.7136 ? 5 : 12} />
-                <TileLayer
-                    attribution='&copy; <a href="https://www.google.com/intl/ar/help/terms_maps/">Google Maps</a>'
-                    url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ar"
-                />
+                            {filteredBranches.map((branch) => (
+                                <Marker
+                                    key={branch.id}
+                                    position={[branch.latitude, branch.longitude]}
+                                    icon={createDotIcon(branch.status)}
+                                >
+                                    <Popup className="premium-popup">
+                                        <div style={{ textAlign: 'right', direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <h3 style={{ margin: '0', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '16px', fontWeight: 'bold' }}>
+                                                    <MapPin size={18} /> {branch.name}
+                                                </h3>
+                                            </div>
+                                            
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', marginTop: '4px' }}>
+                                                <span style={{
+                                                    background: branch.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                                    color: branch.status === 'مفتوح' ? 'var(--success)' : 'var(--error)',
+                                                    padding: '4px 10px',
+                                                    borderRadius: 'var(--radius-full)',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    {branch.status}
+                                                </span>
+                                                <span style={{ color: 'var(--text-secondary)' }}>•</span>
+                                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{branch.categories?.join('، ')}</span>
+                                            </div>
 
-                {/* User Location Marker */}
-                {userLoc && (
-                    <Marker position={userLoc}>
-                        <Popup>
-                            <strong>موقعك الحالي</strong>
-                        </Popup>
-                    </Marker>
-                )}
+                                            {branch.status === 'مفتوح' && (
+                                                <div style={{ background: 'var(--bg-color)', padding: '6px 10px', borderRadius: 'var(--radius-md)', fontSize: '13px', marginTop: '4px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ color: 'var(--text-secondary)' }}>حالة الفرع:</span>
+                                                    <span style={{ fontWeight: 'bold', color: getCongestionLevel(branch, congestionData[branch.id] || 0).color }}>
+                                                        {getCongestionLevel(branch, congestionData[branch.id] || 0).label}
+                                                    </span>
+                                                </div>
+                                            )}
 
-                {/* Branch Markers */}
-                {filteredBranches.map((branch) => (
-                    <Marker
-                        key={branch.id}
-                        position={[branch.latitude, branch.longitude]}
-                        icon={createDotIcon(branch.status)}
-                    >
-                        <Popup className="premium-popup">
-                            <div style={{ textAlign: 'right', direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <h3 style={{ margin: '0', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '16px', fontWeight: 'bold' }}>
-                                        <MapPin size={18} /> {branch.name}
-                                    </h3>
-                                </div>
-                                
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', marginTop: '4px' }}>
-                                    <span style={{
-                                        background: branch.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                        color: branch.status === 'مفتوح' ? 'var(--success)' : 'var(--error)',
-                                        padding: '4px 10px',
-                                        borderRadius: 'var(--radius-full)',
-                                        fontWeight: 'bold'
-                                    }}>
-                                        {branch.status}
-                                    </span>
-                                    <span style={{ color: 'var(--text-secondary)' }}>•</span>
-                                    <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{branch.categories?.join('، ')}</span>
-                                </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', marginTop: '6px', color: 'var(--text-primary)' }}>
+                                                <Clock size={16} color="var(--text-secondary)" />
+                                                <span>{branch.workingHours.start} - {branch.workingHours.end}</span>
+                                            </div>
 
-                                {/* Hybrid Congestion UI */}
-                                {branch.status === 'مفتوح' && (
-                                    <div style={{ background: 'var(--bg-color)', padding: '6px 10px', borderRadius: 'var(--radius-md)', fontSize: '13px', marginTop: '4px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ color: 'var(--text-secondary)' }}>حالة الفرع:</span>
-                                        <span style={{ fontWeight: 'bold', color: getCongestionLevel(branch, congestionData[branch.id] || 0).color }}>
-                                            {getCongestionLevel(branch, congestionData[branch.id] || 0).label}
-                                        </span>
-                                    </div>
-                                )}
+                                            <p style={{ margin: '6px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                                                {branch.address}
+                                            </p>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', marginTop: '6px', color: 'var(--text-primary)' }}>
-                                    <Clock size={16} color="var(--text-secondary)" />
-                                    <span>{branch.workingHours.start} - {branch.workingHours.end}</span>
-                                </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '12px' }}>
+                                                <button
+                                                    onClick={() => handleNavigate(branch)}
+                                                    className="popup-call-btn"
+                                                    style={{ 
+                                                        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px',
+                                                        background: 'var(--primary-color)', color: 'white', border: 'none',
+                                                        padding: '8px 4px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                                                        fontWeight: 'bold', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)',
+                                                        fontSize: '12px'
+                                                    }}
+                                                >
+                                                    <Navigation size={14} />
+                                                    الاتجاه
+                                                </button>
+                                                <a
+                                                    href={`https://wa.me/966${branch.phone.startsWith('0') ? branch.phone.substring(1) : branch.phone}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="popup-call-btn"
+                                                    style={{ 
+                                                        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px',
+                                                        background: '#25D366', color: 'white', border: 'none',
+                                                        padding: '8px 4px', borderRadius: 'var(--radius-md)', 
+                                                        textDecoration: 'none', fontWeight: 'bold',
+                                                        transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)',
+                                                        fontSize: '12px'
+                                                    }}
+                                                >
+                                                    <MessageCircle size={14} />
+                                                    واتساب
+                                                </a>
+                                                <a
+                                                    href={`tel:${branch.phone}`}
+                                                    className="popup-call-btn"
+                                                    style={{ 
+                                                        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px',
+                                                        background: 'var(--bg-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)',
+                                                        padding: '8px 4px', borderRadius: 'var(--radius-md)', 
+                                                        textDecoration: 'none', fontWeight: 'bold',
+                                                        transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)',
+                                                        fontSize: '12px'
+                                                    }}
+                                                >
+                                                    <Phone size={14} />
+                                                    اتصال
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </Popup>
+                                </Marker>
+                            ))}
+                        </MapContainer>
 
-                                <p style={{ margin: '6px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                                    {branch.address}
-                                </p>
-
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '12px' }}>
-                                    <button
-                                        onClick={() => handleNavigate(branch)}
-                                        className="popup-call-btn"
-                                        style={{ 
-                                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px',
-                                            background: 'var(--primary-color)', color: 'white', border: 'none',
-                                            padding: '8px 4px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                                            fontWeight: 'bold', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)',
-                                            fontSize: '12px'
-                                        }}
-                                    >
-                                        <Navigation size={14} />
-                                        الاتجاه
-                                    </button>
-                                    <a
-                                        href={`https://wa.me/966${branch.phone.startsWith('0') ? branch.phone.substring(1) : branch.phone}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="popup-call-btn"
-                                        style={{ 
-                                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px',
-                                            background: '#25D366', color: 'white', border: 'none',
-                                            padding: '8px 4px', borderRadius: 'var(--radius-md)', 
-                                            textDecoration: 'none', fontWeight: 'bold',
-                                            transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)',
-                                            fontSize: '12px'
-                                        }}
-                                    >
-                                        <MessageCircle size={14} />
-                                        واتساب
-                                    </a>
-                                    <a
-                                        href={`tel:${branch.phone}`}
-                                        className="popup-call-btn"
-                                        style={{ 
-                                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px',
-                                            background: 'var(--bg-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)',
-                                            padding: '8px 4px', borderRadius: 'var(--radius-md)', 
-                                            textDecoration: 'none', fontWeight: 'bold',
-                                            transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)',
-                                            fontSize: '12px'
-                                        }}
-                                    >
-                                        <Phone size={14} />
-                                        اتصال
-                                    </a>
-                                </div>
+                        {/* Floating Action Button for Location */}
+                        <button
+                            onClick={handleLocateMe}
+                            style={{
+                                position: 'absolute',
+                                bottom: '24px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                zIndex: 1000,
+                                padding: '12px 24px',
+                                borderRadius: 'var(--radius-full)',
+                                border: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                color: 'white',
+                                background: 'var(--accent-orange)',
+                                boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+                                cursor: 'pointer',
+                                fontWeight: 800,
+                                fontSize: '14px',
+                                transition: 'all 0.3s ease'
+                            }}
+                        >
+                            <Navigation size={18} />
+                            أقرب فرع لي
+                        </button>
+                    </>
+                ) : (
+                    <div style={{ height: '100%', overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {filteredBranches.length === 0 ? (
+                            <div style={{ padding: '3rem', textAlign: 'center', color: 'white' }}>
+                                <AlertCircle size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                                <h3>لا توجد فروع مطابقة لبحثك</h3>
                             </div>
-                        </Popup>
-                    </Marker>
-                ))}
-            </MapContainer>
+                        ) : (
+                            filteredBranches.map(branch => (
+                                <div key={branch.id} className="glass" style={{ 
+                                    padding: '1.25rem', 
+                                    borderRadius: 'var(--radius-lg)', 
+                                    background: 'var(--navy-surface)',
+                                    border: '1px solid rgba(255,255,255,0.05)',
+                                    color: 'white'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <h3 style={{ margin: 0 }}>{branch.name}</h3>
+                                        <span style={{ 
+                                            padding: '4px 10px', 
+                                            borderRadius: 'var(--radius-full)', 
+                                            background: branch.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                            color: branch.status === 'مفتوح' ? 'var(--success)' : 'var(--error)',
+                                            fontSize: '12px',
+                                            fontWeight: 700
+                                        }}>{branch.status}</span>
+                                    </div>
+                                    <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: '0 0 12px' }}>{branch.address}</p>
+                                    <div style={{ display: 'flex', gap: '1rem', fontSize: '13px', color: 'rgba(255,255,255,0.8)', marginBottom: '16px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <Clock size={16} /> {branch.workingHours.start} - {branch.workingHours.end}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <Layers size={16} /> {branch.categories?.join('، ')}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                                        <button onClick={() => { setMapCenter([branch.latitude, branch.longitude]); setViewMode('map'); }} style={{ background: 'var(--primary-color)', border: 'none', color: 'white', padding: '8px', borderRadius: 'var(--radius-md)', fontWeight: 700 }}>الخريطة</button>
+                                        <a href={`https://wa.me/966${branch.phone.startsWith('0') ? branch.phone.substring(1) : branch.phone}`} target="_blank" rel="noreferrer" style={{ background: '#25D366', color: 'white', textAlign: 'center', padding: '8px', borderRadius: 'var(--radius-md)', fontWeight: 700 }}>واتساب</a>
+                                        <a href={`tel:${branch.phone}`} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', textAlign: 'center', padding: '8px', borderRadius: 'var(--radius-md)', fontWeight: 700 }}>اتصال</a>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
