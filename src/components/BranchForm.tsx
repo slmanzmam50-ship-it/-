@@ -88,16 +88,17 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         }
     };
 
-    const handleExtractFromLink = () => {
+    const handleExtractFromLink = (silent: boolean = false) => {
         const input = mapInput.trim();
         if (!input) return;
 
         // 1. Check for shortened links (goo.gl, maps.app.goo.gl)
         if (input.includes("goo.gl") || input.includes("maps.app.goo.gl")) {
             setFormData(prev => ({ ...prev, mapUrl: input }));
-            toast.success("تم حفظ الرابط! يرجى التأكد من تحديد النقطة على الخريطة إذا لم تتحدث تلقائياً.");
-            // We can't easily extract from shortened links without a server-side expansion or browser-side fetch (which might be blocked by CORS)
-            // So we just save the URL.
+            if (!silent) {
+                toast.success("تم حفظ الرابط! يرجى النقر على 'تحديد' أو البحث باسم المكان لإيجاده على الخريطة.");
+                handleSearchAddress();
+            }
             return;
         }
 
@@ -106,32 +107,24 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         let lng: number | null = null;
 
         // Pattern A: @lat,lng (standard Google Maps URL)
-        const matchAt = input.match(/@(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+        const matchAt = input.match(/@(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
         if (matchAt) {
             lat = parseFloat(matchAt[1]);
             lng = parseFloat(matchAt[2]);
         } 
-        // Pattern B: search?q=lat,lng or query=lat,lng
+        // Pattern B: search?q=lat,lng or query=lat,lng or dir/lat,lng
         else {
-            const matchQuery = input.match(/[?&](?:q|query|loc|place)=?(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+            const matchQuery = input.match(/[?&/](?:q|query|loc|place|dir|ll|cbll|addr)=?(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)/);
             if (matchQuery) {
                 lat = parseFloat(matchQuery[1]);
                 lng = parseFloat(matchQuery[2]);
             }
-            // Pattern C: /place/lat,lng/ or /search/lat,lng/
+            // Pattern C: plain coordinates "lat, lng" (very flexible)
             else {
-                const matchPath = input.match(/\/(?:place|search)\/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
-                if (matchPath) {
-                    lat = parseFloat(matchPath[1]);
-                    lng = parseFloat(matchPath[2]);
-                }
-                // Pattern D: plain coordinates "lat, lng"
-                else {
-                    const matchPlain = input.match(/^[\s]*(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)[\s]*$/);
-                    if (matchPlain) {
-                        lat = parseFloat(matchPlain[1]);
-                        lng = parseFloat(matchPlain[2]);
-                    }
+                const matchPlain = input.match(/^[\s]*(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)[\s]*$/);
+                if (matchPlain) {
+                    lat = parseFloat(matchPlain[1]);
+                    lng = parseFloat(matchPlain[2]);
                 }
             }
         }
@@ -143,13 +136,24 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                 longitude: lng as number,
                 mapUrl: input.startsWith('http') ? input : prev.mapUrl 
             }));
-            toast.success("تم استيراد الإحداثيات بنجاح! ✅");
+            if (!silent) toast.success("تم تحديد الموقع تلقائياً! ✅");
             return;
         }
 
-        // If nothing matches, trigger address search instead
-        handleSearchAddress();
+        // If nothing matches and NOT silent, trigger address search
+        if (!silent) handleSearchAddress();
     };
+
+    // Automatic trigger on paste or change
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (mapInput.trim().length > 10) { // Only check if enough content to be a link/coords
+                handleExtractFromLink(true); // Run silently
+            }
+        }, 1000); // 1 second debounce
+
+        return () => clearTimeout(timer);
+    }, [mapInput]);
 
     const handleGetCurrentLocation = () => {
         if (!navigator.geolocation) {
@@ -254,16 +258,15 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                 </div>
                                 <input 
                                     type="text" 
-                                    placeholder="ابحث بالاسم (مثال: حي الشفا) أو الصق الرابط الكامل" 
+                                    placeholder="ابحث بالاسم أو الصق الرابط/الإحداثيات مباشرة" 
                                     value={mapInput} 
                                     onChange={(e) => setMapInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleExtractFromLink())}
                                     style={{ width: '100%', padding: '0.75rem 2.5rem 0.75rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)', fontSize: '14px' }} 
                                 />
                             </div>
                             <button 
                                 type="button" 
-                                onClick={handleExtractFromLink} 
+                                onClick={() => handleExtractFromLink(false)} 
                                 disabled={isSearching}
                                 style={{ 
                                     padding: '0 1.2rem', background: 'var(--primary-color)', color: 'white', 
@@ -272,7 +275,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                     transition: 'all 0.2s', opacity: isSearching ? 0.7 : 1
                                 }}
                             >
-                                {isSearching ? 'جاري البحث..' : 'تحديد'}
+                                {isSearching ? 'جاري التحقق..' : 'تحديد'}
                             </button>
                             <button 
                                 type="button" 

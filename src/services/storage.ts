@@ -210,6 +210,11 @@ export const addCategory = async (name: string): Promise<Category> => {
     return newCat;
 };
 
+export const updateCategory = async (category: Category): Promise<void> => {
+    const catRef = doc(db, CATEGORIES_COLLECTION, category.id);
+    await updateDoc(catRef, { name: category.name });
+};
+
 export const deleteCategory = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, CATEGORIES_COLLECTION, id));
 };
