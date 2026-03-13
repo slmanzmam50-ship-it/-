@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getBranches, getActiveNavigatorsCount, addNavigationIntent, getCategories } from '../services/storage';
 import type { Branch, Category } from '../types';
-import { Navigation, MapPin, Clock, Phone, Search, SlidersHorizontal, Info } from 'lucide-react';
+import { Navigation, MapPin, Clock, Phone, Search, SlidersHorizontal, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Fix typical React Leaflet icon issue
@@ -168,18 +168,19 @@ const ClientMap: React.FC = () => {
             {/* Search and Filter Panel (Modern Floating) */}
             <div className="glass search-panel" style={{
                 position: 'absolute',
-                top: '20px',
+                top: '24px',
                 left: '50%',
                 transform: 'translateX(-50%)',
                 zIndex: 1000,
-                padding: '12px 16px',
+                padding: '14px 20px',
                 borderRadius: 'var(--radius-full)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                width: '90%',
-                maxWidth: '500px',
-                boxShadow: 'var(--shadow-lg)'
+                width: '92%',
+                maxWidth: '550px',
+                boxShadow: 'var(--shadow-lg)',
+                border: '1px solid rgba(255,255,255,0.1)'
             }}>
                 <Search size={20} color="var(--text-secondary)" />
                 <input
@@ -189,7 +190,7 @@ const ClientMap: React.FC = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-primary)', fontSize: '16px' }}
                 />
-                <div style={{ width: '1px', height: '24px', background: 'var(--border-color)' }}></div>
+                <div style={{ width: '1px', height: '28px', background: 'var(--border-color)' }}></div>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <select
                         value={categoryFilter}
@@ -197,7 +198,7 @@ const ClientMap: React.FC = () => {
                         style={{ 
                             border: 'none', background: 'transparent', outline: 'none', 
                             color: 'var(--text-primary)', cursor: 'pointer', appearance: 'none', 
-                            fontWeight: 500, fontSize: '14px', paddingLeft: '8px', paddingRight: '22px'
+                            fontWeight: 600, fontSize: '14px', paddingLeft: '8px', paddingRight: '24px'
                         }}
                     >
                         <option value="all">جميع الفئات</option>
@@ -205,7 +206,7 @@ const ClientMap: React.FC = () => {
                             <option key={cat.id} value={cat.name}>{cat.name}</option>
                         ))}
                     </select>
-                    <SlidersHorizontal size={16} color="var(--text-secondary)" style={{ position: 'absolute', right: '0', pointerEvents: 'none' }} />
+                    <SlidersHorizontal size={16} color="var(--primary-color)" style={{ position: 'absolute', right: '0', pointerEvents: 'none' }} />
                 </div>
             </div>
 
@@ -213,20 +214,21 @@ const ClientMap: React.FC = () => {
             {filteredBranches.length === 0 && (
                 <div className="glass" style={{
                     position: 'absolute',
-                    top: '90px',
+                    top: '100px',
                     left: '50%',
                     transform: 'translateX(-50%)',
                     zIndex: 1000,
-                    padding: '12px 24px',
+                    padding: '14px 28px',
                     borderRadius: 'var(--radius-full)',
-                    color: 'var(--warning)',
+                    color: 'var(--error)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    fontWeight: 'bold',
-                    boxShadow: 'var(--shadow-md)'
+                    gap: '10px',
+                    fontWeight: 800,
+                    boxShadow: 'var(--shadow-md)',
+                    border: '1px solid var(--error)'
                 }}>
-                    <Info size={20} />
+                    <AlertCircle size={20} />
                     عذراً، لم نجد فروع مطابقة لبحثك
                 </div>
             )}
@@ -234,43 +236,38 @@ const ClientMap: React.FC = () => {
             {/* Floating 'Locate Nearest Branch' Button */}
             <button
                 onClick={handleLocateMe}
-                className="glass"
                 style={{
                     position: 'absolute',
-                    bottom: '30px',
+                    bottom: '40px',
                     left: '50%',
                     transform: 'translateX(-50%)',
                     zIndex: 1000,
-                    padding: '14px 24px',
+                    padding: '16px 32px',
                     borderRadius: 'var(--radius-full)',
                     border: 'none',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    color: 'var(--surface-color)',
-                    background: 'var(--primary-color)',
-                    boxShadow: 'var(--shadow-lg)',
+                    gap: '12px',
+                    color: 'white',
+                    background: 'var(--grad-primary)',
+                    boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.5)',
                     cursor: 'pointer',
-                    fontWeight: 'bold',
-                    fontSize: '15px',
-                    transition: 'all 0.3s ease',
+                    fontWeight: 800,
+                    fontSize: '16px',
+                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     whiteSpace: 'nowrap'
                 }}
                 onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'var(--primary-hover)';
-                    e.currentTarget.style.transform = 'translateX(-50%) translateY(-3px)';
-                    e.currentTarget.style.boxShadow = '0 15px 25px -5px rgba(43, 92, 255, 0.4)';
+                    e.currentTarget.style.transform = 'translateX(-50%) translateY(-5px) scale(1.05)';
+                    e.currentTarget.style.boxShadow = '0 20px 30px -5px rgba(59, 130, 246, 0.6)';
                 }}
                 onMouseOut={(e) => {
-                    e.currentTarget.style.background = 'var(--primary-color)';
-                    e.currentTarget.style.transform = 'translateX(-50%)';
-                    e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+                    e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.5)';
                 }}
                 title="البحث عن أقرب فرع"
             >
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Navigation size={20} style={{ animation: 'pulseGreenRing 2s infinite' }} />
-                </div>
+                <Navigation size={22} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
                 توجيهي لأقرب فرع
             </button>
 

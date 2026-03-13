@@ -256,7 +256,7 @@ export const getCategories = async (): Promise<Category[]> => {
         const querySnapshot = await getDocs(collection(db, CATEGORIES_COLLECTION));
         const categories: Category[] = [];
         querySnapshot.forEach((doc) => {
-            categories.push(doc.data() as Category);
+            categories.push({ id: doc.id, ...doc.data() } as Category);
         });
         return categories;
     } catch (error) {

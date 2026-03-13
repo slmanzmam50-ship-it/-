@@ -92,27 +92,59 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         const input = mapInput.trim();
         if (!input) return;
 
-        // 1. Check for shortened links
+        // 1. Check for shortened links (goo.gl, maps.app.goo.gl)
         if (input.includes("goo.gl") || input.includes("maps.app.goo.gl")) {
-            setFormData(prev => ({ ...prev, mapUrl: input })); // Save it anyway
-            toast.success("تم حفظ الرابط المختصر! تذكر الضغط على الخريطة لتحديد النقطة بدقة 👆");
+            setFormData(prev => ({ ...prev, mapUrl: input }));
+            toast.success("تم حفظ الرابط! يرجى التأكد من تحديد النقطة على الخريطة إذا لم تتحدث تلقائياً.");
+            // We can't easily extract from shortened links without a server-side expansion or browser-side fetch (which might be blocked by CORS)
+            // So we just save the URL.
             return;
         }
 
-        // 2. Try regex for @lat,lng
+        // 2. Extract coordinates from URL or text
+        let lat: number | null = null;
+        let lng: number | null = null;
+
+        // Pattern A: @lat,lng (standard Google Maps URL)
         const matchAt = input.match(/@(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
         if (matchAt) {
-            setFormData(prev => ({ ...prev, latitude: parseFloat(matchAt[1]), longitude: parseFloat(matchAt[2]), mapUrl: input }));
-            toast.success("تم استيراد الإحداثيات من الرابط! ✅");
-            return;
+            lat = parseFloat(matchAt[1]);
+            lng = parseFloat(matchAt[2]);
+        } 
+        // Pattern B: search?q=lat,lng or query=lat,lng
+        else {
+            const matchQuery = input.match(/[?&](?:q|query|loc|place)=?(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+            if (matchQuery) {
+                lat = parseFloat(matchQuery[1]);
+                lng = parseFloat(matchQuery[2]);
+            }
+            // Pattern C: /place/lat,lng/ or /search/lat,lng/
+            else {
+                const matchPath = input.match(/\/(?:place|search)\/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+                if (matchPath) {
+                    lat = parseFloat(matchPath[1]);
+                    lng = parseFloat(matchPath[2]);
+                }
+                // Pattern D: plain coordinates "lat, lng"
+                else {
+                    const matchPlain = input.match(/^[\s]*(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)[\s]*$/);
+                    if (matchPlain) {
+                        lat = parseFloat(matchPlain[1]);
+                        lng = parseFloat(matchPlain[2]);
+                    }
+                }
+            }
         }
 
-        // 3. Try plain coordinates
-        const matchPlain = input.match(/(-?\d+\.\d+)[,\s|;]+(-?\d+\.\d+)/);
-        if (matchPlain) {
-             setFormData(prev => ({ ...prev, latitude: parseFloat(matchPlain[1]), longitude: parseFloat(matchPlain[2]) }));
-             toast.success("تم التعرف على الإحداثيات! ✅");
-             return;
+        if (lat !== null && lng !== null) {
+            setFormData(prev => ({ 
+                ...prev, 
+                latitude: lat as number, 
+                longitude: lng as number,
+                mapUrl: input.startsWith('http') ? input : prev.mapUrl 
+            }));
+            toast.success("تم استيراد الإحداثيات بنجاح! ✅");
+            return;
         }
 
         // If nothing matches, trigger address search instead
@@ -178,12 +210,14 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
     return (
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.5)', zIndex: 1000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+            animation: 'fadeIn 0.3s ease-out'
         }}>
             <div className="glass" style={{
-                background: 'var(--surface-color)', padding: '2rem', borderRadius: 'var(--radius-lg)',
-                width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto'
+                background: 'var(--surface-color)', padding: '2.5rem', borderRadius: 'var(--radius-xl)',
+                width: '100%', maxWidth: '550px', maxHeight: '92vh', overflowY: 'auto',
+                boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-color)'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                     <h2 style={{ margin: 0 }}>{branch ? 'تعديل فرع' : 'إضافة فرع جديد'}</h2>

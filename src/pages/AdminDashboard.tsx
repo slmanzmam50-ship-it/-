@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getBranches, addBranch, updateBranch, deleteBranch, getActiveNavigatorsCount, getCategories, addCategory, deleteCategory } from '../services/storage';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, Edit2, Trash2, ExternalLink, LayoutDashboard, CheckCircle2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboard: React.FC = () => {
@@ -146,18 +146,41 @@ const AdminDashboard: React.FC = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
-                    <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)' }}>إجمالي الفروع</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>{totalBranches}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>إجمالي الفروع</h3>
+                            <p style={{ fontSize: '2.5rem', fontWeight: 800, margin: 0, color: 'var(--primary-color)' }}>{totalBranches}</p>
+                        </div>
+                        <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '12px', borderRadius: 'var(--radius-md)', color: 'var(--primary-color)' }}>
+                            <LayoutDashboard size={28} />
+                        </div>
+                    </div>
                 </div>
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
-                    <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)' }}>الفروع المفتوحة حالياً</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 700, margin: 0, color: 'var(--success)' }}>{openBranches}</p>
+                
+                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>الفروع المفتوحة</h3>
+                            <p style={{ fontSize: '2.5rem', fontWeight: 800, margin: 0, color: 'var(--success)' }}>{openBranches}</p>
+                        </div>
+                        <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '12px', borderRadius: 'var(--radius-md)', color: 'var(--success)' }}>
+                            <CheckCircle2 size={28} />
+                        </div>
+                    </div>
                 </div>
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
-                    <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)' }}>الفروع المغلقة</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 700, margin: 0, color: 'var(--error)' }}>{totalBranches - openBranches}</p>
+
+                <div className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>الفروع المغلقة</h3>
+                            <p style={{ fontSize: '2.5rem', fontWeight: 800, margin: 0, color: 'var(--error)' }}>{totalBranches - openBranches}</p>
+                        </div>
+                        <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '12px', borderRadius: 'var(--radius-md)', color: 'var(--error)' }}>
+                            <AlertCircle size={28} />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -165,7 +188,7 @@ const AdminDashboard: React.FC = () => {
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                         <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.02)' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-color)', background: 'rgba(var(--primary-color), 0.05)' }}>
                                 <th style={{ padding: '1rem' }}>الاسم</th>
                                 <th style={{ padding: '1rem' }}>التصنيف</th>
                                 <th style={{ padding: '1rem' }}>الحالة</th>
