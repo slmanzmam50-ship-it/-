@@ -171,7 +171,10 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleDeleteCategory = async (id: string) => {
-        const branchInCat = branches.filter(b => b.category === categories.find(c => c.id === id)?.name);
+        const cat = categories.find(c => c.id === id);
+        if (!cat) return;
+
+        const branchInCat = branches.filter(b => b.categories?.includes(cat.name));
         if (branchInCat.length > 0) {
             toast.error(`لا يمكن حذف التصنيف لوجود ${branchInCat.length} فروع مرتبطة به.`);
             return;
@@ -190,7 +193,7 @@ const AdminDashboard: React.FC = () => {
     };
 
     const getBranchCountByCategory = (catName: string) => {
-        return branches.filter(b => b.category === catName).length;
+        return branches.filter(b => b.categories?.includes(catName)).length;
     };
 
     return (
@@ -290,7 +293,15 @@ const AdminDashboard: React.FC = () => {
                                         branches.map(b => (
                                             <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                                 <td style={{ padding: '1rem', fontWeight: 600 }}>{b.name}</td>
-                                                <td style={{ padding: '1rem' }}>{b.category}</td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                        {b.categories?.map((cat, i) => (
+                                                            <span key={i} style={{ background: 'rgba(59,130,246,0.05)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', border: '1px solid rgba(59,130,246,0.1)' }}>
+                                                                {cat}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </td>
                                                 <td style={{ padding: '1rem' }}>
                                                     <span style={{ padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)', background: b.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: b.status === 'مفتوح' ? 'var(--success)' : 'var(--error)', fontSize: '0.85rem', fontWeight: 600 }}>
                                                         {b.status}
@@ -329,17 +340,28 @@ const AdminDashboard: React.FC = () => {
                             <thead style={{ background: 'rgba(59,130,246,0.05)' }}>
                                 <tr>
                                     <th style={{ padding: '1rem' }}>الاسم</th>
+                                    <th style={{ padding: '1rem' }}>التصنيفات الأخرى</th>
                                     <th style={{ padding: '1rem' }}>الحالة</th>
                                     <th style={{ padding: '1rem' }}>إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {branches.filter(b => b.category === viewingCategory).length === 0 ? (
-                                    <tr><td colSpan={3} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>لا توجد فروع في هذا التصنيف.</td></tr>
+                                {branches.filter(b => b.categories?.includes(viewingCategory)).length === 0 ? (
+                                    <tr><td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>لا توجد فروع في هذا التصنيف.</td></tr>
                                 ) : (
-                                    branches.filter(b => b.category === viewingCategory).map(b => (
+                                    branches.filter(b => b.categories?.includes(viewingCategory)).map(b => (
                                         <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                             <td style={{ padding: '1rem', fontWeight: 600 }}>{b.name}</td>
+                                            <td style={{ padding: '1rem' }}>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                    {b.categories?.filter(c => c !== viewingCategory).map((cat, i) => (
+                                                        <span key={i} style={{ background: 'rgba(59,130,246,0.05)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                                                            {cat}
+                                                        </span>
+                                                    ))}
+                                                    {b.categories?.length === 1 && <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>-</span>}
+                                                </div>
+                                            </td>
                                             <td style={{ padding: '1rem' }}>
                                                 <span style={{ padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)', background: b.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: b.status === 'مفتوح' ? 'var(--success)' : 'var(--error)', fontSize: '0.85rem', fontWeight: 600 }}>
                                                     {b.status}

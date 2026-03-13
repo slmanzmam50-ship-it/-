@@ -157,8 +157,8 @@ const ClientMap: React.FC = () => {
     };
 
     const filteredBranches = branches.filter(branch => {
-        const matchesSearch = branch.name.includes(searchQuery) || branch.category.includes(searchQuery);
-        const matchesCategory = categoryFilter === 'all' || branch.category === categoryFilter;
+        const matchesSearch = branch.name.includes(searchQuery) || branch.categories?.some(c => c.includes(searchQuery));
+        const matchesCategory = categoryFilter === 'all' || branch.categories?.includes(categoryFilter);
         return matchesSearch && matchesCategory;
     });
 
@@ -323,7 +323,7 @@ const ClientMap: React.FC = () => {
                                         {branch.status}
                                     </span>
                                     <span style={{ color: 'var(--text-secondary)' }}>•</span>
-                                    <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{branch.category}</span>
+                                    <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{branch.categories?.join('، ')}</span>
                                 </div>
 
                                 {/* Hybrid Congestion UI */}

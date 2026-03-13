@@ -12,7 +12,7 @@ export interface Branch {
     name: string;
     latitude: number;
     longitude: number;
-    category: BranchCategory;
+    categories: BranchCategory[];
     status: BranchStatus;
     workingHours: WorkingHours;
     address: string;

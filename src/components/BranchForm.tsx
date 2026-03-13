@@ -40,7 +40,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         name: '',
         latitude: 24.7136,
         longitude: 46.6753,
-        category: 'صيانة عامة',
+        categories: ['صيانة عامة'],
         status: 'مفتوح',
         workingHours: { start: '08:00', end: '22:00' },
         address: '',
@@ -204,7 +204,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
             if (branch) {
                 onSave({ ...formData, id: branch.id } as Branch);
             } else {
-                onSave(formData);
+                onSave(formData as any); // Cast because Omit<Branch, 'id'> expects categories properly
             }
         } catch (error) {
             toast.error('حدث خطأ أثناء حفظ الفرع. جرب لاحقاً.');
@@ -340,13 +340,39 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>التصنيف</label>
-                            <select name="category" value={formData.category} onChange={handleChange}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>التصنيفات (يمكنك اختيار أكثر من واحد)</label>
+                            <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
+                                gap: '0.5rem', 
+                                background: 'var(--bg-color)', 
+                                padding: '1rem', 
+                                borderRadius: 'var(--radius-md)', 
+                                border: '1px solid var(--border-color)',
+                                maxHeight: '150px',
+                                overflowY: 'auto'
+                            }}>
                                 {categories.map(cat => (
-                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                    <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={formData.categories.includes(cat.name)}
+                                            onChange={(e) => {
+                                                const newCats = e.target.checked 
+                                                    ? [...formData.categories, cat.name] 
+                                                    : formData.categories.filter(c => c !== cat.name);
+                                                if (newCats.length === 0) {
+                                                    toast.error("يجب اختيار تصنيف واحد على الأقل");
+                                                    return;
+                                                }
+                                                setFormData({ ...formData, categories: newCats });
+                                            }}
+                                            style={{ cursor: 'pointer', accentColor: 'var(--primary-color)' }}
+                                        />
+                                        {cat.name}
+                                    </label>
                                 ))}
-                            </select>
+                            </div>
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>الحالة</label>
