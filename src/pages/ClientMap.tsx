@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getBranches, getActiveNavigatorsCount, addNavigationIntent, getCategories } from '../services/storage';
 import type { Branch, Category } from '../types';
-import { Navigation, MapPin, Clock, Phone, Search, SlidersHorizontal, AlertCircle } from 'lucide-react';
+import { Navigation, MapPin, Clock, Phone, Search, SlidersHorizontal, AlertCircle, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Fix typical React Leaflet icon issue
@@ -345,32 +345,51 @@ const ClientMap: React.FC = () => {
                                     {branch.address}
                                 </p>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '12px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '12px' }}>
                                     <button
                                         onClick={() => handleNavigate(branch)}
                                         className="popup-call-btn"
                                         style={{ 
-                                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px',
+                                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px',
                                             background: 'var(--primary-color)', color: 'white', border: 'none',
-                                            padding: '8px 12px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                                            fontWeight: 'bold', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)'
+                                            padding: '8px 4px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                                            fontWeight: 'bold', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)',
+                                            fontSize: '12px'
                                         }}
                                     >
-                                        <Navigation size={16} />
+                                        <Navigation size={14} />
                                         الاتجاه
                                     </button>
+                                    <a
+                                        href={`https://wa.me/966${branch.phone.startsWith('0') ? branch.phone.substring(1) : branch.phone}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="popup-call-btn"
+                                        style={{ 
+                                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px',
+                                            background: '#25D366', color: 'white', border: 'none',
+                                            padding: '8px 4px', borderRadius: 'var(--radius-md)', 
+                                            textDecoration: 'none', fontWeight: 'bold',
+                                            transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)',
+                                            fontSize: '12px'
+                                        }}
+                                    >
+                                        <MessageCircle size={14} />
+                                        واتساب
+                                    </a>
                                     <a
                                         href={`tel:${branch.phone}`}
                                         className="popup-call-btn"
                                         style={{ 
-                                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px',
+                                            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px',
                                             background: 'var(--bg-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)',
-                                            padding: '8px 12px', borderRadius: 'var(--radius-md)', 
+                                            padding: '8px 4px', borderRadius: 'var(--radius-md)', 
                                             textDecoration: 'none', fontWeight: 'bold',
-                                            transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)'
+                                            transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)',
+                                            fontSize: '12px'
                                         }}
                                     >
-                                        <Phone size={16} />
+                                        <Phone size={14} />
                                         اتصال
                                     </a>
                                 </div>
