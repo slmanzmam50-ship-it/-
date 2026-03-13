@@ -7,15 +7,14 @@ const firebaseConfig = {
     projectId: "slman-zmam",
     storageBucket: "slman-zmam.firebasestorage.app",
     messagingSenderId: "750725696422",
-    appId: "1:750725696422:web:2e63633a124ad70754dd67",
-    measurementId: "G-MTHHCWPVE2"
+    appId: "1:750725696422:web:2e63633a124ad70754dd67"
 };
 
-// Initialize Firebase
+// Initialize Firebase (no analytics - it's optional and causes errors if not enabled)
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-// --- Firebase Connection Diagnostic ---
+// --- Firebase Connection Test ---
 export const testFirebaseConnection = async (): Promise<{ canRead: boolean; canWrite: boolean; error?: string }> => {
     const testDocRef = doc(db, '_connection_test', 'ping');
     let canRead = false;
@@ -23,18 +22,12 @@ export const testFirebaseConnection = async (): Promise<{ canRead: boolean; canW
     let error: string | undefined;
 
     try {
-        // Test Write
-        await setDoc(testDocRef, { timestamp: Date.now(), test: true });
+        await setDoc(testDocRef, { timestamp: Date.now() });
         canWrite = true;
-
-        // Test Read
         const snap = await getDoc(testDocRef);
         canRead = snap.exists();
-
-        // Clean up
         await deleteDoc(testDocRef);
     } catch (e: any) {
-        console.error("Firebase connection test failed:", e);
         const code = e?.code || '';
         if (code.includes('permission-denied')) {
             error = 'PERMISSION_DENIED';
