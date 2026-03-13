@@ -53,7 +53,10 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
 
     useEffect(() => {
         if (branch) {
-            setFormData(branch);
+            // Handle legacy data: ensure categories is an array
+            const legacyBranch = branch as any;
+            const categories = branch.categories || (legacyBranch.category ? [legacyBranch.category] : ['صيانة عامة']);
+            setFormData({ ...branch, categories });
         }
     }, [branch]);
 
