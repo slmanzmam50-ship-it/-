@@ -3,16 +3,13 @@ import { getBranches, addBranch, updateBranch, deleteBranch, getActiveNavigators
 import { testFirebaseConnection } from '../services/firebase';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, ExternalLink, LayoutDashboard, CheckCircle2, AlertCircle, WifiOff, RefreshCw, Loader2, Bug } from 'lucide-react';
+import { Plus, Edit2, Trash2, LayoutDashboard, WifiOff, Loader2, Bug } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboard: React.FC = () => {
     const [branches, setBranches] = useState<Branch[]>([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingBranch, setEditingBranch] = useState<Branch | undefined>(undefined);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState<string>('all');
-    const [navigatorsCount, setNavigatorsCount] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(true);
 
     // Category management state
@@ -98,20 +95,6 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const loadNavigatorCounts = async (branchList: Branch[]) => {
-        addLog("Loading navigator counts...");
-        const counts: Record<string, number> = {};
-        // Process in small batches or one-by-one to avoid pressure
-        for (const b of branchList) {
-            try {
-                counts[b.id] = await getActiveNavigatorsCount(b.id);
-            } catch {
-                counts[b.id] = 0;
-            }
-        }
-        setNavigatorsCount(counts);
-        addLog("Navigator counts updated.");
-    };
 
     const handleSaveBranch = async (branchData: Omit<Branch, 'id'> | Branch) => {
         addLog("Saving branch...");
