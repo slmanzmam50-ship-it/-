@@ -1,6 +1,6 @@
 import type { Branch, NavigationIntent, Category } from '../types';
 import { db } from './firebase';
-import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc, query, where, addDoc } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 
 const COLLECTION_NAME = 'branches';
 const CATEGORIES_COLLECTION = 'categories';
