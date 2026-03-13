@@ -247,3 +247,9 @@ a:hover {
   background: var(--surface-color);
   color: var(--text-primary);
 }
+
+/* Spin animation for loading indicators */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
