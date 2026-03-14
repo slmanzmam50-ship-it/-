@@ -335,26 +335,27 @@ const ClientMap: React.FC = () => {
                                     icon={createDotIcon(branch.status)}
                                 >
                                     <Popup className="premium-popup">
-                                        <div style={{ textAlign: 'right', direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <h3 style={{ margin: '0', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '16px', fontWeight: 'bold' }}>
-                                                    <MapPin size={18} /> {branch.name}
+                                        <div style={{ textAlign: 'center', direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', minWidth: '220px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                                                <h3 style={{ margin: '0', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 'bold' }}>
+                                                    <MapPin size={20} /> {branch.name}
                                                 </h3>
                                             </div>
                                             
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', marginTop: '4px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                                                 <span style={{
                                                     background: branch.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                                                     color: branch.status === 'مفتوح' ? 'var(--success)' : 'var(--error)',
-                                                    padding: '4px 10px',
+                                                    padding: '4px 12px',
                                                     borderRadius: 'var(--radius-full)',
-                                                    fontWeight: 'bold'
+                                                    fontWeight: 'bold',
+                                                    fontSize: '13px'
                                                 }}>
                                                     {branch.status}
                                                 </span>
                                             </div>
                                             
-                                            <div className="category-container" style={{ margin: '4px 0' }}>
+                                            <div className="category-container" style={{ margin: '2px 0', justifyContent: 'center' }}>
                                                 {branch.categories?.map((cat, idx) => (
                                                     <span key={idx} className="popup-category-tag">{cat}</span>
                                                 ))}
@@ -369,12 +370,12 @@ const ClientMap: React.FC = () => {
                                                 </div>
                                             )}
 
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', marginTop: '6px', color: 'var(--text-primary)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '14px', color: 'var(--text-primary)', width: '100%' }}>
                                                 <Clock size={16} color="var(--text-secondary)" />
-                                                <span>{branch.workingHours.start} - {branch.workingHours.end}</span>
+                                                <span style={{ fontWeight: 600 }}>{branch.workingHours.start} - {branch.workingHours.end}</span>
                                             </div>
 
-                                            <p style={{ margin: '6px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                                            <p style={{ margin: '0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, textAlign: 'center' }}>
                                                 {branch.address}
                                             </p>
 
