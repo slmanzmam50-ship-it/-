@@ -140,7 +140,8 @@ const ClientMap: React.FC = () => {
                 (error) => {
                     console.error("Error getting location: ", error);
                     toast.error('تعذر الوصول إلى موقعك. يرجى تفعيل إعدادات الموقع.', { id: 'locate-toast' });
-                }
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         } else {
             toast.error('متصفحك لا يدعم تحديد الموقع.');
