@@ -51,6 +51,7 @@ const ClientMap: React.FC = () => {
     const [branches, setBranches] = useState<Branch[]>([]);
     const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
     const [mapCenter, setMapCenter] = useState<[number, number]>([24.7136, 46.6753]); // Default Riyadh
+    const [mapZoom, setMapZoom] = useState<number>(5);
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [congestionData, setCongestionData] = useState<Record<string, number>>({});
@@ -129,9 +130,11 @@ const ClientMap: React.FC = () => {
 
                         toast.success(`أقرب فرع لك هو: ${nearestBranch.name} (يبعد ${minDistance.toFixed(1)} كم)`, { id: 'locate-toast', duration: 5000 });
                         setMapCenter([nearestBranch.latitude, nearestBranch.longitude]);
+                        setMapZoom(12);
                     } else {
                         toast.success('تم تحديد موقعك، ولكن لا توجد فروع مفتوحة حالياً.', { id: 'locate-toast' });
                         setMapCenter(loc);
+                        setMapZoom(12);
                     }
                 },
                 (error) => {
@@ -317,16 +320,16 @@ const ClientMap: React.FC = () => {
                     <>
                         <MapContainer
                             center={mapCenter}
-                            zoom={5}
-                            minZoom={5}
+                            zoom={mapZoom}
+                            minZoom={4}
                             maxBounds={[
-                                [16.3, 34.5],
-                                [32.2, 55.6]
+                                [10.0, 30.0],
+                                [35.0, 60.0]
                             ]}
                             maxBoundsViscosity={1.0}
                             style={{ height: '100%', width: '100%' }}
                         >
-                            <ChangeView center={mapCenter} zoom={mapCenter[0] === 24.7136 ? 5 : 12} />
+                            <ChangeView center={mapCenter} zoom={mapZoom} />
                             <TileLayer
                                 attribution='&copy; <a href="https://www.google.com/intl/ar/help/terms_maps/">Google Maps</a>'
                                 url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ar"
@@ -348,10 +351,19 @@ const ClientMap: React.FC = () => {
                                     eventHandlers={{
                                         click: () => {
                                             setMapCenter([branch.latitude, branch.longitude]);
+                                            setMapZoom(18);
                                         },
                                     }}
                                 >
-                                    <Popup className="premium-popup">
+                                    <Popup 
+                                        className="premium-popup" 
+                                        eventHandlers={{
+                                            remove: () => {
+                                                setMapZoom(5);
+                                                setMapCenter([24.7136, 46.6753]);
+                                            }
+                                        }}
+                                    >
                                         <div style={{ textAlign: 'center', direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', minWidth: '220px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
                                                 <h3 style={{ margin: '0', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 'bold' }}>
