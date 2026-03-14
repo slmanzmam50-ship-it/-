@@ -191,7 +191,14 @@ const ClientMap: React.FC = () => {
                                             </span>
                                             <span style={{ fontSize: '12px', opacity: 0.7 }}>{b.workingHours.start} - {b.workingHours.end}</span>
                                         </div>
-                                        <p style={{ fontSize: '13px', margin: '0 0 12px', opacity: 0.8 }}>{b.address}</p>
+                                        <p style={{ fontSize: '13px', margin: '0 0 8px', opacity: 0.8 }}>{b.address}</p>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
+                                            {b.categories?.map((cat, i) => (
+                                                <span key={i} style={{ background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: '12px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: 600 }}>
+                                                    {getCategoryIcon(cat)} {cat}
+                                                </span>
+                                            ))}
+                                        </div>
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                                             <button onClick={() => handleNavigate(b)} style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 4px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                                 <Navigation size={14} /> {t.directions}
