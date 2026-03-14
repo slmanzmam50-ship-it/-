@@ -3,7 +3,7 @@ import { getBranches, addBranch, updateBranch, deleteBranch, getCategories, addC
 import { testFirebaseConnection } from '../services/firebase';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, LayoutDashboard, WifiOff, Loader2, Bug, Layers, Search, Check, X as CloseIcon, Eye, ArrowRight, Droplets, Wrench, Zap, Disc, ClipboardCheck, Settings } from 'lucide-react';
+import { Plus, Edit2, Trash2, LayoutDashboard, WifiOff, Loader2, Bug, Layers, Search, Check, X as CloseIcon, Eye, ArrowRight, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboard: React.FC = () => {
@@ -34,12 +34,12 @@ const AdminDashboard: React.FC = () => {
 
     const getCategoryIcon = (name: string) => {
         const n = name.trim();
-        if (n.includes('زيت')) return <Droplets size={12} />;
+        if (n.includes('زيت')) return <Fuel size={12} />;
         if (n.includes('ميكانيكا')) return <Wrench size={12} />;
         if (n.includes('كهرباء')) return <Zap size={12} />;
-        if (n.includes('إطارات') || n.includes('اطارات')) return <Disc size={12} />;
-        if (n.includes('فحص')) return <ClipboardCheck size={12} />;
-        if (n.includes('صيانة') || n.includes('صيانه')) return <Settings size={12} />;
+        if (n.includes('إطارات') || n.includes('اطارات')) return <CircleDashed size={12} />;
+        if (n.includes('فحص')) return <ShieldCheck size={12} />;
+        if (n.includes('صيانة') || n.includes('صيانه')) return <Car size={12} />;
         return <Layers size={12} />;
     };
 

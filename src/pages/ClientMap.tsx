@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getBranches, getActiveNavigatorsCount, addNavigationIntent, getCategories } from '../services/storage';
 import type { Branch, Category } from '../types';
-import { Navigation, MapPin, Clock, Phone, Search, AlertCircle, MessageCircle, Map as MapIcon, List, Layers, Droplets, Wrench, Zap, Disc, ClipboardCheck, Settings } from 'lucide-react';
+import { Navigation, MapPin, Clock, Phone, Search, AlertCircle, MessageCircle, Map as MapIcon, List, Layers, Wrench, Zap, CircleDashed, ShieldCheck, Car, Fuel } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Fix typical React Leaflet icon issue
@@ -38,12 +38,12 @@ const ChangeView = ({ center, zoom }: { center: [number, number], zoom: number }
 // Helper to get icon for category
 const getCategoryIcon = (name: string) => {
     const n = name.trim();
-    if (n.includes('زيت')) return <Droplets size={12} />;
+    if (n.includes('زيت')) return <Fuel size={12} />;
     if (n.includes('ميكانيكا')) return <Wrench size={12} />;
     if (n.includes('كهرباء')) return <Zap size={12} />;
-    if (n.includes('إطارات') || n.includes('اطارات')) return <Disc size={12} />;
-    if (n.includes('فحص')) return <ClipboardCheck size={12} />;
-    if (n.includes('صيانة') || n.includes('صيانه')) return <Settings size={12} />;
+    if (n.includes('إطارات') || n.includes('اطارات')) return <CircleDashed size={12} />;
+    if (n.includes('فحص')) return <ShieldCheck size={12} />;
+    if (n.includes('صيانة') || n.includes('صيانه')) return <Car size={12} />;
     return <Layers size={12} />;
 };
 
