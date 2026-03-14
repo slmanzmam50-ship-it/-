@@ -352,8 +352,12 @@ const ClientMap: React.FC = () => {
                                                 }}>
                                                     {branch.status}
                                                 </span>
-                                                <span style={{ color: 'var(--text-secondary)' }}>•</span>
-                                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{branch.categories?.join('، ')}</span>
+                                            </div>
+                                            
+                                            <div className="category-container" style={{ margin: '4px 0' }}>
+                                                {branch.categories?.map((cat, idx) => (
+                                                    <span key={idx} className="popup-category-tag">{cat}</span>
+                                                ))}
                                             </div>
 
                                             {branch.status === 'مفتوح' && (
@@ -484,12 +488,16 @@ const ClientMap: React.FC = () => {
                                         }}>{branch.status}</span>
                                     </div>
                                     <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: '0 0 12px' }}>{branch.address}</p>
-                                    <div style={{ display: 'flex', gap: '1rem', fontSize: '13px', color: 'rgba(255,255,255,0.8)', marginBottom: '16px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>
                                             <Clock size={16} /> {branch.workingHours.start} - {branch.workingHours.end}
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <Layers size={16} /> {branch.categories?.join('، ')}
+                                        <div className="category-container" style={{ margin: 0 }}>
+                                            {branch.categories?.map((cat, idx) => (
+                                                <span key={idx} className="category-tag">
+                                                    <Layers size={12} /> {cat}
+                                                </span>
+                                            ))}
                                         </div>
                                     </div>
                                     <div className="action-buttons-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>

@@ -294,9 +294,9 @@ const AdminDashboard: React.FC = () => {
                                             <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                                 <td style={{ padding: '1rem', fontWeight: 600 }}>{b.name}</td>
                                                 <td style={{ padding: '1rem' }}>
-                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                    <div className="category-container" style={{ margin: 0 }}>
                                                         {b.categories?.map((cat, i) => (
-                                                            <span key={i} style={{ background: 'rgba(59,130,246,0.05)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', border: '1px solid rgba(59,130,246,0.1)' }}>
+                                                            <span key={i} className="popup-category-tag" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
                                                                 {cat}
                                                             </span>
                                                         ))}
@@ -353,9 +353,9 @@ const AdminDashboard: React.FC = () => {
                                         <tr key={b.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                             <td style={{ padding: '1rem', fontWeight: 600 }}>{b.name}</td>
                                             <td style={{ padding: '1rem' }}>
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                <div className="category-container" style={{ margin: 0 }}>
                                                     {b.categories?.filter(c => c !== viewingCategory).map((cat, i) => (
-                                                        <span key={i} style={{ background: 'rgba(59,130,246,0.05)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                                                        <span key={i} className="popup-category-tag" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
                                                             {cat}
                                                         </span>
                                                     ))}
