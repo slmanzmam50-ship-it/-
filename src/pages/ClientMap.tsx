@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getBranches, getActiveNavigatorsCount, addNavigationIntent, getCategories } from '../services/storage';
 import type { Branch, Category } from '../types';
-import { Navigation, MapPin, Clock, Phone, Search, AlertCircle, MessageCircle, Map as MapIcon, List, Layers } from 'lucide-react';
+import { Navigation, MapPin, Clock, Phone, Search, AlertCircle, MessageCircle, Map as MapIcon, List, Layers, Droplets, Wrench, Zap, Disc, ClipboardCheck, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Fix typical React Leaflet icon issue
@@ -33,6 +33,18 @@ const ChangeView = ({ center, zoom }: { center: [number, number], zoom: number }
         map.flyTo(center, zoom, { duration: 1.5 });
     }, [center, zoom, map]);
     return null;
+};
+
+// Helper to get icon for category
+const getCategoryIcon = (name: string) => {
+    const n = name.trim();
+    if (n.includes('زيت')) return <Droplets size={12} />;
+    if (n.includes('ميكانيكا')) return <Wrench size={12} />;
+    if (n.includes('كهرباء')) return <Zap size={12} />;
+    if (n.includes('إطارات') || n.includes('اطارات')) return <Disc size={12} />;
+    if (n.includes('فحص')) return <ClipboardCheck size={12} />;
+    if (n.includes('صيانة') || n.includes('صيانه')) return <Settings size={12} />;
+    return <Layers size={12} />;
 };
 
 const ClientMap: React.FC = () => {
@@ -357,7 +369,10 @@ const ClientMap: React.FC = () => {
                                             
                                             <div className="category-container" style={{ margin: '2px 0', justifyContent: 'center' }}>
                                                 {branch.categories?.map((cat, idx) => (
-                                                    <span key={idx} className="popup-category-tag">{cat}</span>
+                                                    <span key={idx} className="popup-category-tag" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        {getCategoryIcon(cat)}
+                                                        {cat}
+                                                    </span>
                                                 ))}
                                             </div>
 
@@ -496,7 +511,7 @@ const ClientMap: React.FC = () => {
                                         <div className="category-container" style={{ margin: 0 }}>
                                             {branch.categories?.map((cat, idx) => (
                                                 <span key={idx} className="category-tag">
-                                                    <Layers size={12} /> {cat}
+                                                    {getCategoryIcon(cat)} {cat}
                                                 </span>
                                             ))}
                                         </div>

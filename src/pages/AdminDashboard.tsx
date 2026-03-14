@@ -3,7 +3,7 @@ import { getBranches, addBranch, updateBranch, deleteBranch, getCategories, addC
 import { testFirebaseConnection } from '../services/firebase';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, LayoutDashboard, WifiOff, Loader2, Bug, Layers, Search, Check, X as CloseIcon, Eye, ArrowRight } from 'lucide-react';
+import { Plus, Edit2, Trash2, LayoutDashboard, WifiOff, Loader2, Bug, Layers, Search, Check, X as CloseIcon, Eye, ArrowRight, Droplets, Wrench, Zap, Disc, ClipboardCheck, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboard: React.FC = () => {
@@ -31,6 +31,17 @@ const AdminDashboard: React.FC = () => {
         setDebugLogs(prev => [`[${time}] ${msg}`, ...prev].slice(0, 10));
         console.log(`[Admin] ${msg}`);
     }, []);
+
+    const getCategoryIcon = (name: string) => {
+        const n = name.trim();
+        if (n.includes('زيت')) return <Droplets size={12} />;
+        if (n.includes('ميكانيكا')) return <Wrench size={12} />;
+        if (n.includes('كهرباء')) return <Zap size={12} />;
+        if (n.includes('إطارات') || n.includes('اطارات')) return <Disc size={12} />;
+        if (n.includes('فحص')) return <ClipboardCheck size={12} />;
+        if (n.includes('صيانة') || n.includes('صيانه')) return <Settings size={12} />;
+        return <Layers size={12} />;
+    };
 
     useEffect(() => {
         initializeDashboard();
@@ -296,7 +307,8 @@ const AdminDashboard: React.FC = () => {
                                                 <td style={{ padding: '1rem' }}>
                                                     <div className="category-container" style={{ margin: 0 }}>
                                                         {b.categories?.map((cat, i) => (
-                                                            <span key={i} className="popup-category-tag" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
+                                                            <span key={i} className="popup-category-tag" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                {getCategoryIcon(cat)}
                                                                 {cat}
                                                             </span>
                                                         ))}
@@ -355,7 +367,8 @@ const AdminDashboard: React.FC = () => {
                                             <td style={{ padding: '1rem' }}>
                                                 <div className="category-container" style={{ margin: 0 }}>
                                                     {b.categories?.filter(c => c !== viewingCategory).map((cat, i) => (
-                                                        <span key={i} className="popup-category-tag" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
+                                                        <span key={i} className="popup-category-tag" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            {getCategoryIcon(cat)}
                                                             {cat}
                                                         </span>
                                                     ))}
