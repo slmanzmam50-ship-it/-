@@ -1,12 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap");
 
 :root {
-  --primary-color: #3b82f6; /* More vibrant blue */
+  --primary-color: #3b82f6;
   --primary-hover: #2563eb;
   --bg-color: #f8fafc;
   --surface-color: #ffffff;
-  --text-primary: #0f172a; /* Slate 900 */
-  --text-secondary: #64748b; /* Slate 500 */
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
   --border-color: #e2e8f0;
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -18,7 +18,6 @@
   --error: #ef4444;
   --warning: #f59e0b;
   
-  /* Branch Directory Theme */
   --navy-deep: #0f172a;
   --navy-surface: #1e293b;
   --accent-orange: #f59e0b;
@@ -29,25 +28,10 @@
   --radius-xl: 24px;
   --radius-full: 9999px;
 
-  /* Custom Gradients */
   --grad-primary: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  --grad-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  --grad-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  --grad-error: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   --grad-surface: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%);
 
   font-family: 'Tajawal', sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: var(--text-primary);
-  background-color: var(--bg-color);
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -55,9 +39,8 @@
     --bg-color: #0b0e14;
     --surface-color: #1a1f2e;
     --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1; /* Lighter gray for better contrast in dark mode */
+    --text-secondary: #cbd5e1;
     --border-color: #2d3748;
-    --grad-surface: linear-gradient(180deg, rgba(26,31,46,0.9) 0%, rgba(26,31,46,0.6) 100%);
   }
 }
 
@@ -73,274 +56,153 @@ body {
   background-color: var(--bg-color);
   color: var(--text-primary);
   direction: rtl;
-  /* Arabic Right-To-Left */
 }
 
-/* Glassmorphism common class */
 .glass {
   background: var(--grad-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow-md);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.dark .glass {
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
 }
 
 #root {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  animation: fadeIn 0.5s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 button {
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
 }
 
-button:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
-/* Leaflet Overrides for Premium Aesthetic */
 .leaflet-container {
   width: 100%;
   height: 100%;
-  border-radius: var(--radius-lg);
   z-index: 1;
-  /* Keep map below floating headers */
-  font-family: inherit;
 }
 
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background: var(--surface-color);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-lg);
-  border-radius: var(--radius-md);
+/* --- Redesigned UI Styles --- */
+.branch-directory-header {
+  background: var(--navy-deep);
+  color: white;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
-.leaflet-popup-content {
-  margin: 16px;
+.branch-directory-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
 }
 
-/* Animated Markers (Pure CSS Dots) */
-.custom-dot-marker {
-  background: transparent;
-  border: none;
-}
-
-.dot-indicator {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+.search-pill-container {
+  width: 100%;
+  max-width: 500px;
   position: relative;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
-  border: 2px solid white;
 }
 
-.dot-open {
-  background-color: var(--success);
-}
-
-.dot-closed {
-  background-color: var(--error);
-}
-
-/* Pulse animation for OPEN branches */
-.dot-open::after {
-  content: '';
-  position: absolute;
-  top: -4px; /* match offset based on border/size */
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
-  border-radius: 50%;
-  border: 2px solid var(--success);
-  animation: pulseGreenRing 2s infinite ease-out;
-  opacity: 0;
-}
-
-@keyframes pulseGreenRing {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(2.5);
-    opacity: 0;
-  }
-}
-
-/* Subtle pulse for CLOSED branches */
-.dot-closed::after {
-  content: '';
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
-  border-radius: 50%;
-  border: 2px solid var(--error);
-  animation: pulseRedRing 3s infinite ease-out;
-  opacity: 0;
-}
-
-@keyframes pulseRedRing {
-  0% {
-    transform: scale(0.9);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
-
-a {
-  color: var(--primary-color);
-  text-decoration: none;
-}
-
-a:hover {
-  color: var(--primary-hover);
-}
-
-/* --- Premium Map UI Improvements --- */
-.premium-popup .leaflet-popup-content-wrapper {
-  background: var(--surface-color);
-  border-radius: var(--radius-lg);
-  padding: 4px;
-  box-shadow: var(--shadow-lg);
-}
-
-.premium-popup .leaflet-popup-content {
-  margin: 14px;
-}
-
-.premium-popup .leaflet-popup-tip {
-  background: var(--surface-color);
+.search-pill {
+  width: 100%;
+  padding: 14px 48px 14px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255,255,255,0.2);
+  background: white;
+  color: var(--navy-deep);
+  font-size: 16px;
+  font-weight: 500;
+  outline: none;
   box-shadow: var(--shadow-md);
 }
 
-.popup-call-btn:hover {
-  background: var(--primary-hover) !important;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md) !important;
-}
-
-/* Hide default select arrow for a custom one */
-.search-panel select option {
-  background: var(--surface-color);
-  color: var(--text-primary);
-}
-
-/* Spin animation for loading indicators */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* --- Mobile Responsiveness --- */
-@media (max-width: 768px) {
-  :root {
-    --radius-lg: 12px;
-  }
-  
-  header {
-    padding: 0.75rem 1rem !important;
-  }
-  
-  header h2 {
-    font-size: 1rem !important;
-  }
-
-  /* Client Interface Specific Mobile Adjustments */
-  .branch-directory-header {
-    padding: 1rem 0.75rem !important;
-    gap: 1rem !important;
-  }
-
-  .branch-directory-header h1 {
-    font-size: 1.25rem !important;
-  }
-
-  .search-input-mobile {
-    font-size: 14px !important;
-    padding: 10px 48px 10px 16px !important;
-  }
-
-  .toggle-button-mobile {
-    font-size: 14px !important;
-    padding: 8px !important;
-  }
-
-  .pill-button-mobile {
-    padding: 6px 16px !important;
-    font-size: 13px !important;
-  }
-
-  .branch-card-mobile {
-    padding: 1rem !important;
-  }
-
-  .branch-card-mobile h3 {
-    font-size: 1.1rem !important;
-  }
-
-  .action-buttons-mobile button, 
-  .action-buttons-mobile a {
-    padding: 8px 4px !important;
-    font-size: 11px !important;
-  }
-}
-
-/* Category Tags */
-.category-container {
+.segmented-toggle {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0;
+  background: rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 4px;
+  width: 100%;
+  max-width: 320px;
 }
 
-.category-tag {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.9);
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-weight: 600;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.popup-category-tag {
-  background: rgba(15, 23, 42, 0.05);
-  color: var(--navy-deep);
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 11px;
+.toggle-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: white;
   font-weight: 700;
-  border: 1px solid rgba(15, 23, 42, 0.1);
+  font-size: 14px;
+  gap: 8px;
+}
+
+.toggle-btn.active {
+  background: var(--accent-orange);
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+}
+
+.pills-row {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  padding: 5px 0;
+  width: 100%;
+  max-width: 600px;
+  scrollbar-width: none;
+}
+
+.pills-row::-webkit-scrollbar { display: none; }
+
+.pill-btn {
+  white-space: nowrap;
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pill-btn.active {
+  background: var(--accent-orange);
+  border-color: var(--accent-orange);
+}
+
+/* Markers */
+.custom-dot-marker { background: transparent; border: none; }
+.dot-indicator {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+.dot-open { background: var(--success); }
+.dot-closed { background: var(--error); }
+
+/* Premium Popup */
+.premium-popup .leaflet-popup-content-wrapper {
+  background: white;
+  border-radius: 16px;
+  padding: 5px;
+  box-shadow: var(--shadow-xl);
+}
+
+@media (max-width: 768px) {
+  .branch-directory-header { padding: 1.5rem 1rem; }
+  .branch-directory-header h1 { font-size: 1.4rem; }
+  .search-pill { font-size: 14px; padding: 12px 42px 12px 16px; }
 }
