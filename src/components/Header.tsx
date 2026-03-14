@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { LogOut, Map } from 'lucide-react';
 
 const Header: React.FC = () => {
     const location = useLocation();
@@ -33,7 +33,7 @@ const Header: React.FC = () => {
             zIndex: 1050,
             borderBottom: '1px solid var(--border-color)',
         }}>
-            <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+            <Link to={location.pathname === '/admin' ? '/' : '/admin'} style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
                 <img 
                     src="/logo.png" 
                     alt="Logo" 
@@ -68,9 +68,14 @@ const Header: React.FC = () => {
                 </button>
 
                 {location.pathname === '/admin' && (
-                    <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '14px', background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer' }}>
-                        <LogOut size={18} /> {isAr ? 'خروج' : 'Logout'}
-                    </button>
+                    <>
+                        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '14px', color: 'var(--primary-color)', textDecoration: 'none' }}>
+                            <Map size={18} /> {isAr ? 'الخريطة' : 'Map'}
+                        </Link>
+                        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '14px', background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer' }}>
+                            <LogOut size={18} /> {isAr ? 'خروج' : 'Logout'}
+                        </button>
+                    </>
                 )}
             </nav>
         </header>
