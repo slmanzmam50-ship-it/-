@@ -12,7 +12,7 @@ const Login: React.FC = () => {
 
         // استخدام كلمة المرور التي طلبها المستخدم
         if (password === 'salman.zmam') {
-            localStorage.setItem('isAuthenticated', 'true');
+            sessionStorage.setItem('isAuthenticated', 'true');
             navigate('/admin');
         } else {
             setError('كلمة المرور غير صحيحة');

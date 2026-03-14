@@ -3,10 +3,10 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Language } from '../services/translations';
-import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators } from '../services/storage';
+import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories } from '../services/storage';
 import { translations } from '../services/translations';
-import type { Branch } from '../types';
-import { Navigation, Phone, MessageCircle, Map as MapIcon, List, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers } from 'lucide-react';
+import type { Branch, Category } from '../types';
+import { Navigation, Phone, MessageCircle, Map as MapIcon, List, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Fix typical React Leaflet icon issue
@@ -59,13 +59,14 @@ const ChangeView = ({ center, zoom }: { center: [number, number], zoom: number }
 
 const ClientMap: React.FC = () => {
     const [branches, setBranches] = useState<Branch[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [lang, setLang] = useState<Language>(() => (localStorage.getItem('lang') as Language) || 'ar');
     const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
     const [mapCenter, setMapCenter] = useState<[number, number]>([24.7136, 46.6753]);
     const [mapZoom, setMapZoom] = useState<number>(5);
-    const [categoryFilter] = useState<string>('all');
-    const [searchQuery] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
     const [congestionData, setCongestionData] = useState<Record<string, number>>({});
     const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
@@ -84,7 +85,11 @@ const ClientMap: React.FC = () => {
             setBranches(data);
             setIsLoading(false);
         });
-        return () => unsubBranches();
+        const unsubCategories = subscribeToCategories(setCategories);
+        return () => {
+             unsubBranches();
+             unsubCategories();
+        };
     }, []);
 
     useEffect(() => {
@@ -163,14 +168,63 @@ const ClientMap: React.FC = () => {
     };
 
     const filteredBranches = branches.filter(branch => {
-        const matchesSearch = branch.name.toLowerCase().includes(searchQuery.toLowerCase()) || branch.categories?.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesSearch = branch.name.toLowerCase().includes(searchQuery.toLowerCase()) || branch.address.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = categoryFilter === 'all' || branch.categories?.includes(categoryFilter);
         return matchesSearch && matchesCategory;
     });
 
     return (
-        <div style={{ height: '100vh', width: '100vw', position: 'relative' }}>
-            <div style={{ height: '100%', width: '100%', position: 'relative' }}>
+        <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
+            {/* Dark Header Matching ScreenShot */}
+            <div className="branch-directory-header">
+                <h1><MapPin size={24} color="var(--accent-orange)" /> {lang === 'ar' ? 'دليل الفروع' : 'Branch Directory'}</h1>
+                
+                <div className="search-pill-container">
+                    <Search style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
+                    <input 
+                        className="search-pill"
+                        type="text" 
+                        placeholder={lang === 'ar' ? 'ابحث عن مدينتك...' : 'Search for your city...'} 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+
+                <div className="segmented-toggle">
+                    <button 
+                        className={`toggle-btn ${viewMode === 'map' ? 'active' : ''}`}
+                        onClick={() => setViewMode('map')}
+                    >
+                        <MapIcon size={18} /> {lang === 'ar' ? 'الخريطة' : 'Map'}
+                    </button>
+                    <button 
+                        className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                        onClick={() => setViewMode('list')}
+                    >
+                        <List size={18} /> {lang === 'ar' ? 'القائمة' : 'List'}
+                    </button>
+                </div>
+
+                <div className="pills-row">
+                    <button 
+                        className={`pill-btn ${categoryFilter === 'all' ? 'active' : ''}`}
+                        onClick={() => setCategoryFilter('all')}
+                    >
+                        {lang === 'ar' ? 'الكل' : 'All'}
+                    </button>
+                    {categories.map(cat => (
+                        <button 
+                            key={cat.id}
+                            className={`pill-btn ${categoryFilter === cat.name ? 'active' : ''}`}
+                            onClick={() => setCategoryFilter(cat.name)}
+                        >
+                            {cat.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                 {isLoading ? <SkeletonLoader /> : viewMode === 'map' ? (
                     <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%', zIndex: 1 }} zoomControl={false}>
                         <ChangeView center={mapCenter} zoom={mapZoom} />
@@ -240,13 +294,12 @@ const ClientMap: React.FC = () => {
                         ))}
                     </div>
                 )}
-                <button onClick={() => setViewMode(prev => prev === 'map' ? 'list' : 'map')} style={{ position: 'absolute', bottom: '24px', [lang === 'ar' ? 'left' : 'right']: '24px', zIndex: 1000, background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '50%', width: '56px', height: '56px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {viewMode === 'map' ? <List size={26} /> : <MapIcon size={26} />}
+                
+                {/* Float Locate Me button */}
+                <button onClick={handleLocateMe} style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'var(--accent-orange)', color: 'white', border: 'none', padding: '14px 32px', borderRadius: '35px', fontWeight: 800, fontSize: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Navigation size={20} /> {t.locate_me}
                 </button>
             </div>
-            <button onClick={handleLocateMe} style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'var(--accent-orange)', color: 'white', border: 'none', padding: '14px 32px', borderRadius: '35px', fontWeight: 800, fontSize: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Navigation size={20} /> {t.locate_me}
-            </button>
         </div>
     );
 };

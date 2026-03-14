@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Map, Settings, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 const Header: React.FC = () => {
     const location = useLocation();
@@ -16,7 +16,7 @@ const Header: React.FC = () => {
     const toggleLang = () => setLang(prev => prev === 'ar' ? 'en' : 'ar');
 
     const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
+        sessionStorage.removeItem('isAuthenticated');
         navigate('/login');
     };
 
@@ -33,7 +33,7 @@ const Header: React.FC = () => {
             zIndex: 1050,
             borderBottom: '1px solid var(--border-color)',
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
                 <img 
                     src="/logo.png" 
                     alt="Logo" 
@@ -48,7 +48,7 @@ const Header: React.FC = () => {
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                     {isAr ? 'سلمان زمام الخالدي' : 'Salman Al-Khalidi'}
                 </h2>
-            </div>
+            </Link>
 
             <nav style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                 <button 
@@ -67,19 +67,10 @@ const Header: React.FC = () => {
                     {isAr ? 'English' : 'عربي'}
                 </button>
 
-                {location.pathname === '/admin' ? (
-                    <>
-                        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '14px' }}>
-                            <Map size={18} /> {isAr ? 'الخريطة' : 'Map'}
-                        </Link>
-                        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '14px', background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer' }}>
-                            <LogOut size={18} /> {isAr ? 'خروج' : 'Logout'}
-                        </button>
-                    </>
-                ) : (
-                    <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '14px' }}>
-                        {isAr ? 'الإدارة' : 'Admin'} <Settings size={18} />
-                    </Link>
+                {location.pathname === '/admin' && (
+                    <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '14px', background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer' }}>
+                        <LogOut size={18} /> {isAr ? 'خروج' : 'Logout'}
+                    </button>
                 )}
             </nav>
         </header>
