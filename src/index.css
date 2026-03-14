@@ -55,7 +55,7 @@
     --bg-color: #0b0e14;
     --surface-color: #1a1f2e;
     --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
+    --text-secondary: #cbd5e1; /* Lighter gray for better contrast in dark mode */
     --border-color: #2d3748;
     --grad-surface: linear-gradient(180deg, rgba(26,31,46,0.9) 0%, rgba(26,31,46,0.6) 100%);
   }

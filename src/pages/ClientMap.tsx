@@ -345,6 +345,11 @@ const ClientMap: React.FC = () => {
                                     key={branch.id}
                                     position={[branch.latitude, branch.longitude]}
                                     icon={createDotIcon(branch.status)}
+                                    eventHandlers={{
+                                        click: () => {
+                                            setMapCenter([branch.latitude, branch.longitude]);
+                                        },
+                                    }}
                                 >
                                     <Popup className="premium-popup">
                                         <div style={{ textAlign: 'center', direction: 'rtl', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', minWidth: '220px' }}>
@@ -377,9 +382,9 @@ const ClientMap: React.FC = () => {
                                             </div>
 
                                             {branch.status === 'مفتوح' && (
-                                                <div style={{ background: 'var(--bg-color)', padding: '6px 10px', borderRadius: 'var(--radius-md)', fontSize: '13px', marginTop: '4px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <span style={{ color: 'var(--text-secondary)' }}>حالة الفرع:</span>
-                                                    <span style={{ fontWeight: 'bold', color: getCongestionLevel(branch, congestionData[branch.id] || 0).color }}>
+                                                <div style={{ background: 'rgba(0,0,0,0.03)', padding: '6px 12px', borderRadius: 'var(--radius-md)', fontSize: '13px', marginTop: '4px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                                    <span style={{ color: 'var(--text-primary)', opacity: 0.8 }}>حالة الفرع:</span>
+                                                    <span style={{ fontWeight: 800, color: getCongestionLevel(branch, congestionData[branch.id] || 0).color }}>
                                                         {getCongestionLevel(branch, congestionData[branch.id] || 0).label}
                                                     </span>
                                                 </div>
@@ -390,7 +395,7 @@ const ClientMap: React.FC = () => {
                                                 <span style={{ fontWeight: 600 }}>{branch.workingHours.start} - {branch.workingHours.end}</span>
                                             </div>
 
-                                            <p style={{ margin: '0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, textAlign: 'center' }}>
+                                            <p style={{ margin: '0', fontSize: '13px', color: 'var(--text-primary)', opacity: 0.7, lineHeight: 1.5, textAlign: 'center' }}>
                                                 {branch.address}
                                             </p>
 
