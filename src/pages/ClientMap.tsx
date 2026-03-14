@@ -246,6 +246,11 @@ const ClientMap: React.FC = () => {
                                             <span style={{ fontSize: '12px', opacity: 0.7 }}>{b.workingHours.start} - {b.workingHours.end}</span>
                                         </div>
                                         <p style={{ fontSize: '13px', margin: '0 0 8px', opacity: 0.8 }}>{b.address}</p>
+                                        {b.managerName && (
+                                            <p style={{ fontSize: '12px', margin: '0 0 8px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                                👤 {t.manager_name}: {b.managerName}
+                                            </p>
+                                        )}
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
                                             {b.categories?.map((cat, i) => (
                                                 <span key={i} style={{ background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: '12px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: 600 }}>
@@ -277,7 +282,12 @@ const ClientMap: React.FC = () => {
                                     <h3 style={{ margin: 0 }}>{b.name}</h3>
                                     <span style={{ color: getCongestionLevel(b, congestionData[b.id] || 0).color, fontWeight: 800 }}>{getCongestionLevel(b, congestionData[b.id] || 0).label}</span>
                                 </div>
-                                <p style={{ opacity: 0.7, fontSize: '14px', marginBottom: '12px' }}>{b.address}</p>
+                                <p style={{ opacity: 0.7, fontSize: '14px', marginBottom: '8px' }}>{b.address}</p>
+                                {b.managerName && (
+                                    <p style={{ fontSize: '13px', marginBottom: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
+                                        👤 {t.manager_name}: {b.managerName}
+                                    </p>
+                                )}
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
                                     {b.categories?.map((cat, i) => (
                                         <span key={i} style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -285,10 +295,17 @@ const ClientMap: React.FC = () => {
                                         </span>
                                     ))}
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                                     <button onClick={() => { setMapCenter([b.latitude, b.longitude]); setMapZoom(16); setViewMode('map'); }} style={{ background: 'var(--accent-orange)', color: 'white', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer' }}>{t.map_view}</button>
                                     <button onClick={() => handleNavigate(b)} style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer' }}>{t.directions}</button>
-                                    <a href={`tel:${b.phone}`} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', textAlign: 'center', padding: '10px', borderRadius: '10px', fontWeight: 800, textDecoration: 'none' }}>{t.call}</a>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <a href={`https://wa.me/966${b.phone.startsWith('0') ? b.phone.substring(1) : b.phone}`} target="_blank" rel="noreferrer" style={{ background: '#25D366', color: 'white', textAlign: 'center', padding: '10px', borderRadius: '10px', fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                        <MessageCircle size={18} /> {t.whatsapp}
+                                    </a>
+                                    <a href={`tel:${b.phone}`} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', textAlign: 'center', padding: '10px', borderRadius: '10px', fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                        <Phone size={18} /> {t.call}
+                                    </a>
                                 </div>
                             </div>
                         ))}

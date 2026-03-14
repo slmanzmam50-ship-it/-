@@ -46,6 +46,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         address: '',
         phone: '',
         mapUrl: '',
+        managerName: '',
     });
     const [mapInput, setMapInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -410,6 +411,12 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>العنوان التفصيلي</label>
                         <input required type="text" name="address" value={formData.address} onChange={handleChange}
                             style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>اسم المسؤول</label>
+                        <input type="text" name="managerName" value={formData.managerName || ''} onChange={handleChange}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} placeholder="أدخل اسم المسؤول عن الفرع..." />
                     </div>
 
                     <button type="submit" style={{

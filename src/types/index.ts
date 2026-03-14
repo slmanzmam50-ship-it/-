@@ -20,6 +20,7 @@ export interface Branch {
     mapUrl?: string; // Original Google Maps link or source
     maxCapacity?: number; 
     actualLoad?: number;  
+    managerName?: string;
 }
 
 export interface NavigationIntent {

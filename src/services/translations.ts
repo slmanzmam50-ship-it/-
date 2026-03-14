@@ -26,6 +26,7 @@ export const translations = {
         working_hours: "ساعات العمل",
         address: "العنوان",
         loading: "جاري التحميل...",
+        manager_name: "اسم المسؤول",
     },
     en: {
         title: "Salman Zamam Al-Khalidi Service Centers",
@@ -53,6 +54,7 @@ export const translations = {
         working_hours: "Working Hours",
         address: "Address",
         loading: "Loading...",
+        manager_name: "Branch Manager",
     }
 };
 
