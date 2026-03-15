@@ -222,10 +222,11 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
             animation: 'fadeIn 0.3s ease-out'
         }}>
-            <div className="glass" style={{
-                background: 'var(--surface-color)', padding: '2.5rem', borderRadius: 'var(--radius-xl)',
+            <div className="glass branch-form-modal" style={{
+                background: 'var(--surface-color)', borderRadius: 'var(--radius-xl)',
                 width: '100%', maxWidth: '550px', maxHeight: '92vh', overflowY: 'auto',
-                boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-color)'
+                boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-color)',
+                padding: '2rem'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                     <h2 style={{ margin: 0 }}>{branch ? 'تعديل فرع' : 'إضافة فرع جديد'}</h2>
@@ -342,7 +343,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="admin-stats-grid">
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>التصنيفات (يمكنك اختيار أكثر من واحد)</label>
                             <div style={{ 
@@ -388,7 +389,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="admin-stats-grid">
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>وقت البدء</label>
                             <input required type="time" name="start" value={formData.workingHours.start} onChange={handleChange}

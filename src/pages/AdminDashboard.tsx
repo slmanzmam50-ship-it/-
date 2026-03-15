@@ -128,42 +128,44 @@ const AdminDashboard: React.FC = () => {
 
             {activeTab === 'branches' ? (
                 <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <div className="admin-header-row">
                         <h2>الفروع ({totalBranches})</h2>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
+                        <div className="admin-actions">
                             <div style={{ position: 'relative' }}>
                                 <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }} size={16} />
-                                <input type="text" placeholder="بحث..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ padding: '8px 40px 8px 12px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                <input type="text" placeholder="بحث..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ padding: '8px 40px 8px 12px', borderRadius: '8px', border: '1px solid #ddd', width: '200px' }} />
                             </div>
                             <button onClick={() => setIsFormOpen(true)} style={{ background: 'var(--primary-color)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Plus size={20} /> إضافة فرع
                             </button>
                         </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
-                        <div className="glass" style={{ padding: '1rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>إجمالي الفروع</span><strong>{totalBranches}</strong>
+                    <div className="admin-stats-grid" style={{ marginBottom: '2rem' }}>
+                        <div className="glass" style={{ padding: '1.25rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 600 }}>إجمالي الفروع</span><strong style={{ fontSize: '1.25rem', color: 'var(--primary-color)' }}>{totalBranches}</strong>
                         </div>
-                        <div className="glass" style={{ padding: '1rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>مفتوح الآن</span><strong>{openBranchesCount}</strong>
+                        <div className="glass" style={{ padding: '1.25rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 600 }}>مفتوح الآن</span><strong style={{ fontSize: '1.25rem', color: 'var(--success)' }}>{openBranchesCount}</strong>
                         </div>
                     </div>
                     {isLoading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><Loader2 className="animate-spin" /></div> : (
-                        <div className="glass" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+                        <div className="glass responsive-table-container" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+                            <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                                 <thead style={{ background: '#f8fafc' }}>
                                     <tr><th style={{ padding: '1rem' }}>الاسم</th><th style={{ padding: '1rem' }}>الحالة</th><th style={{ padding: '1rem' }}>إجراءات</th></tr>
                                 </thead>
                                 <tbody>
                                     {filteredBranches.map(b => (
                                         <tr key={b.id} style={{ borderBottom: '1px solid #eee' }}>
-                                            <td style={{ padding: '1rem' }}>{b.name}</td>
+                                            <td style={{ padding: '1rem', fontWeight: 600 }}>{b.name}</td>
                                             <td style={{ padding: '1rem' }}>
-                                                <span style={{ padding: '4px 12px', borderRadius: '20px', background: b.status === 'مفتوح' ? '#dcfce7' : '#fee2e2', color: b.status === 'مفتوح' ? '#166534' : '#991b1b' }}>{b.status}</span>
+                                                <span style={{ padding: '4px 12px', borderRadius: '20px', background: b.status === 'مفتوح' ? '#dcfce7' : '#fee2e2', color: b.status === 'مفتوح' ? '#166534' : '#991b1b', fontSize: '12px', fontWeight: 700 }}>{b.status}</span>
                                             </td>
                                             <td style={{ padding: '1rem' }}>
-                                                <button onClick={() => { setEditingBranch(b); setIsFormOpen(true); }} style={{ background: 'none', border: 'none', color: 'blue', cursor: 'pointer' }}><Edit2 size={18} /></button>
-                                                <button onClick={() => handleDelete(b.id)} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }}><Trash2 size={18} /></button>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button onClick={() => { setEditingBranch(b); setIsFormOpen(true); }} style={{ background: 'rgba(59, 130, 246, 0.1)', border: 'none', color: '#2563eb', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Edit2 size={18} /></button>
+                                                    <button onClick={() => handleDelete(b.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Trash2 size={18} /></button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

@@ -224,7 +224,7 @@ const ClientMap: React.FC = () => {
                 </div>
             </div>
 
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {isLoading ? <SkeletonLoader /> : viewMode === 'map' ? (
                     <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%', zIndex: 1 }} zoomControl={false}>
                         <ChangeView center={mapCenter} zoom={mapZoom} />
@@ -313,7 +313,7 @@ const ClientMap: React.FC = () => {
                 )}
                 
                 {/* Float Locate Me button */}
-                <button onClick={handleLocateMe} style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'var(--accent-orange)', color: 'white', border: 'none', padding: '14px 32px', borderRadius: '35px', fontWeight: 800, fontSize: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button onClick={handleLocateMe} className="locate-me-btn" style={{ position: 'absolute', zIndex: 1000, background: 'var(--accent-orange)', color: 'white', border: 'none', borderRadius: '35px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px', left: '50%', transform: 'translateX(-50%)', bottom: '24px', padding: '14px 32px', fontSize: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.4)' }}>
                     <Navigation size={20} /> {t.locate_me}
                 </button>
             </div>

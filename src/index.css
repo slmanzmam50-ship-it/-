@@ -202,7 +202,40 @@ button {
 }
 
 @media (max-width: 768px) {
-  .branch-directory-header { padding: 1.5rem 1rem; }
-  .branch-directory-header h1 { font-size: 1.4rem; }
-  .search-pill { font-size: 14px; padding: 12px 42px 12px 16px; }
+  .branch-directory-header { padding: 1rem 0.75rem !important; gap: 1rem !important; }
+  .branch-directory-header h1 { font-size: 1.25rem !important; }
+  .search-pill { font-size: 14px !important; padding: 12px 42px 12px 16px !important; }
+  
+  .responsive-table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+  }
+
+  .admin-table {
+    min-width: 600px;
+  }
+
+  .locate-me-btn {
+    bottom: 32px !important;
+    padding: 12px 24px !important;
+    font-size: 14px !important;
+    min-width: 160px;
+  }
+}
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.admin-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
