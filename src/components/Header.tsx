@@ -20,6 +20,32 @@ const Header: React.FC = () => {
         navigate('/login');
     };
 
+    const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+    const [showInstallBtn, setShowInstallBtn] = React.useState(false);
+
+    React.useEffect(() => {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setShowInstallBtn(true);
+        });
+
+        window.addEventListener('appinstalled', () => {
+            setDeferredPrompt(null);
+            setShowInstallBtn(false);
+        });
+    }, []);
+
+    const handleInstall = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            setDeferredPrompt(null);
+            setShowInstallBtn(false);
+        }
+    };
+
     const isAr = lang === 'ar';
 
     return (
@@ -51,6 +77,24 @@ const Header: React.FC = () => {
             </Link>
 
             <nav style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                {showInstallBtn && (
+                    <button 
+                        onClick={handleInstall}
+                        style={{
+                            background: 'var(--success)',
+                            color: 'white',
+                            padding: '4px 10px',
+                            borderRadius: 'var(--radius-sm)',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        {isAr ? 'تثبيت التطبيق' : 'Install App'}
+                    </button>
+                )}
+
                 <button 
                     onClick={toggleLang}
                     style={{
