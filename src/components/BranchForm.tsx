@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Branch, Category } from '../types';
-import { X, Save, MapPin, Search as SearchIcon, ExternalLink, Navigation } from 'lucide-react';
+import { X, Save, MapPin, Search as SearchIcon, ExternalLink, Navigation, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -218,84 +218,83 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
     return (
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 1000,
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(15px)', zIndex: 2000,
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
-            animation: 'fadeIn 0.3s ease-out'
+            animation: 'fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
         }}>
-            <div className="glass branch-form-modal" style={{
-                background: 'var(--surface-color)', borderRadius: 'var(--radius-xl)',
-                width: '100%', maxWidth: '550px', maxHeight: '92vh', overflowY: 'auto',
-                boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-color)',
-                padding: '2rem'
-            }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                    <h2 style={{ margin: 0 }}>{branch ? 'تعديل فرع' : 'إضافة فرع جديد'}</h2>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)' }}>
-                        <X size={24} />
+            <div className="glass branch-form-modal">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>{branch ? 'تعديل فرع' : 'إضافة فرع جديد'}</h2>
+                    <button onClick={onClose} style={{ background: 'var(--bg-color)', border: 'none', color: 'var(--text-secondary)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>اسم الفرع</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>اسم الفرع</label>
                         <input required type="text" name="name" value={formData.name} onChange={handleChange}
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} />
+                            placeholder="مثال: فرع الرياض - حي الياسمين"
+                            style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
                     </div>
 
                     {/* Intelligent Location Selection */}
-                    <div style={{ background: 'var(--bg-color)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <label style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ background: 'var(--bg-color)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                            <label style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem' }}>
                                 <MapPin size={20} color="var(--primary-color)" />
-                                تحديد موقع الفرع (ذكي)
+                                موقع الفرع
                             </label>
                             {formData.mapUrl && (
-                                <a href={formData.mapUrl} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontWeight: 600 }}>
-                                    <ExternalLink size={12} /> معاينة الرابط المحفوظ
+                                <a href={formData.mapUrl} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontWeight: 600 }}>
+                                    <ExternalLink size={14} /> معاينة الرابط
                                 </a>
                             )}
                         </div>
                         
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <div style={{ flex: '1', minWidth: '200px', position: 'relative', display: 'flex', alignItems: 'center' }}>
                                 <div style={{ position: 'absolute', right: '12px', color: 'var(--text-secondary)', pointerEvents: 'none' }}>
                                     <SearchIcon size={18} />
                                 </div>
                                 <input 
                                     type="text" 
-                                    placeholder="ابحث بالاسم أو الصق الرابط/الإحداثيات مباشرة" 
+                                    placeholder="ابحث بالعنوان أو الصق الرابط..." 
                                     value={mapInput} 
                                     onChange={(e) => setMapInput(e.target.value)}
-                                    style={{ width: '100%', padding: '0.75rem 2.5rem 0.75rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)', fontSize: '14px' }} 
+                                    style={{ width: '100%', padding: '0.85rem 2.5rem 0.85rem 0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', fontSize: '14px', outline: 'none' }} 
                                 />
                             </div>
-                            <button 
-                                type="button" 
-                                onClick={() => handleExtractFromLink(false)} 
-                                disabled={isSearching}
-                                style={{ 
-                                    padding: '0 1.2rem', background: 'var(--primary-color)', color: 'white', 
-                                    border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', 
-                                    fontWeight: 'bold', fontSize: '14px', whiteSpace: 'nowrap',
-                                    transition: 'all 0.2s', opacity: isSearching ? 0.7 : 1
-                                }}
-                            >
-                                {isSearching ? 'جاري التحقق..' : 'تحديد'}
-                            </button>
-                            <button 
-                                type="button" 
-                                onClick={handleGetCurrentLocation}
-                                title="استخدم موقعي الحالي"
-                                style={{ 
-                                    padding: '0 0.75rem', background: 'var(--bg-color)', color: 'var(--primary-color)', 
-                                    border: '1px solid var(--primary-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer'
-                                }}
-                            >
-                                <Navigation size={20} />
-                            </button>
+                            <div style={{ display: 'contents' } as any}>
+                                <button 
+                                    type="button" 
+                                    onClick={() => handleExtractFromLink(false)} 
+                                    disabled={isSearching}
+                                    style={{ 
+                                        padding: '0 1.25rem', background: 'var(--primary-color)', color: 'white', 
+                                        border: 'none', borderRadius: '10px', cursor: 'pointer', 
+                                        fontWeight: 'bold', fontSize: '14px', whiteSpace: 'nowrap', minHeight: '45px',
+                                        flex: 1
+                                    }}
+                                >
+                                    {isSearching ? <Loader2 className="animate-spin" size={18} /> : 'تحديد'}
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={handleGetCurrentLocation}
+                                    title="موقعي الحالي"
+                                    style={{ 
+                                        width: '45px', height: '45px', background: 'var(--bg-color)', color: 'var(--primary-color)', 
+                                        border: '1px solid var(--primary-color)', borderRadius: '10px', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                    }}
+                                >
+                                    <Navigation size={20} />
+                                </button>
+                            </div>
                         </div>
 
-                        <div style={{ height: '240px', width: '100%', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '2px solid var(--border-color)', position: 'relative' }}>
+                        <div style={{ height: '220px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border-color)', position: 'relative' }}>
                             <MapContainer 
                                 center={[formData.latitude || 24.7136, formData.longitude || 46.6753]} 
                                 zoom={13} 
@@ -311,8 +310,8 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                     setPosition={(pos) => setFormData(prev => ({...prev, latitude: pos[0], longitude: pos[1]}))} 
                                 />
                             </MapContainer>
-                            <div style={{ position: 'absolute', bottom: '15px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(255,255,255,0.9)', color: 'black', padding: '6px 16px', borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: 'bold', pointerEvents: 'none', boxShadow: 'var(--shadow-md)', border: '1px solid var(--border-color)' }}>
-                                👈 حرك الخريطة أو اضغط لتغيير الموقع بدقة
+                            <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(255,255,255,0.95)', color: 'var(--text-primary)', padding: '6px 14px', borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: 800, whiteSpace: 'nowrap', boxShadow: 'var(--shadow-md)', border: '1px solid var(--border-color)' }}>
+                                حرك الخريطة لتحديد الموقع بدقة
                             </div>
                         </div>
 
@@ -323,108 +322,123 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                 onClick={() => setShowManual(!showManual)}
                                 style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
                             >
-                                {showManual ? 'إخفاء الإحداثيات اليدوية' : 'أدخل الإحداثيات يدوياً (للمتقدمين)'}
+                                {showManual ? 'إخفاء الإحداثيات' : 'أدخل الإحداثيات يدوياً'}
                             </button>
                             
                             {showManual && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
                                     <div>
-                                        <label style={{ fontSize: '11px', display: 'block', marginBottom: '2px' }}>خط العرض</label>
+                                        <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 600 }}>خط العرض</label>
                                         <input type="number" step="any" name="latitude" value={formData.latitude} onChange={handleChange}
-                                            style={{ width: '100%', padding: '0.4rem', fontSize: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
+                                            style={{ width: '100%', padding: '0.5rem', fontSize: '13px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
                                     </div>
                                     <div>
-                                        <label style={{ fontSize: '11px', display: 'block', marginBottom: '2px' }}>خط الطول</label>
+                                        <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px', fontWeight: 600 }}>خط الطول</label>
                                         <input type="number" step="any" name="longitude" value={formData.longitude} onChange={handleChange}
-                                            style={{ width: '100%', padding: '0.4rem', fontSize: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
+                                            style={{ width: '100%', padding: '0.5rem', fontSize: '13px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
                                     </div>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <div className="admin-stats-grid">
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>التصنيفات (يمكنك اختيار أكثر من واحد)</label>
-                            <div style={{ 
-                                display: 'grid', 
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
-                                gap: '0.5rem', 
-                                background: 'var(--bg-color)', 
-                                padding: '1rem', 
-                                borderRadius: 'var(--radius-md)', 
-                                border: '1px solid var(--border-color)',
-                                maxHeight: '150px',
-                                overflowY: 'auto'
-                            }}>
-                                {categories.map(cat => (
-                                    <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={formData.categories.includes(cat.name)}
-                                            onChange={(e) => {
-                                                const newCats = e.target.checked 
-                                                    ? [...formData.categories, cat.name] 
-                                                    : formData.categories.filter(c => c !== cat.name);
-                                                if (newCats.length === 0) {
-                                                    toast.error("يجب اختيار تصنيف واحد على الأقل");
-                                                    return;
-                                                }
-                                                setFormData({ ...formData, categories: newCats });
-                                            }}
-                                            style={{ cursor: 'pointer', accentColor: 'var(--primary-color)' }}
-                                        />
-                                        {cat.name}
-                                    </label>
-                                ))}
-                            </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700, fontSize: '0.9rem' }}>الأقسام</label>
+                        <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
+                            gap: '0.5rem', 
+                            background: 'var(--bg-color)', 
+                            padding: '1rem', 
+                            borderRadius: '12px', 
+                            border: '1px solid var(--border-color)',
+                            maxHeight: '140px',
+                            overflowY: 'auto'
+                        }}>
+                            {categories.map(cat => (
+                                <label key={cat.id} style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '8px', 
+                                    cursor: 'pointer', 
+                                    fontSize: '13px',
+                                    padding: '6px 8px',
+                                    borderRadius: '8px',
+                                    background: formData.categories.includes(cat.name) ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+                                    transition: 'all 0.2s'
+                                }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={formData.categories.includes(cat.name)}
+                                        onChange={(e) => {
+                                            const newCats = e.target.checked 
+                                                ? [...formData.categories, cat.name] 
+                                                : formData.categories.filter(c => c !== cat.name);
+                                            if (newCats.length === 0) {
+                                                toast.error("يجب اختيار قسم واحد على الأقل");
+                                                return;
+                                            }
+                                            setFormData({ ...formData, categories: newCats });
+                                        }}
+                                        style={{ cursor: 'pointer', accentColor: 'var(--primary-color)', width: '16px', height: '16px' }}
+                                    />
+                                    {cat.name}
+                                </label>
+                            ))}
                         </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>الحالة</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>الحالة</label>
                             <select name="status" value={formData.status} onChange={handleChange}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}>
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }}>
                                 <option value="مفتوح">مفتوح</option>
                                 <option value="مغلق">مغلق</option>
                             </select>
                         </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>رقم الهاتف</label>
+                            <input required type="tel" name="phone" value={formData.phone} onChange={handleChange}
+                                placeholder="05xxxxxxxx"
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
+                        </div>
                     </div>
 
-                    <div className="admin-stats-grid">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>وقت البدء</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>وقت البدء</label>
                             <input required type="time" name="start" value={formData.workingHours.start} onChange={handleChange}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} />
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>وقت الإنتهاء</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>وقت الإنتهاء</label>
                             <input required type="time" name="end" value={formData.workingHours.end} onChange={handleChange}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} />
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
                         </div>
                     </div>
 
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>رقم الهاتف</label>
-                        <input required type="text" name="phone" value={formData.phone} onChange={handleChange}
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} />
-                    </div>
-
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>العنوان التفصيلي</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>العنوان بالتفصيل</label>
                         <input required type="text" name="address" value={formData.address} onChange={handleChange}
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} />
+                            placeholder="اسم الشارع، الحي، المدينة"
+                            style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
                     </div>
 
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>اسم المسؤول</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>اسم المسؤول</label>
                         <input type="text" name="managerName" value={formData.managerName || ''} onChange={handleChange}
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} placeholder="أدخل اسم المسؤول عن الفرع..." />
+                            placeholder="أدخل اسم المسؤول عن الفرع"
+                            style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
                     </div>
 
                     <button type="submit" style={{
-                        marginTop: '1rem', padding: '0.75rem', background: 'var(--primary-color)', color: 'white',
-                        border: 'none', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', fontWeight: 700
-                    }}>
-                        <Save size={20} /> حفظ الفرع
+                        marginTop: '0.8rem', padding: '1.1rem', background: 'var(--grad-primary)', color: 'white',
+                        border: 'none', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.6rem', fontWeight: 800,
+                        boxShadow: '0 8px 25px rgba(59, 130, 246, 0.4)', cursor: 'pointer', fontSize: '1.05rem',
+                        transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    }} className="hover-scale">
+                        <Save size={22} /> حفظ بيانات الفرع
                     </button>
                 </form>
             </div>

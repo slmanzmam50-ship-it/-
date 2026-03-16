@@ -11,7 +11,7 @@ import {
 } from '../services/storage';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, Database } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, Database, AlertCircle, FileDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboard: React.FC = () => {
@@ -26,6 +26,15 @@ const AdminDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'branches' | 'categories'>('branches');
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [categoryEditName, setCategoryEditName] = useState('');
+    const [lang, setLang] = useState<'ar' | 'en'>(() => (localStorage.getItem('lang') as 'ar' | 'en') || 'ar');
+
+    useEffect(() => {
+        const checkLang = setInterval(() => {
+            const currentLang = (localStorage.getItem('lang') as 'ar' | 'en') || 'ar';
+            if (currentLang !== lang) setLang(currentLang);
+        }, 500);
+        return () => clearInterval(checkLang);
+    }, [lang]);
 
     const BATCH_DATA = [
       { city: "جيزان", address: "حي الزهور", name: "السيارة الجديدة دنلوب", manager: "علي الكندي", phone: "0555414922", url: "https://maps.app.goo.gl/hHxnKgeDKx9VYKpc9?g_st=aw", lat: 16.8892, lng: 42.5511 },
@@ -110,11 +119,11 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (window.confirm('هل أنت متأكد من حذف هذا الفرع؟')) {
+    const handleDelete = async (id: string, name: string) => {
+        if (window.confirm(lang === 'ar' ? `هل أنت متأكد من حذف فرع "${name}"؟` : `Are you sure you want to delete branch "${name}"?`)) {
             try {
                 await deleteBranch(id);
-                toast.success('تم حذف الفرع بنجاح');
+                toast.success(lang === 'ar' ? 'تم حذف الفرع بنجاح' : 'Branch deleted successfully');
             } catch (error: any) {
                 toast.error('حدث خطأ أثناء الحذف');
             }
@@ -184,17 +193,41 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const handleDeleteCategory = async (id: string) => {
+    const handleExportCSV = () => {
+        const headers = ["Name", "Address", "Phone", "Status", "Manager", "Categories"];
+        const rows = branches.map(b => [
+            b.name,
+            b.address,
+            b.phone,
+            b.status,
+            b.managerName || "",
+            b.categories?.join(" | ") || ""
+        ]);
+        
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `branches_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success(lang === 'ar' ? 'تم تصدير البيانات بنجاح' : 'Data exported successfully');
+    };
+
+    const handleDeleteCategory = async (id: string, name: string) => {
         const category = categories.find(c => c.id === id);
         if (!category) return;
         if (branches.some(b => b.categories?.includes(category.name))) {
-            toast.error('لا يمكن حذف قسم مرتبط بفروع');
+            toast.error(lang === 'ar' ? 'لا يمكن حذف قسم مرتبط بفروع' : 'Cannot delete category linked to branches');
             return;
         }
-        if (window.confirm('حذف القسم؟')) {
+        if (window.confirm(lang === 'ar' ? `هل أنت متأكد من حذف تصنيف "${name}"؟` : `Are you sure you want to delete category "${name}"?`)) {
             try {
                 await deleteCategory(id);
-                toast.success('تم الحذف');
+                toast.success(lang === 'ar' ? 'تم حذف التصنيف بنجاح' : 'Category deleted successfully');
             } catch (error: any) {
                 toast.error('فشل الحذف');
             }
@@ -204,54 +237,218 @@ const AdminDashboard: React.FC = () => {
     const getBranchCountByCategory = (catName: string) => branches.filter(b => b.categories?.includes(catName)).length;
 
     return (
-        <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-                <button onClick={() => setActiveTab('branches')} style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: 'none', background: activeTab === 'branches' ? 'var(--primary-color)' : '#eee', color: activeTab === 'branches' ? 'white' : 'black', cursor: 'pointer', fontWeight: 700 }}>الفروع</button>
-                <button onClick={() => setActiveTab('categories')} style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: 'none', background: activeTab === 'categories' ? 'var(--primary-color)' : '#eee', color: activeTab === 'categories' ? 'white' : 'black', cursor: 'pointer', fontWeight: 700 }}>الأقسام</button>
+        <div className="admin-container">
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem' }}>
+                <button 
+                    onClick={() => setActiveTab('branches')} 
+                    className="tab-button"
+                    style={{ 
+                        padding: '0.75rem 1.5rem', 
+                        borderRadius: '12px', 
+                        border: 'none', 
+                        background: activeTab === 'branches' ? 'var(--primary-color)' : 'var(--bg-color)', 
+                        color: activeTab === 'branches' ? 'white' : 'var(--text-secondary)', 
+                        cursor: 'pointer', 
+                        fontWeight: 700,
+                        flex: activeTab === 'branches' ? 1.2 : 1,
+                        transition: 'all 0.3s ease'
+                    }}
+                >
+                    الفروع
+                </button>
+                <button 
+                    onClick={() => setActiveTab('categories')} 
+                    className="tab-button"
+                    style={{ 
+                        padding: '0.75rem 1.5rem', 
+                        borderRadius: '12px', 
+                        border: 'none', 
+                        background: activeTab === 'categories' ? 'var(--primary-color)' : 'var(--bg-color)', 
+                        color: activeTab === 'categories' ? 'white' : 'var(--text-secondary)', 
+                        cursor: 'pointer', 
+                        fontWeight: 700,
+                        flex: activeTab === 'categories' ? 1.2 : 1,
+                        transition: 'all 0.3s ease'
+                    }}
+                >
+                    الأقسام
+                </button>
             </div>
 
             {activeTab === 'branches' ? (
                 <>
                     <div className="admin-header-row">
-                        <h2>الفروع ({totalBranches})</h2>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>الفروع <span style={{ color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: 500 }}>({totalBranches})</span></h2>
                         <div className="admin-actions">
-                            <div style={{ position: 'relative' }}>
-                                <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }} size={16} />
-                                <input type="text" placeholder="بحث..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ padding: '8px 40px 8px 12px', borderRadius: '8px', border: '1px solid #ddd', width: '200px' }} />
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }} size={16} color="var(--text-secondary)" />
+                                <input 
+                                    type="text" 
+                                    placeholder="بحث في الفروع..." 
+                                    value={searchTerm} 
+                                    onChange={(e) => setSearchTerm(e.target.value)} 
+                                    style={{ 
+                                        padding: '12px 40px 12px 12px', 
+                                        borderRadius: '10px', 
+                                        border: '1px solid var(--border-color)', 
+                                        width: '100%',
+                                        background: 'var(--surface-color)',
+                                        fontSize: '14px'
+                                    }} 
+                                />
                             </div>
-                            <button onClick={handleBatchImport} disabled={isImporting} style={{ background: '#f59e0b', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                {isImporting ? <Loader2 className="animate-spin" size={20} /> : <Database size={20} />} استيراد البيانات
+                            <button 
+                                onClick={handleBatchImport} 
+                                disabled={isImporting} 
+                                style={{ 
+                                    background: 'var(--accent-orange)', 
+                                    color: 'white', 
+                                    padding: '0.85rem 1.25rem', 
+                                    borderRadius: '10px', 
+                                    border: 'none', 
+                                    fontWeight: 700, 
+                                    cursor: 'pointer', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '0.5rem',
+                                    fontSize: '14px'
+                                }}
+                            >
+                                {isImporting ? <Loader2 className="animate-spin" size={18} /> : <Database size={18} />} 
+                                <span className="mobile-hide">استيراد البيانات</span>
+                                {!isImporting && <span style={{ display: 'block' }} className="desktop-hide">استيراد</span>}
                             </button>
-                            <button onClick={() => setIsFormOpen(true)} style={{ background: 'var(--primary-color)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Plus size={20} /> إضافة فرع
+                            <button 
+                                onClick={handleExportCSV} 
+                                style={{ 
+                                    background: 'var(--surface-color)', 
+                                    color: 'var(--text-primary)', 
+                                    padding: '0.85rem 1.25rem', 
+                                    borderRadius: '10px', 
+                                    border: '1px solid var(--border-color)', 
+                                    fontWeight: 700, 
+                                    cursor: 'pointer', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '0.5rem',
+                                    fontSize: '14px'
+                                }}
+                            >
+                                <FileDown size={18} />
+                                <span className="mobile-hide">{lang === 'ar' ? 'تصدير' : 'Export'}</span>
+                            </button>
+                            <button 
+                                onClick={() => setIsFormOpen(true)} 
+                                style={{ 
+                                    background: 'var(--primary-color)', 
+                                    color: 'white', 
+                                    padding: '0.85rem 1.25rem', 
+                                    borderRadius: '10px', 
+                                    border: 'none', 
+                                    fontWeight: 700, 
+                                    cursor: 'pointer', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '0.5rem',
+                                    fontSize: '14px'
+                                }}
+                            >
+                                <Plus size={18} /> 
+                                <span>إضافة فرع</span>
                             </button>
                         </div>
                     </div>
-                    <div className="admin-stats-grid" style={{ marginBottom: '2rem' }}>
-                        <div className="glass" style={{ padding: '1.25rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontWeight: 600 }}>إجمالي الفروع</span><strong style={{ fontSize: '1.25rem', color: 'var(--primary-color)' }}>{totalBranches}</strong>
+
+                    <div className="admin-stats-grid">
+                        <div className="glass admin-stats-card hover-scale tap-effect">
+                            <div>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '4px' }}>إجمالي الفروع</p>
+                                <strong style={{ fontSize: '1.5rem', color: 'var(--primary-color)' }}>{totalBranches}</strong>
+                            </div>
+                            <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '10px', borderRadius: '12px' }}>
+                                <Database size={24} color="var(--primary-color)" />
+                            </div>
                         </div>
-                        <div className="glass" style={{ padding: '1.25rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontWeight: 600 }}>مفتوح الآن</span><strong style={{ fontSize: '1.25rem', color: 'var(--success)' }}>{openBranchesCount}</strong>
+                        <div className="glass admin-stats-card hover-scale tap-effect">
+                            <div>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '4px' }}>مفتوح الآن</p>
+                                <strong style={{ fontSize: '1.5rem', color: 'var(--success)' }}>{openBranchesCount}</strong>
+                            </div>
+                            <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px', borderRadius: '12px' }}>
+                                <Check size={24} color="var(--success)" />
+                            </div>
                         </div>
                     </div>
-                    {isLoading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><Loader2 className="animate-spin" /></div> : (
-                        <div className="glass responsive-table-container" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-                            <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
-                                <thead style={{ background: '#f8fafc' }}>
-                                    <tr><th style={{ padding: '1rem' }}>الاسم</th><th style={{ padding: '1rem' }}>الحالة</th><th style={{ padding: '1rem' }}>إجراءات</th></tr>
+
+                    {isLoading ? (
+                        <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="glass" style={{ height: '80px', display: 'flex', alignItems: 'center', padding: '0 1.5rem' }}>
+                                    <div className="skeleton skeleton-title" style={{ width: '30%', marginBottom: 0 }}></div>
+                                    <div className="skeleton skeleton-text" style={{ width: '40%', marginBottom: 0, marginInlineStart: 'auto' }}></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="responsive-table-container glass">
+                            <table className="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>اسم الفرع</th>
+                                        <th className="mobile-hide">العنوان</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredBranches.map(b => (
-                                        <tr key={b.id} style={{ borderBottom: '1px solid #eee' }}>
-                                            <td style={{ padding: '1rem', fontWeight: 600 }}>{b.name}</td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <span style={{ padding: '4px 12px', borderRadius: '20px', background: b.status === 'مفتوح' ? '#dcfce7' : '#fee2e2', color: b.status === 'مفتوح' ? '#166534' : '#991b1b', fontSize: '12px', fontWeight: 700 }}>{b.status}</span>
+                                    {filteredBranches.length === 0 ? (
+                                        <tr className="animate-fade-in">
+                                            <td colSpan={4} style={{ textAlign: 'center', padding: '3.5rem' }}>
+                                                <div className="empty-state-container" style={{ padding: 0 }}>
+                                                    <AlertCircle className="empty-state-icon" style={{ width: 40, height: 40 }} />
+                                                    <div className="empty-state-title" style={{ fontSize: '1.1rem' }}>
+                                                        {lang === 'ar' ? 'لا توجد فروع مطابقة' : 'No matching branches'}
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button onClick={() => { setEditingBranch(b); setIsFormOpen(true); }} style={{ background: 'rgba(59, 130, 246, 0.1)', border: 'none', color: '#2563eb', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Edit2 size={18} /></button>
-                                                    <button onClick={() => handleDelete(b.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}><Trash2 size={18} /></button>
+                                        </tr>
+                                    ) : filteredBranches.map(b => (
+                                        <tr key={b.id} className="animate-fade-in">
+                                            <td>
+                                                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{b.name}</div>
+                                                <div style={{ display: 'block' }} className="desktop-hide">
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{b.address}</span>
+                                                </div>
+                                            </td>
+                                            <td className="mobile-hide" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '250px' }}>{b.address}</td>
+                                            <td>
+                                                <span style={{ 
+                                                    padding: '4px 10px', 
+                                                    borderRadius: '8px', 
+                                                    background: b.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                                                    color: b.status === 'مفتوح' ? 'var(--success)' : 'var(--error)', 
+                                                    fontSize: '0.75rem', 
+                                                    fontWeight: 800 
+                                                }}>
+                                                    {b.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ textAlign: 'left' }}>
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                    <button 
+                                                        onClick={() => { setEditingBranch(b); setIsFormOpen(true); }} 
+                                                        style={{ background: 'rgba(59, 130, 246, 0.1)', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}
+                                                        title="تعديل"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDelete(b.id, b.name)} 
+                                                        style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '8px', borderRadius: '8px' }}
+                                                        title="حذف"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -262,34 +459,81 @@ const AdminDashboard: React.FC = () => {
                     )}
                 </>
             ) : (
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: '12px' }}>
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-                        <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="اسم القسم الجديد..." style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
-                        <button onClick={handleAddCategory} disabled={isAddingCategory} style={{ background: '#10b981', color: 'white', padding: '0 1.5rem', borderRadius: '8px', border: 'none', fontWeight: 700, cursor: 'pointer' }}>إضافة</button>
+                <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '2rem' }}>
+                        <input 
+                            type="text" 
+                            value={newCategoryName} 
+                            onChange={(e) => setNewCategoryName(e.target.value)} 
+                            placeholder="اسم القسم الجديد (مثلاً: كفرات)" 
+                            style={{ flex: 1, minWidth: '200px', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }} 
+                        />
+                        <button 
+                            onClick={handleAddCategory} 
+                            disabled={isAddingCategory} 
+                            style={{ background: 'var(--success)', color: 'white', padding: '0 2rem', height: '48px', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer', minWidth: '100px' }}
+                        >
+                            {isAddingCategory ? <Loader2 className="animate-spin" size={20} /> : 'إضافة'}
+                        </button>
                     </div>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
-                        <thead><tr><th style={{ padding: '1rem' }}>القسم</th><th style={{ padding: '1rem' }}>الفروع</th><th style={{ padding: '1rem' }}>إجراءات</th></tr></thead>
-                        <tbody>
-                            {categories.map(c => (
-                                <tr key={c.id} style={{ borderBottom: '1px solid #eee' }}>
-                                    <td style={{ padding: '1rem' }}>
-                                        {editingCategoryId === c.id ? (
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                <input value={categoryEditName} onChange={e => setCategoryEditName(e.target.value)} style={{ padding: '4px' }} />
-                                                <button onClick={() => handleUpdateCategory(c.id)} style={{ border: 'none', background: 'none', color: 'green', cursor: 'pointer' }}><Check size={16} /></button>
-                                                <button onClick={() => setEditingCategoryId(null)} style={{ border: 'none', background: 'none', color: 'red', cursor: 'pointer' }}><CloseIcon size={16} /></button>
-                                            </div>
-                                        ) : c.name}
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>{getBranchCountByCategory(c.name)}</td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <button onClick={() => { setEditingCategoryId(c.id); setCategoryEditName(c.name); }} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer' }}><Edit2 size={16} /></button>
-                                        <button onClick={() => handleDeleteCategory(c.id)} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }}><Trash2 size={16} /></button>
-                                    </td>
+                    
+                    <div className="responsive-table-container">
+                        <table className="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>اسم القسم</th>
+                                    <th>عدد الفروع</th>
+                                    <th>الإجراءات</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {categories.length === 0 ? (
+                                    <tr className="animate-fade-in">
+                                        <td colSpan={3} style={{ textAlign: 'center', padding: '3rem' }}>
+                                            <div className="empty-state-container" style={{ padding: 0 }}>
+                                                <AlertCircle className="empty-state-icon" style={{ width: 40, height: 40 }} />
+                                                <div className="empty-state-title" style={{ fontSize: '1rem' }}>
+                                                    {lang === 'ar' ? 'لا توجد تصنيفات حالياً' : 'No categories yet'}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : categories.map(c => (
+                                    <tr key={c.id} className="animate-fade-in">
+                                        <td>
+                                            {editingCategoryId === c.id ? (
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <input value={categoryEditName} onChange={e => setCategoryEditName(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--primary-color)', outline: 'none' }} />
+                                                    <button onClick={() => handleUpdateCategory(c.id)} style={{ border: 'none', background: 'var(--success)', color: 'white', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}><Check size={16} /></button>
+                                                    <button onClick={() => setEditingCategoryId(null)} style={{ border: 'none', background: 'var(--error)', color: 'white', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}><CloseIcon size={16} /></button>
+                                                </div>
+                                            ) : (
+                                                <div style={{ fontWeight: 600 }}>{c.name}</div>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <span style={{ background: 'var(--bg-color)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid var(--border-color)' }}>
+                                                {getBranchCountByCategory(c.name)} فرع
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button onClick={() => { setEditingCategoryId(c.id); setCategoryEditName(c.name); }} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '4px' }}><Edit2 size={18} /></button>
+                                                <button onClick={() => handleDeleteCategory(c.id, c.name)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '4px' }}><Trash2 size={18} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {categories.length === 0 && (
+                                    <tr>
+                                        <td colSpan={3} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                                            لا توجد أقسام مضافة بعد
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
             {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} />}

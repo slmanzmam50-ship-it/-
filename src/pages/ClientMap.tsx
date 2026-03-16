@@ -6,7 +6,7 @@ import type { Language } from '../services/translations';
 import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories } from '../services/storage';
 import { translations } from '../services/translations';
 import type { Branch, Category } from '../types';
-import { Navigation, Phone, MessageCircle, Map as MapIcon, List, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin } from 'lucide-react';
+import { Navigation, MessageCircle, Map as MapIcon, List, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Fix typical React Leaflet icon issue
@@ -48,6 +48,14 @@ const getCategoryIcon = (name: string) => {
     if (n.includes('صيانة') || n.includes('Service')) return <Car size={12} />;
     return <Layers size={12} />;
 };
+
+const EmptyState: React.FC<{ message: string; subMessage?: string }> = ({ message, subMessage }) => (
+    <div className="empty-state-container animate-fade-in">
+        <AlertCircle className="empty-state-icon" />
+        <div className="empty-state-title">{message}</div>
+        {subMessage && <div className="empty-state-desc">{subMessage}</div>}
+    </div>
+);
 
 const ChangeView = ({ center, zoom }: { center: [number, number], zoom: number }) => {
     const map = useMap();
@@ -103,17 +111,6 @@ const ClientMap: React.FC = () => {
         return () => unsubs.forEach(f => f());
     }, [branches]);
 
-    const getCongestionLevel = (branch: Branch, activeIntents: number) => {
-        const isOpen = branch.status === 'مفتوح';
-        if (!isOpen) return { label: t.closed + ' 🔴', color: 'var(--error)' };
-        const capacity = branch.maxCapacity || 10;
-        const currentLoad = branch.actualLoad || 0;
-        const loadScore = currentLoad + (activeIntents * 0.3);
-        const percentage = loadScore / capacity;
-        if (percentage >= 0.75) return { label: t.congestion_high + ' 🟠', color: 'var(--warning)' };
-        if (percentage >= 0.40) return { label: t.congestion_medium + ' 🟡', color: '#fbbf24' }; 
-        return { label: t.congestion_low + ' 🟢', color: 'var(--success)' };
-    };
 
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
         const R = 6371;
@@ -167,11 +164,55 @@ const ClientMap: React.FC = () => {
         }
     };
 
+    const handleShare = async (branch: Branch) => {
+        const shareData = {
+            title: branch.name,
+            text: `${branch.name}\n${branch.address}\n${lang === 'ar' ? 'سلمان زمام الخالدي لخدمة السيارات' : 'Salman Al-Khalidi Auto Service'}`,
+            url: `https://www.google.com/maps/search/?api=1&query=${branch.latitude},${branch.longitude}`
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                console.log('Share failed', err);
+            }
+        } else {
+            // Fallback: Copy to clipboard
+            navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+            toast.success(lang === 'ar' ? 'تم نسخ تفاصيل الفرع' : 'Branch details copied');
+        }
+    };
+
     const filteredBranches = branches.filter(branch => {
         const matchesSearch = branch.name.toLowerCase().includes(searchQuery.toLowerCase()) || branch.address.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = categoryFilter === 'all' || branch.categories?.includes(categoryFilter);
         return matchesSearch && matchesCategory;
     });
+
+    const getCongestionLevel = (branchId: string) => {
+        const count = congestionData[branchId] || 0;
+        if (count < 2) return { text: lang === 'ar' ? 'هادئ' : 'Quiet', class: 'congestion-quiet', color: 'var(--success)' };
+        if (count < 5) return { text: lang === 'ar' ? 'متوسط' : 'Busy', class: 'congestion-busy', color: '#fbbf24' };
+        return { text: lang === 'ar' ? 'مزدحم' : 'Crowded', class: 'congestion-crowded', color: 'var(--error)' };
+    };
+
+    if (isLoading) {
+        return (
+            <div style={{ padding: '0 15px', marginTop: '20px' }}>
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="glass" style={{ marginBottom: '15px', padding: '15px', borderRadius: '15px' }}>
+                        <div className="skeleton skeleton-title" style={{ width: '40%' }}></div>
+                        <div className="skeleton skeleton-text" style={{ width: '80%' }}></div>
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                            <div className="skeleton-circle skeleton"></div>
+                            <div className="skeleton-circle skeleton"></div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
     return (
         <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
@@ -240,9 +281,9 @@ const ClientMap: React.FC = () => {
                                     <div style={{ minWidth: '220px', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
                                         <h3 style={{ margin: '0 0 8px', color: 'var(--primary-color)', fontSize: '18px' }}>{b.name}</h3>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                            <span style={{ fontSize: '14px', fontWeight: 800, color: getCongestionLevel(b, congestionData[b.id] || 0).color }}>
-                                                {getCongestionLevel(b, congestionData[b.id] || 0).label}
-                                            </span>
+                                            <div className={`congestion-badge ${getCongestionLevel(b.id).class}`}>
+                                                <BarChart2 size={12} /> {getCongestionLevel(b.id).text}
+                                            </div>
                                             <span style={{ fontSize: '12px', opacity: 0.7 }}>{b.workingHours.start} - {b.workingHours.end}</span>
                                         </div>
                                         <p style={{ fontSize: '13px', margin: '0 0 8px', opacity: 0.8 }}>{b.address}</p>
@@ -259,15 +300,15 @@ const ClientMap: React.FC = () => {
                                             ))}
                                         </div>
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                                            <button onClick={() => handleNavigate(b)} style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 4px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                                <Navigation size={14} /> {t.directions}
+                                            <button onClick={() => handleNavigate(b)} className="hover-scale tap-effect" style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 4px', borderRadius: 'var(--radius-md)', fontSize: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                <Navigation size={12} /> {t.directions}
                                             </button>
-                                            <a href={`https://wa.me/966${b.phone.startsWith('0') ? b.phone.substring(1) : b.phone}`} target="_blank" rel="noreferrer" style={{ background: '#25D366', color: 'white', textDecoration: 'none', padding: '8px 4px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                                <MessageCircle size={14} /> {t.whatsapp}
+                                            <a href={`https://wa.me/966${b.phone.startsWith('0') ? b.phone.substring(1) : b.phone}`} target="_blank" rel="noreferrer" style={{ background: '#25D366', color: 'white', textDecoration: 'none', padding: '8px 4px', borderRadius: 'var(--radius-md)', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                <MessageCircle size={12} /> {t.whatsapp}
                                             </a>
-                                            <a href={`tel:${b.phone}`} style={{ background: 'rgba(0,0,0,0.05)', color: 'black', textDecoration: 'none', padding: '8px 4px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                                <Phone size={14} /> {t.call}
-                                            </a>
+                                            <button onClick={() => handleShare(b)} className="hover-scale tap-effect" style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', padding: '8px 4px', borderRadius: 'var(--radius-md)', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                <Share2 size={12} /> {lang === 'ar' ? 'مشاركة' : 'Share'}
+                                            </button>
                                         </div>
                                     </div>
                                 </Popup>
@@ -276,11 +317,18 @@ const ClientMap: React.FC = () => {
                     </MapContainer>
                 ) : (
                     <div style={{ padding: '1rem', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {filteredBranches.map(b => (
+                        {filteredBranches.length === 0 ? (
+                            <EmptyState 
+                                message={lang === 'ar' ? 'لا توجد فروع مطابقة' : 'No matching branches'} 
+                                subMessage={lang === 'ar' ? 'جرب البحث بكلمات مختلفة أو تغيير التصفية' : 'Try searching with different words or changing filters'} 
+                            />
+                        ) : filteredBranches.map(b => (
                             <div key={b.id} className="glass" style={{ padding: '1.25rem', borderRadius: '15px', background: 'var(--navy-surface)', color: 'white' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
                                     <h3 style={{ margin: 0 }}>{b.name}</h3>
-                                    <span style={{ color: getCongestionLevel(b, congestionData[b.id] || 0).color, fontWeight: 800 }}>{getCongestionLevel(b, congestionData[b.id] || 0).label}</span>
+                                    <div className={`congestion-badge ${getCongestionLevel(b.id).class}`}>
+                                        <BarChart2 size={12} /> {getCongestionLevel(b.id).text}
+                                    </div>
                                 </div>
                                 <p style={{ opacity: 0.7, fontSize: '14px', marginBottom: '8px' }}>{b.address}</p>
                                 {b.managerName && (
@@ -303,9 +351,9 @@ const ClientMap: React.FC = () => {
                                     <a href={`https://wa.me/966${b.phone.startsWith('0') ? b.phone.substring(1) : b.phone}`} target="_blank" rel="noreferrer" style={{ background: '#25D366', color: 'white', textAlign: 'center', padding: '10px', borderRadius: '10px', fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                         <MessageCircle size={18} /> {t.whatsapp}
                                     </a>
-                                    <a href={`tel:${b.phone}`} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', textAlign: 'center', padding: '10px', borderRadius: '10px', fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                        <Phone size={18} /> {t.call}
-                                    </a>
+                                    <button onClick={() => handleShare(b)} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                        <Share2 size={18} /> {lang === 'ar' ? 'مشاركة' : 'Share'}
+                                    </button>
                                 </div>
                             </div>
                         ))}
@@ -313,7 +361,7 @@ const ClientMap: React.FC = () => {
                 )}
                 
                 {/* Float Locate Me button */}
-                <button onClick={handleLocateMe} className="locate-me-btn" style={{ position: 'absolute', zIndex: 1000, background: 'var(--accent-orange)', color: 'white', border: 'none', borderRadius: '35px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px', left: '50%', transform: 'translateX(-50%)', bottom: '24px', padding: '14px 32px', fontSize: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.4)' }}>
+                <button onClick={handleLocateMe} className="locate-me-btn hover-scale tap-effect" style={{ position: 'absolute', zIndex: 1000, background: 'var(--accent-orange)', color: 'white', border: 'none', borderRadius: '35px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px', left: '50%', transform: 'translateX(-50%)', bottom: '24px', padding: '14px 32px', fontSize: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.4)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
                     <Navigation size={20} /> {t.locate_me}
                 </button>
             </div>

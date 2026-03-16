@@ -7,10 +7,13 @@ import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
 
+import InstallPWA from './components/InstallPWA';
+
 function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-center" reverseOrder={false} />
+      <InstallPWA />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<ClientMap />} />
