@@ -109,6 +109,17 @@ const AdminDashboard: React.FC = () => {
                 await updateBranch(branchData as Branch);
                 toast.success('تم تعديل الفرع بنجاح ✅');
             } else {
+                // Check for duplicates
+                const isDuplicate = branches.some(b => 
+                    b.name.trim().toLowerCase() === branchData.name.trim().toLowerCase() ||
+                    (Math.abs(b.latitude - branchData.latitude) < 0.0001 && Math.abs(b.longitude - branchData.longitude) < 0.0001)
+                );
+
+                if (isDuplicate) {
+                    toast.error(lang === 'ar' ? 'هذا الفرع موجود مسبقاً (تطابق في الاسم أو الموقع) ❌' : 'This branch already exists ❌');
+                    return; // Stop execution, don't close form
+                }
+
                 await addBranch(branchData);
                 toast.success('تم إضافة الفرع بنجاح ✅');
             }

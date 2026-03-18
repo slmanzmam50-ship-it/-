@@ -298,12 +298,14 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                             <MapContainer 
                                 center={[formData.latitude || 24.7136, formData.longitude || 46.6753]} 
                                 zoom={13} 
+                                maxZoom={20}
                                 style={{ height: '100%', width: '100%' }}
                             >
                                 <ChangeView center={[formData.latitude || 24.7136, formData.longitude || 46.6753]} />
                                 <TileLayer
                                     attribution='&copy; Google Maps'
                                     url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ar"
+                                    maxZoom={20}
                                 />
                                 <LocationMarker 
                                     position={[formData.latitude || 24.7136, formData.longitude || 46.6753]} 

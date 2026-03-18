@@ -299,7 +299,7 @@ button {
   }
 
   .admin-table {
-    min-width: 600px;
+    width: 100%;
   }
 
   .locate-me-btn {
@@ -323,4 +323,207 @@ button {
   flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+/* --- App Header & Navigation --- */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.app-logo-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.app-logo-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-color);
+}
+
+.app-logo-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.header-nav {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.theme-toggle-btn {
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.lang-toggle-btn {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+:root.dark .lang-toggle-btn {
+  color: #60a5fa;
+  border-color: #3b82f6;
+}
+
+.header-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.logout-btn {
+  background: transparent;
+  border: none;
+  color: var(--error);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0.75rem 1rem;
+  }
+  .app-logo-text {
+    font-size: 0.95rem;
+  }
+  .header-nav {
+    gap: 0.5rem;
+  }
+  .theme-toggle-btn {
+    padding: 10px;
+  }
+  .lang-toggle-btn {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+}
+
+/* --- PWA Banner --- */
+.pwa-banner-wrapper {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  width: 90%;
+  max-width: 400px;
+  animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pwa-banner-content {
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  background: var(--surface-color);
+}
+
+.pwa-banner-icon {
+  min-width: 42px;
+  height: 42px;
+  background: var(--grad-primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.pwa-banner-text {
+  flex: 1;
+}
+
+.pwa-banner-text h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.pwa-banner-text p {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.pwa-banner-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pwa-btn-install {
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.pwa-btn-dismiss {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.pwa-btn-close {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--surface-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 768px) {
+  .pwa-banner-wrapper {
+    bottom: 10px;
+    width: 95%;
+  }
 }

@@ -267,9 +267,13 @@ const ClientMap: React.FC = () => {
 
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {isLoading ? <SkeletonLoader /> : viewMode === 'map' ? (
-                    <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%', zIndex: 1 }} zoomControl={false}>
+                    <MapContainer center={mapCenter} zoom={mapZoom} maxZoom={20} style={{ height: '100%', width: '100%', zIndex: 1 }} zoomControl={false}>
                         <ChangeView center={mapCenter} zoom={mapZoom} />
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <TileLayer 
+                            attribution='&copy; Google Maps'
+                            url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ar"
+                            maxZoom={20}
+                        />
                         {userLoc && (
                             <Marker position={userLoc}>
                                 <Popup>{lang === 'ar' ? 'موقعك الحالي' : 'Your Location'}</Popup>

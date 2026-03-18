@@ -42,45 +42,23 @@ const Header: React.FC = () => {
     const isAr = lang === 'ar';
 
     return (
-        <header className="glass" style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0.75rem 1.5rem',
-            position: 'sticky',
-            top: 0,
-            zIndex: 1050,
-            borderBottom: '1px solid var(--border-color)',
-        }}>
-            <Link to={location.pathname === '/admin' ? '/' : '/admin'} style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+        <header className="glass app-header">
+            <Link to={location.pathname === '/admin' ? '/' : '/admin'} className="app-logo-link">
                 <img 
                     src="/logo.png" 
                     alt="Logo" 
-                    style={{ 
-                        width: '36px', 
-                        height: '36px', 
-                        borderRadius: '50%', 
-                        objectFit: 'cover',
-                        border: '2px solid var(--primary-color)'
-                    }} 
+                    className="app-logo-img"
                 />
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                <h2 className="app-logo-text">
                     {isAr ? 'سلمان زمام الخالدي' : 'Salman Al-Khalidi'}
                 </h2>
             </Link>
 
-            <nav style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <nav className="header-nav">
 
                 <button 
                     onClick={toggleTheme}
-                    style={{
-                        background: 'rgba(59, 130, 246, 0.05)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)',
-                        padding: '6px',
-                        borderRadius: '10px',
-                        cursor: 'pointer'
-                    }}
+                    className="theme-toggle-btn"
                     title={isAr ? 'تبديل المظهر' : 'Toggle Theme'}
                 >
                     {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -88,26 +66,17 @@ const Header: React.FC = () => {
 
                 <button 
                     onClick={toggleLang}
-                    style={{
-                        background: 'rgba(59, 130, 246, 0.1)',
-                        border: '1px solid var(--primary-color)',
-                        color: 'var(--primary-color)',
-                        padding: '6px 12px',
-                        borderRadius: '10px',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        cursor: 'pointer'
-                    }}
+                    className="lang-toggle-btn"
                 >
                     {isAr ? 'English' : 'عربي'}
                 </button>
 
                 {location.pathname === '/admin' && (
                     <>
-                        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '14px', color: 'var(--primary-color)', textDecoration: 'none' }}>
+                        <Link to="/" className="header-link">
                             <Map size={18} /> {isAr ? 'الخريطة' : 'Map'}
                         </Link>
-                        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '14px', background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer' }}>
+                        <button onClick={handleLogout} className="logout-btn">
                             <LogOut size={18} /> {isAr ? 'خروج' : 'Logout'}
                         </button>
                     </>
