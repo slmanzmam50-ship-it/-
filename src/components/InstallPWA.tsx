@@ -45,26 +45,28 @@ const InstallPWA: React.FC = () => {
     const isAr = localStorage.getItem('lang') !== 'en';
 
     return (
-        <div className="pwa-banner-wrapper">
-            <div className="glass pwa-banner-content">
-                <div className="pwa-banner-icon">
-                    <Smartphone color="white" size={24} />
-                </div>
-                <div className="pwa-banner-text">
-                    <h4>{isAr ? 'سلمان زمام الخالدي' : 'Salman Al-Khalidi'}</h4>
-                    <p>{isAr ? 'ثبت التطبيق لتجربة أسرع وأفضل' : 'Install for a better experience'}</p>
-                </div>
-                <div className="pwa-banner-actions">
-                    <button className="pwa-btn-install" onClick={handleInstall}>
-                        {isAr ? 'تثبيت' : 'Install'}
+        <div className="pwa-overlay">
+            <div className="pwa-banner-wrapper">
+                <div className="glass pwa-banner-content">
+                    <div className="pwa-banner-icon">
+                        <Smartphone color="white" size={24} />
+                    </div>
+                    <div className="pwa-banner-text">
+                        <h4>{isAr ? 'سلمان زمام الخالدي' : 'Salman Al-Khalidi'}</h4>
+                        <p>{isAr ? 'ثبت التطبيق لتجربة أسرع وأفضل' : 'Install for a better experience'}</p>
+                    </div>
+                    <div className="pwa-banner-actions">
+                        <button className="pwa-btn-dismiss" onClick={handleDismiss}>
+                            {isAr ? 'تخطي' : 'Dismiss'}
+                        </button>
+                        <button className="pwa-btn-install" onClick={handleInstall}>
+                            {isAr ? 'تثبيت' : 'Install'}
+                        </button>
+                    </div>
+                    <button className="pwa-btn-close" onClick={handleDismiss}>
+                        <X size={18} />
                     </button>
-                    <button className="pwa-btn-dismiss" onClick={handleDismiss}>
-                        {isAr ? 'تخطي' : 'Dismiss'}
-                    </button>
                 </div>
-                <button className="pwa-btn-close" onClick={handleDismiss}>
-                    <X size={14} />
-                </button>
             </div>
         </div>
     );

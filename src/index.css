@@ -449,24 +449,30 @@ button {
 /* --- PWA Banner --- */
 .pwa-banner-wrapper {
   position: fixed;
-  bottom: 20px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   z-index: 9999;
   width: 90%;
   max-width: 400px;
-  animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .pwa-banner-content {
-  padding: 1rem;
-  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border-radius: var(--radius-xl);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  text-align: center;
+  gap: 16px;
   position: relative;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-  background: var(--surface-color);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  background: rgba(30, 41, 59, 0.85); /* Translucent background */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
 }
 
 .pwa-banner-icon {
@@ -485,63 +491,87 @@ button {
 }
 
 .pwa-banner-text h4 {
-  margin: 0;
-  font-size: 0.95rem;
+  margin: 0 0 8px;
+  font-size: 1.1rem;
   font-weight: 800;
-  color: var(--text-primary);
+  color: white;
 }
 
 .pwa-banner-text p {
-  margin: 2px 0 0;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
   font-weight: 500;
 }
 
 .pwa-banner-actions {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  width: 100%;
+  gap: 12px;
+  margin-top: 8px;
 }
 
 .pwa-btn-install {
-  background: var(--primary-color);
+  flex: 1;
+  background: var(--grad-primary);
   color: #fff;
   border: none;
-  padding: 6px 14px;
+  padding: 12px;
   border-radius: var(--radius-md);
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
 .pwa-btn-dismiss {
-  background: transparent;
-  color: var(--text-secondary);
-  border: none;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-decoration: underline;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .pwa-btn-close {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  background: var(--surface-color);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  width: 24px;
-  height: 24px;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+
+.pwa-btn-close:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 @media (max-width: 768px) {
   .pwa-banner-wrapper {
-    bottom: 10px;
-    width: 95%;
+    width: 85%;
   }
+}
+
+/* Background overlay for PWA modal */
+.pwa-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9998;
+  animation: fadeIn 0.3s ease-out forwards;
 }
