@@ -164,6 +164,25 @@ const ClientMap: React.FC = () => {
         }
     };
 
+    const handleShareApp = async () => {
+        const shareData = {
+            title: 'Salman Zamam Al-Khalidi',
+            text: lang === 'ar' ? 'اكتشف أقرب فروع صيانة السيارات والملاحة إليها' : 'Discover the nearest auto service branches and navigate to them',
+            url: window.location.origin
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                console.log('Share failed', err);
+            }
+        } else {
+            navigator.clipboard.writeText(shareData.url);
+            toast.success(lang === 'ar' ? 'تم نسخ رابط التطبيق' : 'App link copied');
+        }
+    };
+
     const handleShare = async (branch: Branch) => {
         const shareData = {
             title: branch.name,
@@ -218,9 +237,18 @@ const ClientMap: React.FC = () => {
         <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
             {/* Dark Header Matching ScreenShot */}
             <div className="branch-directory-header">
-                <h1><MapPin size={24} color="var(--accent-orange)" /> {lang === 'ar' ? 'دليل الفروع' : 'Branch Directory'}</h1>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h1 style={{ margin: 0, fontSize: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={24} color="var(--accent-orange)" /> {lang === 'ar' ? 'دليل الفروع' : 'Branch Directory'}</h1>
+                    <button 
+                        onClick={handleShareApp} 
+                        className="hover-scale tap-effect"
+                        style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                        <Share2 size={16} /> {lang === 'ar' ? 'مشاركه' : 'Share'}
+                    </button>
+                </div>
                 
-                <div className="search-pill-container">
+                <div className="search-pill-container" style={{ marginTop: 0 }}>
                     <Search style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
                     <input 
                         className="search-pill"
