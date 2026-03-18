@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { Branch, Category } from '../types';
-import { X, Save, MapPin, Search as SearchIcon, ExternalLink, Navigation, Loader2 } from 'lucide-react';
+import { X, Save, MapPin, Search as SearchIcon, ExternalLink, Navigation, Loader2, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { uploadImage } from '../services/storage';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -51,6 +52,8 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
     const [mapInput, setMapInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [showManual, setShowManual] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (branch) {
@@ -199,19 +202,30 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         return true;
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!validateForm()) return;
-
+        setIsSaving(true);
         try {
+            let finalImageUrl = formData.imageUrl;
+            if (imageFile) {
+                toast.loading('جاري رفع الصورة...', { id: 'upload' });
+                finalImageUrl = await uploadImage(imageFile, 'branches');
+                toast.success('تم رفع الصورة بنجاح', { id: 'upload' });
+            }
+
+            const dataToSave = { ...formData, imageUrl: finalImageUrl };
+
             if (branch) {
-                onSave({ ...formData, id: branch.id } as Branch);
+                onSave({ ...dataToSave, id: branch.id } as Branch);
             } else {
-                onSave(formData as any); // Cast because Omit<Branch, 'id'> expects categories properly
+                onSave(dataToSave as any); // Cast because Omit<Branch, 'id'> expects categories properly
             }
         } catch (error) {
-            toast.error('حدث خطأ أثناء حفظ الفرع. جرب لاحقاً.');
+            toast.error('حدث خطأ أثناء حفظ الفرع. جرب لاحقاً.', { id: 'upload' });
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -428,10 +442,32 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                     </div>
 
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>رابط صورة الفرع (اختياري)</label>
-                        <input type="url" name="imageUrl" value={formData.imageUrl || ''} onChange={handleChange}
-                            placeholder="الصق رابط صورة للفرع (من قوقل ماب أو غيره)"
-                            style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>صورة الفرع (اختياري)</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '0.85rem', borderRadius: '10px', border: '1px dashed var(--primary-color)', background: 'rgba(59, 130, 246, 0.05)', color: 'var(--primary-color)', flex: 1, justifyContent: 'center' }}>
+                                <ImageIcon size={20} />
+                                <span>{imageFile ? imageFile.name : (formData.imageUrl ? 'تغيير الصورة الحالية' : 'اختر صورة من جهازك')}</span>
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    style={{ display: 'none' }} 
+                                    onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                            setImageFile(e.target.files[0]);
+                                        }
+                                    }} 
+                                />
+                            </label>
+                            {(imageFile || formData.imageUrl) && (
+                                <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                    <img 
+                                        src={imageFile ? URL.createObjectURL(imageFile) : formData.imageUrl} 
+                                        alt="Preview" 
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div>
@@ -441,13 +477,15 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                             style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
                     </div>
 
-                    <button type="submit" style={{
+                    <button type="submit" disabled={isSaving} style={{
                         marginTop: '0.8rem', padding: '1.1rem', background: 'var(--grad-primary)', color: 'white',
                         border: 'none', borderRadius: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.6rem', fontWeight: 800,
-                        boxShadow: '0 8px 25px rgba(59, 130, 246, 0.4)', cursor: 'pointer', fontSize: '1.05rem',
-                        transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                    }} className="hover-scale">
-                        <Save size={22} /> حفظ بيانات الفرع
+                        boxShadow: '0 8px 25px rgba(59, 130, 246, 0.4)', cursor: isSaving ? 'not-allowed' : 'pointer', fontSize: '1.05rem',
+                        transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        opacity: isSaving ? 0.7 : 1
+                    }} className={isSaving ? '' : 'hover-scale'}>
+                        {isSaving ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />} 
+                        {isSaving ? 'جاري الحفظ...' : 'حفظ بيانات الفرع'}
                     </button>
                 </form>
             </div>

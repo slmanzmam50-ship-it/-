@@ -7,11 +7,12 @@ import {
     updateCategory, 
     deleteCategory, 
     subscribeToBranches, 
-    subscribeToCategories 
+    subscribeToCategories,
+    uploadImage
 } from '../services/storage';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
 
@@ -28,7 +29,9 @@ const AdminDashboard: React.FC = () => {
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [categoryEditName, setCategoryEditName] = useState('');
     const [newCategoryImageUrl, setNewCategoryImageUrl] = useState('');
+    const [newCategoryFile, setNewCategoryFile] = useState<File | null>(null);
     const [categoryEditImageUrl, setCategoryEditImageUrl] = useState('');
+    const [categoryEditFile, setCategoryEditFile] = useState<File | null>(null);
     const [lang, setLang] = useState<'ar' | 'en'>(() => (localStorage.getItem('lang') as 'ar' | 'en') || 'ar');
 
     useEffect(() => {
@@ -103,12 +106,19 @@ const AdminDashboard: React.FC = () => {
         if (!name) return;
         setIsAddingCategory(true);
         try {
-            await addCategory(name, newCategoryImageUrl);
+            let finalImageUrl = newCategoryImageUrl;
+            if (newCategoryFile) {
+                toast.loading('جاري رفع الصورة...', { id: 'catUpload' });
+                finalImageUrl = await uploadImage(newCategoryFile, 'categories');
+                toast.success('تم رفع الصورة بنجاح', { id: 'catUpload' });
+            }
+            await addCategory(name, finalImageUrl);
             setNewCategoryName('');
             setNewCategoryImageUrl('');
+            setNewCategoryFile(null);
             toast.success('تم إضافة القسم بنجاح');
         } catch (error: any) {
-            toast.error('حدث خطأ أثناء إضافة القسم');
+            toast.error('حدث خطأ أثناء إضافة القسم', { id: 'catUpload' });
         } finally {
             setIsAddingCategory(false);
         }
@@ -116,11 +126,18 @@ const AdminDashboard: React.FC = () => {
 
     const handleUpdateCategory = async (id: string) => {
         try {
-            await updateCategory({ id, name: categoryEditName, imageUrl: categoryEditImageUrl });
+            let finalImageUrl = categoryEditImageUrl;
+            if (categoryEditFile) {
+                toast.loading('جاري التحديث ورفع الصورة...', { id: 'catUpload' });
+                finalImageUrl = await uploadImage(categoryEditFile, 'categories');
+                toast.success('تم رفع الصورة بنجاح', { id: 'catUpload' });
+            }
+            await updateCategory({ id, name: categoryEditName, imageUrl: finalImageUrl });
             setEditingCategoryId(null);
+            setCategoryEditFile(null);
             toast.success('تم تحديث القسم');
         } catch (error: any) {
-            toast.error('فشل التحديث');
+            toast.error('فشل التحديث', { id: 'catUpload' });
         }
     };
 
@@ -390,13 +407,22 @@ const AdminDashboard: React.FC = () => {
                             placeholder="اسم القسم الجديد (مثلاً: كفرات)" 
                             style={{ flex: 1, minWidth: '200px', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }} 
                         />
-                        <input 
-                            type="text" 
-                            value={newCategoryImageUrl} 
-                            onChange={(e) => setNewCategoryImageUrl(e.target.value)} 
-                            placeholder="رابط الصورة (اختياري)" 
-                            style={{ flex: 1, minWidth: '200px', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }} 
-                        />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.85rem', borderRadius: '10px', border: '1px dashed var(--primary-color)', background: 'var(--surface-color)', color: 'var(--primary-color)', cursor: 'pointer', flex: 1, minWidth: '200px' }}>
+                            <ImageIcon size={18} />
+                            <span style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {newCategoryFile ? newCategoryFile.name : 'صورة القسم (اختياري)'}
+                            </span>
+                            <input 
+                                type="file" 
+                                accept="image/*" 
+                                style={{ display: 'none' }} 
+                                onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        setNewCategoryFile(e.target.files[0]);
+                                    }
+                                }} 
+                            />
+                        </label>
                         <button 
                             onClick={handleAddCategory} 
                             disabled={isAddingCategory} 
@@ -428,14 +454,34 @@ const AdminDashboard: React.FC = () => {
                                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)'
                                 }}>
                                     <div style={{ position: 'absolute', top: '1rem', left: lang === 'ar' ? '1rem' : 'auto', right: lang !== 'ar' ? '1rem' : 'auto', display: 'flex', gap: '8px', zIndex: 10 }}>
-                                        <button onClick={() => { setEditingCategoryId(c.id); setCategoryEditName(c.name); setCategoryEditImageUrl(c.imageUrl || ''); }} style={{ background: 'var(--bg-color)', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '6px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}><Edit2 size={14} /></button>
+                                        <button onClick={() => { 
+                                    setEditingCategoryId(c.id); 
+                                    setCategoryEditName(c.name); 
+                                    setCategoryEditImageUrl(c.imageUrl || ''); 
+                                    setCategoryEditFile(null);
+                                }} style={{ background: 'var(--bg-color)', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '6px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}><Edit2 size={14} /></button>
                                         <button onClick={() => handleDeleteCategory(c.id, c.name)} style={{ background: 'var(--bg-color)', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '6px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}><Trash2 size={14} /></button>
                                     </div>
                                     
                                     {editingCategoryId === c.id ? (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '2rem' }}>
                                             <input value={categoryEditName} onChange={e => setCategoryEditName(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--primary-color)', background: 'var(--bg-color)', outline: 'none' }} placeholder="اسم القسم" />
-                                            <input value={categoryEditImageUrl} onChange={e => setCategoryEditImageUrl(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--primary-color)', background: 'var(--bg-color)', outline: 'none' }} placeholder="رابط الصورة" />
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', borderRadius: '8px', border: '1px dashed var(--primary-color)', background: 'var(--surface-color)', color: 'var(--primary-color)', cursor: 'pointer' }}>
+                                                <ImageIcon size={16} />
+                                                <span style={{ fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {categoryEditFile ? categoryEditFile.name : (categoryEditImageUrl ? 'تغيير الصورة' : 'إرفاق صورة')}
+                                                </span>
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*" 
+                                                    style={{ display: 'none' }} 
+                                                    onChange={(e) => {
+                                                        if (e.target.files && e.target.files[0]) {
+                                                            setCategoryEditFile(e.target.files[0]);
+                                                        }
+                                                    }} 
+                                                />
+                                            </label>
                                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <button onClick={() => handleUpdateCategory(c.id)} style={{ flex: 1, border: 'none', background: 'var(--success)', color: 'white', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}><Check size={18} /></button>
                                                 <button onClick={() => setEditingCategoryId(null)} style={{ flex: 1, border: 'none', background: 'var(--error)', color: 'white', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}><CloseIcon size={18} /></button>

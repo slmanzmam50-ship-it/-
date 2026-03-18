@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { doc, setDoc, getDoc, deleteDoc, initializeFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAdTZKrSsTVIQndTRCsrRjNMydn9ITSDVY",
@@ -12,6 +13,9 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Initialize Storage
+export const storage = getStorage(app);
 
 // Use initializeFirestore to enable long-polling (helps if streams are blocked)
 export const db = initializeFirestore(app, {

@@ -1,6 +1,7 @@
 import type { Branch, NavigationIntent, Category } from '../types';
-import { db } from './firebase';
+import { db, storage } from './firebase';
 import { collection, onSnapshot, query, where, getDocs, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const COLLECTION_NAME = 'branches';
 const CATEGORIES_COLLECTION = 'categories';
@@ -144,3 +145,18 @@ export const deleteCategory = async (id: string): Promise<void> => {
 
 // Initial data removed for brevity, assuming it was already seeded
 export const seedDatabaseIfNeeded = async () => {};
+
+// --- Storage Upload ---
+export const uploadImage = async (file: File, path: string): Promise<string> => {
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const storageRef = ref(storage, `${path}/${fileName}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadUrl = await getDownloadURL(snapshot.ref);
+        return downloadUrl;
+    } catch (error) {
+        console.error("Error uploading image:", error);
+        throw error;
+    }
+};
