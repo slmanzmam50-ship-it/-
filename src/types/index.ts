@@ -18,6 +18,7 @@ export interface Branch {
     address: string;
     phone: string;
     mapUrl?: string; // Original Google Maps link or source
+    imageUrl?: string; // Photo of the branch
     maxCapacity?: number; 
     actualLoad?: number;  
     managerName?: string;

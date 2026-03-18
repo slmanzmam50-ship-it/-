@@ -164,25 +164,6 @@ const ClientMap: React.FC = () => {
         }
     };
 
-    const handleShareApp = async () => {
-        const shareData = {
-            title: 'Salman Zamam Al-Khalidi',
-            text: lang === 'ar' ? 'اكتشف أقرب فروع صيانة السيارات والملاحة إليها' : 'Discover the nearest auto service branches and navigate to them',
-            url: window.location.origin
-        };
-
-        if (navigator.share) {
-            try {
-                await navigator.share(shareData);
-            } catch (err) {
-                console.log('Share failed', err);
-            }
-        } else {
-            navigator.clipboard.writeText(shareData.url);
-            toast.success(lang === 'ar' ? 'تم نسخ رابط التطبيق' : 'App link copied');
-        }
-    };
-
     const handleShare = async (branch: Branch) => {
         const shareData = {
             title: branch.name,
@@ -239,13 +220,6 @@ const ClientMap: React.FC = () => {
             <div className="branch-directory-header">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h1 style={{ margin: 0, fontSize: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={24} color="var(--accent-orange)" /> {lang === 'ar' ? 'دليل الفروع' : 'Branch Directory'}</h1>
-                    <button 
-                        onClick={handleShareApp} 
-                        className="hover-scale tap-effect"
-                        style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
-                    >
-                        <Share2 size={16} /> {lang === 'ar' ? 'مشاركه' : 'Share'}
-                    </button>
                 </div>
                 
                 <div className="search-pill-container" style={{ marginTop: 0 }}>
@@ -312,6 +286,11 @@ const ClientMap: React.FC = () => {
                                 <Popup className="premium-popup">
                                     <div style={{ minWidth: '220px', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
                                         <h3 style={{ margin: '0 0 8px', color: 'var(--primary-color)', fontSize: '18px' }}>{b.name}</h3>
+                                        {b.imageUrl && (
+                                            <div style={{ height: '120px', width: '100%', marginBottom: '10px', borderRadius: '8px', overflow: 'hidden' }}>
+                                                <img src={b.imageUrl} alt={b.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            </div>
+                                        )}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                             <div className={`congestion-badge ${getCongestionLevel(b.id).class}`}>
                                                 <BarChart2 size={12} /> {getCongestionLevel(b.id).text}
@@ -356,6 +335,11 @@ const ClientMap: React.FC = () => {
                             />
                         ) : filteredBranches.map(b => (
                             <div key={b.id} className="glass" style={{ padding: '1.25rem', borderRadius: '15px', background: 'var(--navy-surface)', color: 'white' }}>
+                                {b.imageUrl && (
+                                    <div style={{ height: '160px', width: '100%', marginBottom: '12px', borderRadius: '10px', overflow: 'hidden' }}>
+                                        <img src={b.imageUrl} alt={b.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                )}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
                                     <h3 style={{ margin: 0 }}>{b.name}</h3>
                                     <div className={`congestion-badge ${getCongestionLevel(b.id).class}`}>

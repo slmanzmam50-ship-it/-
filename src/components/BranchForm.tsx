@@ -428,6 +428,13 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                     </div>
 
                     <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>رابط صورة الفرع (اختياري)</label>
+                        <input type="url" name="imageUrl" value={formData.imageUrl || ''} onChange={handleChange}
+                            placeholder="الصق رابط صورة للفرع (من قوقل ماب أو غيره)"
+                            style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
+                    </div>
+
+                    <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>اسم المسؤول</label>
                         <input type="text" name="managerName" value={formData.managerName || ''} onChange={handleChange}
                             placeholder="أدخل اسم المسؤول عن الفرع"

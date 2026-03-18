@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Map, Sun, Moon } from 'lucide-react';
+import { LogOut, Map, Sun, Moon, Share2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Header: React.FC = () => {
     const location = useLocation();
@@ -38,6 +39,24 @@ const Header: React.FC = () => {
         navigate('/login');
     };
 
+    const handleShareApp = async () => {
+        const shareData = {
+            title: 'Salman Zamam Al-Khalidi',
+            text: lang === 'ar' ? 'اكتشف أقرب فروع صيانة السيارات والملاحة إليها' : 'Discover the nearest auto service branches and navigate to them',
+            url: window.location.origin
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                console.log('Share failed', err);
+            }
+        } else {
+            navigator.clipboard.writeText(shareData.url);
+            toast.success(lang === 'ar' ? 'تم نسخ رابط التطبيق' : 'App link copied');
+        }
+    };
 
     const isAr = lang === 'ar';
 
@@ -69,6 +88,15 @@ const Header: React.FC = () => {
                     className="lang-toggle-btn"
                 >
                     {isAr ? 'English' : 'عربي'}
+                </button>
+
+                <button 
+                    onClick={handleShareApp}
+                    className="share-btn-header"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', padding: '6px' }}
+                    title={isAr ? 'مشاركة التطبيق' : 'Share App'}
+                >
+                    <Share2 size={20} />
                 </button>
 
                 {location.pathname === '/admin' && (
