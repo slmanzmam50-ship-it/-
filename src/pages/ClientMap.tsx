@@ -60,7 +60,7 @@ const EmptyState: React.FC<{ message: string; subMessage?: string }> = ({ messag
 const ChangeView = ({ center, zoom }: { center: [number, number], zoom: number }) => {
     const map = useMap();
     useEffect(() => {
-        if (map) map.flyTo(center, zoom, { duration: 1.5 });
+        if (map) map.flyTo(center, zoom, { duration: 0.8 });
     }, [center, zoom, map]);
     return null;
 };
@@ -141,7 +141,7 @@ const ClientMap: React.FC = () => {
                     }
                 },
                 () => toast.error(lang === 'ar' ? 'فشل تحديد الموقع' : 'Location failed', { id: 'locate-toast' }),
-                { enableHighAccuracy: true }
+                { enableHighAccuracy: false, maximumAge: 10000, timeout: 5000 }
             );
         }
     };
@@ -393,7 +393,7 @@ const ClientMap: React.FC = () => {
                 )}
                 
                 {/* Float Locate Me button */}
-                <button onClick={handleLocateMe} className="locate-me-btn hover-scale tap-effect" style={{ position: 'absolute', zIndex: 1000, background: 'var(--accent-orange)', color: 'white', border: 'none', borderRadius: '35px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px', left: '50%', transform: 'translateX(-50%)', bottom: '24px', padding: '14px 32px', fontSize: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.4)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                <button onClick={handleLocateMe} className="locate-me-btn hover-scale tap-effect" style={{ position: 'fixed', zIndex: 2000, background: 'var(--accent-orange)', color: 'white', border: 'none', borderRadius: '35px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px', left: '50%', transform: 'translateX(-50%)', bottom: 'env(safe-area-inset-bottom, 30px)', padding: '14px 32px', fontSize: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.4)', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
                     <Navigation size={20} /> {t.locate_me}
                 </button>
             </div>

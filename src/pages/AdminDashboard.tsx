@@ -11,8 +11,9 @@ import {
 } from '../services/storage';
 import type { Branch, Category } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, Database, AlertCircle, FileDown } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, Database, AlertCircle, FileDown, Layers } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { utils, writeFile } from 'xlsx';
 
 const AdminDashboard: React.FC = () => {
     const [branches, setBranches] = useState<Branch[]>([]);
@@ -26,6 +27,8 @@ const AdminDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'branches' | 'categories'>('branches');
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [categoryEditName, setCategoryEditName] = useState('');
+    const [newCategoryImageUrl, setNewCategoryImageUrl] = useState('');
+    const [categoryEditImageUrl, setCategoryEditImageUrl] = useState('');
     const [lang, setLang] = useState<'ar' | 'en'>(() => (localStorage.getItem('lang') as 'ar' | 'en') || 'ar');
 
     useEffect(() => {
@@ -146,8 +149,9 @@ const AdminDashboard: React.FC = () => {
         if (!name) return;
         setIsAddingCategory(true);
         try {
-            await addCategory(name);
+            await addCategory(name, newCategoryImageUrl);
             setNewCategoryName('');
+            setNewCategoryImageUrl('');
             toast.success('تم إضافة القسم بنجاح');
         } catch (error: any) {
             toast.error('حدث خطأ أثناء إضافة القسم');
@@ -158,7 +162,7 @@ const AdminDashboard: React.FC = () => {
 
     const handleUpdateCategory = async (id: string) => {
         try {
-            await updateCategory({ id, name: categoryEditName });
+            await updateCategory({ id, name: categoryEditName, imageUrl: categoryEditImageUrl });
             setEditingCategoryId(null);
             toast.success('تم تحديث القسم');
         } catch (error: any) {
@@ -204,8 +208,8 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const handleExportCSV = () => {
-        const headers = ["Name", "Address", "Phone", "Status", "Manager", "Categories"];
+    const handleExportExcel = () => {
+        const headers = ["اسم الفرع", "العنوان", "رقم الجوال", "الحالة", "المدير", "الأقسام"];
         const rows = branches.map(b => [
             b.name,
             b.address,
@@ -215,17 +219,25 @@ const AdminDashboard: React.FC = () => {
             b.categories?.join(" | ") || ""
         ]);
         
-        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `branches_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.success(lang === 'ar' ? 'تم تصدير البيانات بنجاح' : 'Data exported successfully');
+        const worksheet = utils.aoa_to_sheet([headers, ...rows]);
+        worksheet['!dir'] = 'rtl'; // Right-to-left for Arabic
+        
+        // Auto-size columns slightly
+        const colWidths = [
+            { wch: 25 }, // Name
+            { wch: 40 }, // Address
+            { wch: 15 }, // Phone
+            { wch: 10 }, // Status
+            { wch: 20 }, // Manager
+            { wch: 30 }  // Categories
+        ];
+        worksheet['!cols'] = colWidths;
+
+        const workbook = utils.book_new();
+        utils.book_append_sheet(workbook, worksheet, "الفروع");
+        
+        writeFile(workbook, `branches_${new Date().toISOString().split('T')[0]}.xlsx`);
+        toast.success(lang === 'ar' ? 'تم تصدير الإكسل بنجاح' : 'Excel exported successfully');
     };
 
     const handleDeleteCategory = async (id: string, name: string) => {
@@ -330,7 +342,7 @@ const AdminDashboard: React.FC = () => {
                                 {!isImporting && <span style={{ display: 'block' }} className="desktop-hide">استيراد</span>}
                             </button>
                             <button 
-                                onClick={handleExportCSV} 
+                                onClick={handleExportExcel} 
                                 style={{ 
                                     background: 'var(--surface-color)', 
                                     color: 'var(--text-primary)', 
@@ -346,7 +358,7 @@ const AdminDashboard: React.FC = () => {
                                 }}
                             >
                                 <FileDown size={18} />
-                                <span className="mobile-hide">{lang === 'ar' ? 'تصدير' : 'Export'}</span>
+                                <span className="mobile-hide">{lang === 'ar' ? 'تصدير إكسل' : 'Export Excel'}</span>
                             </button>
                             <button 
                                 onClick={() => setIsFormOpen(true)} 
@@ -479,6 +491,13 @@ const AdminDashboard: React.FC = () => {
                             placeholder="اسم القسم الجديد (مثلاً: كفرات)" 
                             style={{ flex: 1, minWidth: '200px', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }} 
                         />
+                        <input 
+                            type="text" 
+                            value={newCategoryImageUrl} 
+                            onChange={(e) => setNewCategoryImageUrl(e.target.value)} 
+                            placeholder="رابط الصورة (اختياري)" 
+                            style={{ flex: 1, minWidth: '200px', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }} 
+                        />
                         <button 
                             onClick={handleAddCategory} 
                             disabled={isAddingCategory} 
@@ -488,63 +507,62 @@ const AdminDashboard: React.FC = () => {
                         </button>
                     </div>
                     
-                    <div className="responsive-table-container">
-                        <table className="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>اسم القسم</th>
-                                    <th>عدد الفروع</th>
-                                    <th>الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {categories.length === 0 ? (
-                                    <tr className="animate-fade-in">
-                                        <td colSpan={3} style={{ textAlign: 'center', padding: '3rem' }}>
-                                            <div className="empty-state-container" style={{ padding: 0 }}>
-                                                <AlertCircle className="empty-state-icon" style={{ width: 40, height: 40 }} />
-                                                <div className="empty-state-title" style={{ fontSize: '1rem' }}>
-                                                    {lang === 'ar' ? 'لا توجد تصنيفات حالياً' : 'No categories yet'}
-                                                </div>
+                    {categories.length === 0 ? (
+                        <div className="empty-state-container" style={{ padding: '3rem 0' }}>
+                            <AlertCircle className="empty-state-icon" style={{ width: 40, height: 40 }} />
+                            <div className="empty-state-title" style={{ fontSize: '1rem' }}>
+                                {lang === 'ar' ? 'لا توجد تصنيفات حالياً' : 'No categories yet'}
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
+                            {categories.map(c => (
+                                <div key={c.id} className="category-card animate-fade-in" style={{ 
+                                    background: 'var(--surface-color)', 
+                                    padding: '1.25rem', 
+                                    borderRadius: '16px', 
+                                    display: 'flex', 
+                                    flexDirection: 'column', 
+                                    gap: '1rem', 
+                                    position: 'relative',
+                                    border: '1px solid var(--border-color)',
+                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)'
+                                }}>
+                                    <div style={{ position: 'absolute', top: '1rem', left: lang === 'ar' ? '1rem' : 'auto', right: lang !== 'ar' ? '1rem' : 'auto', display: 'flex', gap: '8px', zIndex: 10 }}>
+                                        <button onClick={() => { setEditingCategoryId(c.id); setCategoryEditName(c.name); setCategoryEditImageUrl(c.imageUrl || ''); }} style={{ background: 'var(--bg-color)', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '6px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}><Edit2 size={14} /></button>
+                                        <button onClick={() => handleDeleteCategory(c.id, c.name)} style={{ background: 'var(--bg-color)', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '6px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}><Trash2 size={14} /></button>
+                                    </div>
+                                    
+                                    {editingCategoryId === c.id ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '2rem' }}>
+                                            <input value={categoryEditName} onChange={e => setCategoryEditName(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--primary-color)', background: 'var(--bg-color)', outline: 'none' }} placeholder="اسم القسم" />
+                                            <input value={categoryEditImageUrl} onChange={e => setCategoryEditImageUrl(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--primary-color)', background: 'var(--bg-color)', outline: 'none' }} placeholder="رابط الصورة" />
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button onClick={() => handleUpdateCategory(c.id)} style={{ flex: 1, border: 'none', background: 'var(--success)', color: 'white', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}><Check size={18} /></button>
+                                                <button onClick={() => setEditingCategoryId(null)} style={{ flex: 1, border: 'none', background: 'var(--error)', color: 'white', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}><CloseIcon size={18} /></button>
                                             </div>
-                                        </td>
-                                    </tr>
-                                ) : categories.map(c => (
-                                    <tr key={c.id} className="animate-fade-in">
-                                        <td>
-                                            {editingCategoryId === c.id ? (
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <input value={categoryEditName} onChange={e => setCategoryEditName(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--primary-color)', outline: 'none' }} />
-                                                    <button onClick={() => handleUpdateCategory(c.id)} style={{ border: 'none', background: 'var(--success)', color: 'white', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}><Check size={16} /></button>
-                                                    <button onClick={() => setEditingCategoryId(null)} style={{ border: 'none', background: 'var(--error)', color: 'white', padding: '6px', borderRadius: '6px', cursor: 'pointer' }}><CloseIcon size={16} /></button>
-                                                </div>
-                                            ) : (
-                                                <div style={{ fontWeight: 600 }}>{c.name}</div>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <span style={{ background: 'var(--bg-color)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid var(--border-color)' }}>
-                                                {getBranchCountByCategory(c.name)} فرع
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button onClick={() => { setEditingCategoryId(c.id); setCategoryEditName(c.name); }} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '4px' }}><Edit2 size={18} /></button>
-                                                <button onClick={() => handleDeleteCategory(c.id, c.name)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '4px' }}><Trash2 size={18} /></button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div onClick={() => setActiveTab('branches')} style={{ height: '140px', borderRadius: '12px', background: 'var(--bg-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: 'pointer' }}>
+                                                {c.imageUrl ? (
+                                                    <img src={c.imageUrl} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <Layers size={48} color="var(--primary-color)" style={{ opacity: 0.5 }} />
+                                                )}
                                             </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {categories.length === 0 && (
-                                    <tr>
-                                        <td colSpan={3} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                                            لا توجد أقسام مضافة بعد
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            <div style={{ textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+                                                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>{c.name}</h3>
+                                                <span style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary-color)', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700 }}>
+                                                    {getBranchCountByCategory(c.name)} فرع
+                                                </span>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
             {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} />}

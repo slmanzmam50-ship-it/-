@@ -122,16 +122,20 @@ export const getCategories = async (): Promise<Category[]> => {
     }
 };
 
-export const addCategory = async (name: string): Promise<Category> => {
+export const addCategory = async (name: string, imageUrl?: string): Promise<Category> => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    const newCat: Category = { id, name };
+    const newCat: Category = { id, name, imageUrl };
     await setDoc(doc(db, CATEGORIES_COLLECTION, id), newCat);
     return newCat;
 };
 
 export const updateCategory = async (category: Category): Promise<void> => {
     const catRef = doc(db, CATEGORIES_COLLECTION, category.id);
-    await updateDoc(catRef, { name: category.name });
+    const updateData: any = { name: category.name };
+    if (category.imageUrl !== undefined) {
+        updateData.imageUrl = category.imageUrl;
+    }
+    await updateDoc(catRef, updateData);
 };
 
 export const deleteCategory = async (id: string): Promise<void> => {
