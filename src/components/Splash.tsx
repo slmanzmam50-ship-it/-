@@ -135,8 +135,9 @@ const Splash: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
                                 key={`arc-${c.id}`}
                                 d={`M ${hq.x} ${hq.y} Q ${cx} ${cy} ${c.x} ${c.y}`}
                                 fill="none"
-                                stroke="rgba(249,115,22,0.6)"
-                                strokeWidth="0.3"
+                                stroke="rgba(249,115,22,0.8)"
+                                strokeWidth="0.4"
+                                pathLength="1"
                                 className="flight-arc"
                                 style={{
                                     animationDelay: `${i * staggerTime}ms`,
@@ -151,13 +152,13 @@ const Splash: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
                         opacity: phase >= 1 ? 1 : 0,
                         transition: 'opacity 0.3s ease'
                     }}>
-                        <circle cx={hq.x} cy={hq.y} r={2.5} fill="rgba(249,115,22,0.5)" filter="blur(1px)" />
-                        <circle cx={hq.x} cy={hq.y} r={1.2} fill="#f97316" />
+                        <circle cx={hq.x} cy={hq.y} r={3.5} fill="rgba(249,115,22,0.5)" filter="blur(1.5px)" />
+                        <circle cx={hq.x} cy={hq.y} r={1.6} fill="#f97316" />
                     </g>
                     
                     {/* HQ Radar */}
                     {phase >= 1 && (
-                        <circle cx={hq.x} cy={hq.y} r="0" fill="none" stroke="#f97316" strokeWidth="0.6">
+                        <circle cx={hq.x} cy={hq.y} r="0" fill="none" stroke="#f97316" strokeWidth="0.8">
                             <animate attributeName="r" values="0; 45" dur="1s" begin="0.2s" keyTimes="0; 1" keySplines="0.1 0.8 0.3 1" calcMode="spline" fill="freeze" />
                             <animate attributeName="opacity" values="1; 0" dur="1s" begin="0.2s" keyTimes="0; 1" keySplines="0.1 0.8 0.3 1" calcMode="spline" fill="freeze" />
                         </circle>
@@ -170,17 +171,17 @@ const Splash: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
                             animationPlayState: phase >= 2 ? 'running' : 'paused'
                         }}>
                             {/* Glow */}
-                            <circle cx={c.x} cy={c.y} r={1.5} fill="rgba(59,130,246,0.6)" filter="blur(1px)" />
+                            <circle cx={c.x} cy={c.y} r={2.0} fill="rgba(59,130,246,0.6)" filter="blur(1px)" />
                             {/* Core */}
-                            <circle cx={c.x} cy={c.y} r={0.7} fill="#cbfb45" />
+                            <circle cx={c.x} cy={c.y} r={1.0} fill="#cbfb45" />
                             
                             {/* City Name labels */}
                             {(c.id === 'jeddah' || c.id === 'dammam' || c.id === 'jizan' || c.id === 'tabuk' || c.id === 'abha' || c.id === 'buraydah') && (
                                 <text 
-                                    x={c.id === 'jeddah' || c.id === 'tabuk' ? c.x - 2 : c.x + 2} 
-                                    y={c.y + 0.6} 
-                                    fill="rgba(255,255,255,0.9)" 
-                                    fontSize="2.4" 
+                                    x={c.id === 'jeddah' || c.id === 'tabuk' ? c.x - 2.5 : c.x + 2.5} 
+                                    y={c.y + 0.8} 
+                                    fill="rgba(255,255,255,0.95)" 
+                                    fontSize="2.6" 
                                     fontFamily="system-ui"
                                     fontWeight="700"
                                     textAnchor={c.id === 'jeddah' || c.id === 'tabuk' ? "end" : "start"}
@@ -198,16 +199,15 @@ const Splash: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
                 .draw-map { stroke-dasharray: 400; stroke-dashoffset: 0; opacity: 1; transition: stroke-dashoffset 0.8s ease-out, opacity 0.2s; }
                 
                 .flight-arc {
-                    stroke-dasharray: 200;
-                    stroke-dashoffset: 200;
+                    stroke-dasharray: 1;
+                    stroke-dashoffset: 1;
                     opacity: 0;
-                    animation: drawArc ${flightDuration}ms ease-out forwards;
+                    animation: drawArc ${flightDuration}ms ease-in-out forwards;
                 }
                 
                 @keyframes drawArc {
-                    0% { stroke-dashoffset: 200; opacity: 1; }
-                    50% { opacity: 1; }
-                    100% { stroke-dashoffset: 0; opacity: 0.3; } /* Leave trace visible slightly */
+                    0% { stroke-dashoffset: 1; opacity: 1; }
+                    100% { stroke-dashoffset: 0; opacity: 0.5; } /* Trace remains visible */
                 }
 
                 .city-node {
