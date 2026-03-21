@@ -66,7 +66,12 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        if (name === 'start' || name === 'end') {
+        if (name === 'phone') {
+            const englishNumbers = value.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
+                                      .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString())
+                                      .replace(/[\s-]/g, '');
+            setFormData({ ...formData, phone: englishNumbers });
+        } else if (name === 'start' || name === 'end') {
             setFormData({ ...formData, workingHours: { ...formData.workingHours, [name]: value } });
         } else {
             setFormData({ ...formData, [name]: name === 'latitude' || name === 'longitude' ? parseFloat(value) : value });
