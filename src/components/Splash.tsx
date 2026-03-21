@@ -1,253 +1,191 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 const Splash: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
-    const [phase, setPhase] = useState<0 | 1 | 2 | 3>(0);
-    // phase 0 = particles only
-    // phase 1 = logo appears
-    // phase 2 = text appears
-    // phase 3 = fade out
+    const [phase, setPhase] = useState<0 | 1 | 2 | 3 | 4>(0);
 
+    // Timeline
+    // 0: Initial dark screen
+    // 1: Logo enters (0.3s)
+    // 2: Sonar wave & Nodes light up (1.0s)
+    // 3: Text fade in & loading line (1.8s)
+    // 4: Fade out to app (3.5s)
     useEffect(() => {
         const t1 = setTimeout(() => setPhase(1), 300);
         const t2 = setTimeout(() => setPhase(2), 1000);
-        const t3 = setTimeout(() => setPhase(3), 2600);
-        const t4 = setTimeout(() => onComplete(), 3200);
-        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
+        const t3 = setTimeout(() => setPhase(3), 1800);
+        const t4 = setTimeout(() => setPhase(4), 3500);
+        const t5 = setTimeout(() => onComplete(), 4100);
+        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
     }, [onComplete]);
 
-    // 20 random particles for the background
-    const particles = Array.from({ length: 20 }, (_, i) => ({
-        id: i,
-        size: Math.random() * 6 + 2,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        delay: Math.random() * 3,
-        dur: Math.random() * 4 + 3,
-        opacity: Math.random() * 0.5 + 0.1,
-    }));
+    // Generate random map nodes (representing many branches)
+    const nodes = useMemo(() => {
+        return Array.from({ length: 45 }).map((_, i) => {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 45 + 10; // 10% to 55% from center
+            // Convert polar to cartesian (percentage)
+            const x = 50 + radius * Math.cos(angle);
+            const y = 50 + radius * Math.sin(angle);
+            
+            return {
+                id: i,
+                x, y,
+                size: Math.random() * 3 + 2,
+                opacity: Math.random() * 0.5 + 0.3,
+                delay: radius * 0.03 // Delay lighting up based on distance from center!
+            };
+        });
+    }, []);
 
     return (
         <div style={{
             position: 'fixed', inset: 0, zIndex: 99999,
-            background: 'linear-gradient(135deg, #060b18 0%, #0d1b35 50%, #0f172a 100%)',
+            backgroundColor: '#0a0f18', // Deep luxury navy/black
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             overflow: 'hidden',
-            opacity: phase === 3 ? 0 : 1,
-            transition: 'opacity 0.6s cubic-bezier(0.4,0,0.2,1)',
+            opacity: phase === 4 ? 0 : 1,
+            transition: 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
         }}>
 
-            {/* ── Ambient glow blobs ── */}
-            <div style={{
-                position: 'absolute', width: '700px', height: '700px',
-                background: 'radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 65%)',
-                top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                animation: 'blobPulse 4s ease-in-out infinite alternate',
-            }} />
-            <div style={{
-                position: 'absolute', width: '400px', height: '400px',
-                background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 65%)',
-                top: '20%', right: '-10%',
-                animation: 'blobPulse 5s ease-in-out infinite alternate-reverse',
-            }} />
-            <div style={{
-                position: 'absolute', width: '300px', height: '300px',
-                background: 'radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 65%)',
-                bottom: '10%', left: '-5%',
-                animation: 'blobPulse 6s ease-in-out infinite alternate',
-            }} />
-
-            {/* ── Floating particles ── */}
-            {particles.map(p => (
-                <div key={p.id} style={{
-                    position: 'absolute',
-                    width: p.size, height: p.size,
-                    borderRadius: '50%',
-                    left: `${p.x}%`, top: `${p.y}%`,
-                    background: p.id % 3 === 0 ? '#f97316' : p.id % 3 === 1 ? '#3b82f6' : 'rgba(255,255,255,0.6)',
-                    opacity: p.opacity,
-                    animation: `floatParticle ${p.dur}s ease-in-out ${p.delay}s infinite alternate`,
-                }} />
-            ))}
-
-            {/* ── Grid lines (subtle) ── */}
+            {/* ── Subtle Map Grid Background ── */}
             <div style={{
                 position: 'absolute', inset: 0,
                 backgroundImage: `
-                    linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px)
+                    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)
                 `,
-                backgroundSize: '60px 60px',
-            }} />
+                backgroundSize: '40px 40px',
+                opacity: phase >= 1 ? 1 : 0,
+                transition: 'opacity 2s ease',
+            }}>
+                <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'radial-gradient(circle at center, transparent 30%, #0a0f18 80%)'
+                }} />
+            </div>
 
-            {/* ── Center content ── */}
+            {/* ── The Network Nodes (Branches lighting up) ── */}
+            {nodes.map(n => (
+                <div key={n.id} style={{
+                    position: 'absolute',
+                    left: `${n.x}%`, top: `${n.y}%`,
+                    width: `${n.size}px`, height: `${n.size}px`,
+                    borderRadius: '50%',
+                    backgroundColor: n.id % 4 === 0 ? '#f97316' : '#3b82f6', // Mix of brand orange and tech blue
+                    boxShadow: n.id % 4 === 0 ? '0 0 8px #f97316' : '0 0 6px #3b82f6',
+                    opacity: phase >= 2 ? n.opacity : 0,
+                    transform: phase >= 2 ? 'scale(1)' : 'scale(0)',
+                    transition: `all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) ${n.delay}s`,
+                }} />
+            ))}
+
+            {/* ── Center Content ── */}
             <div style={{
                 position: 'relative', zIndex: 10,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0',
+                display: 'flex', flexDirection: 'column', alignItems: 'center'
             }}>
 
-                {/* Logo Container */}
+                {/* The Sonar Pulse */}
                 <div style={{
-                    position: 'relative', marginBottom: '2rem',
-                    opacity: phase >= 1 ? 1 : 0,
-                    transform: phase >= 1 ? 'scale(1) translateY(0)' : 'scale(0.4) translateY(30px)',
-                    transition: 'all 0.8s cubic-bezier(0.34,1.56,0.64,1)',
-                }}>
-                    {/* Outer ring */}
-                    <div style={{
-                        position: 'absolute', inset: '-16px',
-                        borderRadius: '50%',
-                        border: '1.5px solid rgba(249,115,22,0.3)',
-                        animation: 'ringRotate 8s linear infinite',
-                    }}>
-                        {/* Ring dot */}
-                        <div style={{
-                            position: 'absolute', top: '6px', left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '8px', height: '8px', borderRadius: '50%',
-                            background: '#f97316', boxShadow: '0 0 10px #f97316',
-                        }} />
-                    </div>
-
-                    {/* Second ring */}
-                    <div style={{
-                        position: 'absolute', inset: '-28px',
-                        borderRadius: '50%',
-                        border: '1px solid rgba(59,130,246,0.2)',
-                        animation: 'ringRotate 12s linear infinite reverse',
-                    }}>
-                        <div style={{
-                            position: 'absolute', bottom: '8px', left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '6px', height: '6px', borderRadius: '50%',
-                            background: '#3b82f6', boxShadow: '0 0 8px #3b82f6',
-                        }} />
-                    </div>
-
-                    {/* Logo circle */}
-                    <div style={{
-                        width: '100px', height: '100px', borderRadius: '50%',
-                        background: 'linear-gradient(145deg, #1e3a5f, #0f172a)',
-                        border: '2px solid rgba(249,115,22,0.5)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 0 40px rgba(249,115,22,0.25), 0 0 80px rgba(249,115,22,0.1), inset 0 0 30px rgba(0,0,0,0.5)',
-                        overflow: 'hidden',
-                        position: 'relative',
-                    }}>
-                        <img
-                            src="/logo.png"
-                            alt="Logo"
-                            style={{ width: '70px', height: '70px', objectFit: 'contain', position: 'relative', zIndex: 2 }}
-                            onError={(e) => {
-                                // Fallback to car icon if logo not found
-                                (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                        />
-                        {/* Shimmer sweep */}
-                        <div style={{
-                            position: 'absolute', inset: 0,
-                            background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%)',
-                            animation: 'shimmerSweep 2.5s ease-in-out infinite',
-                        }} />
-                    </div>
-                </div>
-
-                {/* Company name - Arabic */}
-                <div style={{
-                    opacity: phase >= 2 ? 1 : 0,
-                    transform: phase >= 2 ? 'translateY(0)' : 'translateY(20px)',
-                    transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)',
-                    textAlign: 'center',
-                    marginBottom: '0.75rem',
-                }}>
-                    <h1 style={{
-                        margin: 0,
-                        fontSize: '2rem',
-                        fontWeight: 900,
-                        color: 'white',
-                        letterSpacing: '-0.5px',
-                        textShadow: '0 2px 20px rgba(0,0,0,0.8)',
-                        lineHeight: 1.2,
-                    }}>
-                        سلمان زمام الخالدي
-                    </h1>
-                </div>
-
-                {/* Divider line */}
-                <div style={{
-                    opacity: phase >= 2 ? 1 : 0,
-                    transition: 'opacity 0.6s ease 0.15s',
-                    width: phase >= 2 ? '180px' : '0px',
-                    height: '1.5px',
-                    background: 'linear-gradient(90deg, transparent, #f97316, transparent)',
-                    margin: '0.5rem auto',
-                    transitionProperty: 'opacity, width',
-                    transitionDuration: '0.6s, 0.8s',
-                    transitionDelay: '0.15s, 0.2s',
+                    position: 'absolute',
+                    top: '50%', left: '50%',
+                    width: '0px', height: '0px',
+                    borderRadius: '50%',
+                    border: '2px solid rgba(59, 130, 246, 0.4)',
+                    transform: 'translate(-50%, -50%)',
+                    opacity: phase === 2 ? 1 : 0,
+                    animation: phase >= 2 ? 'sonarExpand 2.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards' : 'none'
                 }} />
 
-                {/* Subtitle */}
+                {/* Logo Pin */}
                 <div style={{
-                    opacity: phase >= 2 ? 1 : 0,
-                    transform: phase >= 2 ? 'translateY(0)' : 'translateY(12px)',
-                    transition: 'all 0.6s cubic-bezier(0.16,1,0.3,1) 0.25s',
-                    textAlign: 'center',
-                    marginBottom: '3rem',
+                    width: '90px', height: '90px',
+                    borderRadius: '24px',
+                    background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
+                    opacity: phase >= 1 ? 1 : 0,
+                    transform: phase >= 1 ? 'translateY(0) scale(1)' : 'translateY(40px) scale(0.8)',
+                    transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    position: 'relative',
+                    overflow: 'hidden'
                 }}>
-                    <p style={{
-                        margin: 0,
-                        fontSize: '0.95rem',
-                        fontWeight: 500,
-                        color: 'rgba(249,115,22,0.9)',
-                        letterSpacing: '3px',
-                        textTransform: 'uppercase',
-                    }}>
-                        لخدمات السيارات
-                    </p>
+                    {/* Inner glowing core */}
+                    <div style={{
+                        position: 'absolute', inset: 0,
+                        background: 'radial-gradient(circle at 50% 0%, rgba(249,115,22,0.15), transparent 70%)',
+                    }} />
+                    
+                    <img
+                        src="/logo.png"
+                        alt="Logo"
+                        style={{ width: '60px', height: '60px', objectFit: 'contain', position: 'relative', zIndex: 2 }}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
                 </div>
 
-                {/* Loading bar */}
+                {/* Text Reveal */}
                 <div style={{
-                    opacity: phase >= 2 ? 1 : 0,
-                    transition: 'opacity 0.4s ease 0.4s',
+                    marginTop: '2rem',
+                    textAlign: 'center',
+                    opacity: phase >= 3 ? 1 : 0,
+                    transform: phase >= 3 ? 'translateY(0)' : 'translateY(15px)',
+                    transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}>
+                    <h1 style={{
+                        color: '#ffffff',
+                        fontSize: '24px',
+                        fontWeight: 700,
+                        letterSpacing: '0.5px',
+                        margin: '0 0 8px 0',
+                        textShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                    }}>سلمان زمام الخالدي</h1>
+                    
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                    }}>
+                        <div style={{ width: '30px', height: '1px', background: 'rgba(255,255,255,0.15)' }} />
+                        <span style={{
+                            color: '#94a3b8',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                            letterSpacing: '2px',
+                            textTransform: 'uppercase'
+                        }}>شبكة الخدمة الإقليمية</span>
+                        <div style={{ width: '30px', height: '1px', background: 'rgba(255,255,255,0.15)' }} />
+                    </div>
+                </div>
+
+                {/* Minimalist Loading Indicator */}
+                <div style={{
+                    marginTop: '3.5rem',
+                    width: '120px', height: '2px',
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    borderRadius: '2px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    opacity: phase >= 3 ? 1 : 0,
+                    transition: 'opacity 0.6s ease 0.3s'
                 }}>
                     <div style={{
-                        width: '160px', height: '2px',
-                        background: 'rgba(255,255,255,0.1)',
-                        borderRadius: '2px',
-                        overflow: 'hidden',
-                    }}>
-                        <div style={{
-                            height: '100%',
-                            background: 'linear-gradient(90deg, #f97316, #fb923c)',
-                            borderRadius: '2px',
-                            animation: 'loadBar 2s ease-out forwards',
-                            boxShadow: '0 0 10px rgba(249,115,22,0.7)',
-                        }} />
-                    </div>
+                        position: 'absolute', top: 0, left: 0, bottom: 0,
+                        width: '40%',
+                        background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
+                        animation: phase >= 3 ? 'minimalSweep 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite' : 'none'
+                    }} />
                 </div>
             </div>
 
             <style>{`
-                @keyframes blobPulse {
-                    from { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; }
-                    to   { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+                @keyframes sonarExpand {
+                    0% { width: 0px; height: 0px; opacity: 1; border-width: 2px; }
+                    100% { width: 800px; height: 800px; opacity: 0; border-width: 0px; }
                 }
-                @keyframes floatParticle {
-                    from { transform: translateY(0px) scale(1); }
-                    to   { transform: translateY(-20px) scale(1.2); }
-                }
-                @keyframes ringRotate {
-                    from { transform: rotate(0deg); }
-                    to   { transform: rotate(360deg); }
-                }
-                @keyframes shimmerSweep {
-                    0%   { transform: translateX(-100%); }
-                    60%  { transform: translateX(100%); }
-                    100% { transform: translateX(100%); }
-                }
-                @keyframes loadBar {
-                    from { width: 0%; }
-                    to   { width: 100%; }
+                @keyframes minimalSweep {
+                    0% { transform: translateX(-100%); width: 20%; }
+                    50% { width: 60%; }
+                    100% { transform: translateX(300%); width: 20%; }
                 }
             `}</style>
         </div>
