@@ -308,33 +308,102 @@ const ClientMap: React.FC = () => {
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
 
-    const handleLocateMe = () => {
-        if (navigator.geolocation) {
-            // #8 - Arabic toast messages
-            toast.loading(lang === 'ar' ? 'جاري تحديد موقعك...' : 'Locating...', { id: 'locate-toast' });
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const loc: [number, number] = [position.coords.latitude, position.coords.longitude];
-                    setUserLoc(loc);
-                    const openBranches = branches.filter(b => isCurrentlyOpen(b));
-                    if (openBranches.length > 0) {
-                        const sorted = openBranches.map(b => ({ ...b, dist: calculateDistance(loc[0], loc[1], b.latitude, b.longitude) })).sort((a, b) => a.dist - b.dist);
-                        const nearest = sorted[0];
-                        toast.success(lang === 'ar' ? `أقرب فرع مفتوح: ${nearest.name}` : `Nearest open branch: ${nearest.name}`, { id: 'locate-toast' });
-                        prevMapZoomRef.current = mapZoom;
-                        setMapCenter([nearest.latitude, nearest.longitude]);
-                        setMapZoom(14);
-                    } else {
-                        toast.success(lang === 'ar' ? 'تم تحديد موقعك' : 'Location found', { id: 'locate-toast' });
-                        setMapCenter(loc);
-                        setMapZoom(12);
-                    }
-                },
-                () => toast.error(lang === 'ar' ? 'فشل تحديد الموقع' : 'Location failed', { id: 'locate-toast' }),
-                { enableHighAccuracy: false, maximumAge: 10000, timeout: 5000 }
+    // ─── Smart 3-phase geolocation ────────────────────────────────────────
+    const locateAndCenter = (loc: [number, number]) => {
+        setUserLoc(loc);
+        const openBranches = branches.filter(b => isCurrentlyOpen(b));
+        const allBranches = branches;
+        const pool = openBranches.length > 0 ? openBranches : allBranches;
+        if (pool.length > 0) {
+            const sorted = pool
+                .map(b => ({ ...b, dist: calculateDistance(loc[0], loc[1], b.latitude, b.longitude) }))
+                .sort((a, b) => a.dist - b.dist);
+            const nearest = sorted[0];
+            const distKm = sorted[0].dist.toFixed(1);
+            const label = openBranches.length > 0
+                ? (lang === 'ar' ? `أقرب فرع مفتوح: ${nearest.name} (${distKm} كم)` : `Nearest open: ${nearest.name} (${distKm} km)`)
+                : (lang === 'ar' ? `أقرب فرع: ${nearest.name} (${distKm} كم)` : `Nearest: ${nearest.name} (${distKm} km)`);
+            toast.success(label, { id: 'locate-toast', duration: 4000 });
+            prevMapZoomRef.current = mapZoom;
+            setMapCenter([nearest.latitude, nearest.longitude]);
+            setMapZoom(14);
+        } else {
+            toast.success(lang === 'ar' ? 'تم تحديد موقعك' : 'Location found', { id: 'locate-toast' });
+            setMapCenter(loc);
+            setMapZoom(12);
+        }
+    };
+
+    const tryIPFallback = async () => {
+        toast.loading(lang === 'ar' ? 'جاري تحديد موقعك عبر الشبكة...' : 'Trying network location...', { id: 'locate-toast' });
+        try {
+            const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(6000) });
+            if (!res.ok) throw new Error('IP lookup failed');
+            const data = await res.json();
+            if (data.latitude && data.longitude) {
+                const loc: [number, number] = [data.latitude, data.longitude];
+                toast.loading(
+                    lang === 'ar' ? '⚠️ موقع تقريبي عبر الشبكة' : '⚠️ Approximate location via network',
+                    { id: 'locate-toast', duration: 3000 }
+                );
+                locateAndCenter(loc);
+            } else {
+                throw new Error('No coords');
+            }
+        } catch {
+            toast.error(
+                lang === 'ar'
+                    ? 'تعذّر تحديد الموقع. تأكد من منح الإذن في إعدادات المتصفح.'
+                    : 'Location unavailable. Please allow location in browser settings.',
+                { id: 'locate-toast', duration: 5000 }
             );
         }
     };
+
+    const tryLowAccuracy = () => {
+        toast.loading(lang === 'ar' ? 'إعادة المحاولة...' : 'Retrying...', { id: 'locate-toast' });
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                locateAndCenter([pos.coords.latitude, pos.coords.longitude]);
+            },
+            () => {
+                // Phase 3: IP fallback
+                tryIPFallback();
+            },
+            { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 }
+        );
+    };
+
+    const handleLocateMe = () => {
+        if (!navigator.geolocation) {
+            tryIPFallback();
+            return;
+        }
+        toast.loading(lang === 'ar' ? 'جاري تحديد موقعك...' : 'Locating...', { id: 'locate-toast' });
+        // Phase 1: High accuracy GPS
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                locateAndCenter([pos.coords.latitude, pos.coords.longitude]);
+            },
+            (err) => {
+                // PERMISSION_DENIED → no point retrying
+                if (err.code === 1) {
+                    toast.error(
+                        lang === 'ar'
+                            ? 'يرجى السماح بالوصول للموقع من إعدادات المتصفح'
+                            : 'Please allow location access in browser settings',
+                        { id: 'locate-toast', duration: 5000 }
+                    );
+                    return;
+                }
+                // Phase 2: retry with low accuracy
+                tryLowAccuracy();
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
+        );
+    };
+
+
 
     const handleNavigate = useCallback(async (branch: Branch) => {
         if (!userLoc) {
