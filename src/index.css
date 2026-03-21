@@ -575,3 +575,150 @@ button {
   z-index: 9998;
   animation: fadeIn 0.3s ease-out forwards;
 }
+
+/* ================================================================
+   #4 - Branch Detail Modal
+================================================================ */
+.branch-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 5000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+
+.branch-modal-card {
+  background: var(--surface-color);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 24px 24px 0 0;
+  position: relative;
+  scrollbar-width: thin;
+}
+
+@media (min-width: 640px) {
+  .branch-modal-overlay { align-items: center; padding: 1rem; }
+  .branch-modal-card { border-radius: 24px; max-height: 85vh; }
+}
+
+.branch-modal-close {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.1);
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.branch-modal-close:hover { background: rgba(0,0,0,0.18); }
+
+/* ================================================================
+   #12 - Branch action grid: responsive 5-button layout
+================================================================ */
+.branch-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 400px) {
+  .branch-action-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ================================================================
+   #10 - User location marker pulse animation
+================================================================ */
+@keyframes userPulse {
+  0%   { transform: scale(1);   opacity: 0.5; }
+  50%  { transform: scale(1.6); opacity: 0.15; }
+  100% { transform: scale(1);   opacity: 0.5; }
+}
+
+.custom-user-marker { background: transparent; border: none; }
+
+/* ================================================================
+   #12 - Admin mobile improvements
+================================================================ */
+@media (max-width: 640px) {
+  .admin-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .admin-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.admin-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ================================================================
+   Skeleton animations 
+================================================================ */
+.skeleton {
+  border-radius: 8px;
+  margin-bottom: 8px;
+  height: 16px;
+  background: linear-gradient(90deg, var(--border-color) 25%, rgba(255,255,255,0.08) 50%, var(--border-color) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-title { height: 20px; margin-bottom: 12px; }
+.skeleton-text  { height: 14px; }
+.skeleton-circle { width: 36px; height: 36px; border-radius: 50%; }
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ================================================================
+   Hover/tap effects shared
+================================================================ */
+.hover-scale:hover { transform: scale(1.04); }
+.tap-effect:active { transform: scale(0.96); }
+
+/* ================================================================
+   Congestion badges
+================================================================ */
+.congestion-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.congestion-quiet   { background: rgba(16,185,129,0.15); color: var(--success); }
+.congestion-busy    { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+.congestion-crowded { background: rgba(239,68,68,0.15);   color: var(--error); }

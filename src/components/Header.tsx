@@ -31,7 +31,12 @@ const Header: React.FC = () => {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
-    const toggleLang = () => setLang(prev => prev === 'ar' ? 'en' : 'ar');
+    const toggleLang = () => {
+        const newLang = lang === 'ar' ? 'en' : 'ar';
+        setLang(newLang);
+        localStorage.setItem('lang', newLang);
+        window.dispatchEvent(new CustomEvent('langChange'));
+    };
     const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
     const handleLogout = () => {
