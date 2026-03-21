@@ -49,7 +49,9 @@ export const getBranches = async (): Promise<Branch[]> => {
 
 export const addBranch = async (branch: Omit<Branch, 'id'>): Promise<Branch> => {
     const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    const newBranch = { ...branch, id: newId };
+    const cleanData = { ...branch };
+    Object.keys(cleanData).forEach(key => (cleanData as any)[key] === undefined && delete (cleanData as any)[key]);
+    const newBranch = { ...cleanData, id: newId } as Branch;
     await setDoc(doc(db, COLLECTION_NAME, newId), newBranch);
     return newBranch;
 };
@@ -57,6 +59,7 @@ export const addBranch = async (branch: Omit<Branch, 'id'>): Promise<Branch> => 
 export const updateBranch = async (updatedBranch: Branch): Promise<void> => {
     const branchRef = doc(db, COLLECTION_NAME, updatedBranch.id);
     const { id, ...dataToUpdate } = updatedBranch;
+    Object.keys(dataToUpdate).forEach(key => (dataToUpdate as any)[key] === undefined && delete (dataToUpdate as any)[key]);
     await updateDoc(branchRef, dataToUpdate);
 };
 
@@ -125,7 +128,8 @@ export const getCategories = async (): Promise<Category[]> => {
 
 export const addCategory = async (name: string, imageUrl?: string): Promise<Category> => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    const newCat: Category = { id, name, imageUrl };
+    const newCat: any = { id, name };
+    if (imageUrl !== undefined) newCat.imageUrl = imageUrl;
     await setDoc(doc(db, CATEGORIES_COLLECTION, id), newCat);
     return newCat;
 };
