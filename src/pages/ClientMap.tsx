@@ -8,6 +8,7 @@ import { translations } from '../services/translations';
 import type { Branch, Category } from '../types';
 import { Navigation, MessageCircle, Map as MapIcon, List, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc } from 'lucide-react';
 import toast from 'react-hot-toast';
+import LocationLoader from './LocationLoader';
 
 // Fix typical React Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -265,6 +266,7 @@ const ClientMap: React.FC = () => {
     const [showSortMenu, setShowSortMenu] = useState(false);
     // #11 - Track popup open state for zoom behavior
     const [popupOpen, setPopupOpen] = useState(false);
+    const [isLocatingLoc, setIsLocatingLoc] = useState(false);
     const prevMapZoomRef = useRef<number>(5);
 
     const t = translations[lang];
@@ -332,10 +334,10 @@ const ClientMap: React.FC = () => {
             setMapCenter(loc);
             setMapZoom(12);
         }
+        setIsLocatingLoc(false);
     };
 
     const tryIPFallback = async () => {
-        toast.loading(lang === 'ar' ? 'جاري تحديد موقعك عبر الشبكة...' : 'Trying network location...', { id: 'locate-toast' });
         try {
             const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(6000) });
             if (!res.ok) throw new Error('IP lookup failed');
@@ -351,6 +353,7 @@ const ClientMap: React.FC = () => {
                 throw new Error('No coords');
             }
         } catch {
+            setIsLocatingLoc(false);
             toast.error(
                 lang === 'ar'
                     ? 'تعذّر تحديد الموقع. تأكد من منح الإذن في إعدادات المتصفح.'
@@ -361,7 +364,6 @@ const ClientMap: React.FC = () => {
     };
 
     const tryLowAccuracy = () => {
-        toast.loading(lang === 'ar' ? 'إعادة المحاولة...' : 'Retrying...', { id: 'locate-toast' });
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 locateAndCenter([pos.coords.latitude, pos.coords.longitude]);
@@ -375,11 +377,12 @@ const ClientMap: React.FC = () => {
     };
 
     const handleLocateMe = () => {
+        setIsLocatingLoc(true);
         if (!navigator.geolocation) {
             tryIPFallback();
             return;
         }
-        toast.loading(lang === 'ar' ? 'جاري تحديد موقعك...' : 'Locating...', { id: 'locate-toast' });
+        
         // Phase 1: High accuracy GPS
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -388,6 +391,7 @@ const ClientMap: React.FC = () => {
             (err) => {
                 // PERMISSION_DENIED → no point retrying
                 if (err.code === 1) {
+                    setIsLocatingLoc(false);
                     toast.error(
                         lang === 'ar'
                             ? 'يرجى السماح بالوصول للموقع من إعدادات المتصفح'
@@ -813,6 +817,8 @@ const ClientMap: React.FC = () => {
                     onNavigate={() => { handleNavigate(selectedBranch); setSelectedBranch(null); }}
                 />
             )}
+
+            <LocationLoader isActive={isLocatingLoc} lang={lang} />
         </div>
     );
 };
