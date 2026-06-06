@@ -473,9 +473,21 @@ const ClientMap: React.FC = () => {
 
     const handleShare = async (branch: Branch) => {
         const mapsUrl = branch.mapUrl || `https://www.google.com/maps/search/?api=1&query=${branch.latitude},${branch.longitude}`;
+        
+        // Build rich text description with bold styling for WhatsApp
+        const lines = [
+            `🛠️ *${branch.name}*`,
+            `📍 *${lang === 'ar' ? 'العنوان' : 'Address'}:* ${branch.address}`,
+            branch.phone ? `📞 *${lang === 'ar' ? 'الجوال' : 'Phone'}:* ${branch.phone}` : '',
+            branch.managerName ? `👤 *${lang === 'ar' ? 'المسؤول' : 'Manager'}:* ${branch.managerName}` : '',
+            branch.workingHours ? `⏰ *${lang === 'ar' ? 'الدوام' : 'Hours'}:* ${branch.workingHours.start} – ${branch.workingHours.end}` : '',
+            branch.categories && branch.categories.length > 0 ? `⚙️ *${lang === 'ar' ? 'الخدمات' : 'Services'}:* ${branch.categories.join(' - ')}` : '',
+            `\n${lang === 'ar' ? 'سلمان زمام الخالدي لخدمة السيارات' : 'Salman Al-Khalidi Auto Service'}`
+        ].filter(Boolean);
+
         const shareData = {
             title: branch.name,
-            text: `${branch.name}\n📍 ${branch.address}\n📞 ${branch.phone || ''}\n${lang === 'ar' ? 'سلمان زمام الخالدي لخدمة السيارات' : 'Salman Al-Khalidi Auto Service'}`,
+            text: lines.join('\n'),
             url: mapsUrl
         };
         if (navigator.share) {
