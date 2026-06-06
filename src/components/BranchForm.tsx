@@ -54,6 +54,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
     const [showManual, setShowManual] = useState(false);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isFetchingImage, setIsFetchingImage] = useState(false);
 
     useEffect(() => {
         if (branch) {
@@ -183,6 +184,60 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
             },
             { enableHighAccuracy: true }
         );
+    };
+
+    const handleFetchGoogleImage = async () => {
+        const urlToFetch = mapInput.trim() || formData.mapUrl;
+        if (!urlToFetch) {
+            toast.error("يرجى إدخال رابط قوقل ماب في حقل البحث أولاً");
+            return;
+        }
+
+        setIsFetchingImage(true);
+        const toastId = toast.loading("جاري جلب الصورة من قوقل ماب...");
+        try {
+            // Step 1: Fetch HTML via CORS proxy
+            const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlToFetch)}`);
+            if (!response.ok) throw new Error("Failed to fetch page HTML");
+            const html = await response.text();
+
+            // Step 2: Extract og:image
+            const match = html.match(/property="og:image"\s+content="([^"]+)"/i) || 
+                          html.match(/content="([^"]+)"\s+property="og:image"/i) ||
+                          html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i);
+
+            if (!match || !match[1]) {
+                throw new Error("لم نتمكن من العثور على صورة في هذا الرابط. تأكد من أنه رابط مكان صحيح في قوقل ماب.");
+            }
+
+            let imageUrl = match[1];
+            imageUrl = imageUrl.replace(/&amp;/g, '&');
+
+            // Boost quality for Google User Content URLs
+            if (imageUrl.includes('googleusercontent.com') || imageUrl.includes('ggpht.com')) {
+                imageUrl = imageUrl.replace(/=[ws]\d+[^&]*/, '=s800');
+                if (!imageUrl.includes('=')) {
+                    imageUrl += '=s800';
+                }
+            }
+
+            // Step 3: Fetch the image file (through proxy to avoid CORS)
+            const imgResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`);
+            if (!imgResponse.ok) throw new Error("Failed to download image data");
+            const blob = await imgResponse.blob();
+
+            // Step 4: Create a File object and set it in state
+            const filename = `google_map_photo_${Date.now()}.jpg`;
+            const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+            
+            setImageFile(file);
+            toast.success("تم جلب الصورة من قوقل ماب بنجاح! 📸", { id: toastId });
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || "فشل في جلب الصورة. تأكد من صحة الرابط وجرب مرة أخرى.", { id: toastId });
+        } finally {
+            setIsFetchingImage(false);
+        }
     };
 
     const validateForm = (): boolean => {
@@ -448,30 +503,57 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
 
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>صورة الفرع (اختياري)</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '0.85rem', borderRadius: '10px', border: '1px dashed var(--primary-color)', background: 'rgba(59, 130, 246, 0.05)', color: 'var(--primary-color)', flex: 1, justifyContent: 'center' }}>
-                                <ImageIcon size={20} />
-                                <span>{imageFile ? imageFile.name : (formData.imageUrl ? 'تغيير الصورة الحالية' : 'اختر صورة من جهازك')}</span>
-                                <input 
-                                    type="file" 
-                                    accept="image/*" 
-                                    style={{ display: 'none' }} 
-                                    onChange={(e) => {
-                                        if (e.target.files && e.target.files[0]) {
-                                            setImageFile(e.target.files[0]);
-                                        }
-                                    }} 
-                                />
-                            </label>
-                            {(imageFile || formData.imageUrl) && (
-                                <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                                    <img 
-                                        src={imageFile ? URL.createObjectURL(imageFile) : formData.imageUrl} 
-                                        alt="Preview" 
-                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '0.85rem', borderRadius: '10px', border: '1px dashed var(--primary-color)', background: 'rgba(59, 130, 246, 0.05)', color: 'var(--primary-color)', flex: 1, justifyContent: 'center' }}>
+                                    <ImageIcon size={20} />
+                                    <span>{imageFile ? imageFile.name : (formData.imageUrl ? 'تغيير الصورة الحالية' : 'اختر صورة من جهازك')}</span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        style={{ display: 'none' }} 
+                                        onChange={(e) => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                setImageFile(e.target.files[0]);
+                                            }
+                                        }} 
                                     />
-                                </div>
-                            )}
+                                </label>
+                                {(imageFile || formData.imageUrl) && (
+                                    <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                        <img 
+                                            src={imageFile ? URL.createObjectURL(imageFile) : formData.imageUrl} 
+                                            alt="Preview" 
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <button
+                                type="button"
+                                onClick={handleFetchGoogleImage}
+                                disabled={isFetchingImage}
+                                style={{
+                                    padding: '0.75rem',
+                                    background: 'var(--navy-surface)',
+                                    color: 'white',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '10px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 700,
+                                    cursor: isFetchingImage ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    transition: '0.3s'
+                                }}
+                                className="hover-scale"
+                            >
+                                {isFetchingImage ? <Loader2 className="animate-spin" size={16} /> : <ImageIcon size={16} />}
+                                {isFetchingImage ? 'جاري جلب الصورة...' : 'جلب صورة الغلاف تلقائياً من رابط قوقل ماب'}
+                            </button>
                         </div>
                     </div>
 
