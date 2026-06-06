@@ -195,6 +195,21 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
+    const proxyFetch = async (url: string, signal?: AbortSignal): Promise<Response> => {
+        // Try local serverless function first
+        try {
+            const res = await fetch(`/api/fetch-map-image?url=${encodeURIComponent(url)}`, { signal });
+            if (res.ok) return res;
+        } catch (e) {
+            console.warn("Local API proxy failed, falling back to public proxy...", e);
+        }
+
+        // Fallback: allorigins public proxy
+        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, { signal });
+        if (!res.ok) throw new Error("CORS Proxy Error");
+        return res;
+    };
+
     const handleBatchFetchImages = async () => {
         if (window.confirm(lang === 'ar' ? 'هل تريد جلب وتحديث صور الغلاف لجميع الفروع من قوقل ماب تلقائياً؟' : 'Do you want to automatically fetch and update cover images for all branches from Google Maps?')) {
             setIsBatchFetching(true);
@@ -208,12 +223,9 @@ const AdminDashboard: React.FC = () => {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-                    const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(b.mapUrl)}`, {
-                        signal: controller.signal
-                    });
+                    const response = await proxyFetch(b.mapUrl, controller.signal);
                     clearTimeout(timeoutId);
 
-                    if (!response.ok) throw new Error("Failed to fetch HTML");
                     const html = await response.text();
 
                     const match = html.match(/property="og:image"\s+content="([^"]+)"/i) || 
@@ -233,9 +245,7 @@ const AdminDashboard: React.FC = () => {
                         const imgController = new AbortController();
                         const imgTimeoutId = setTimeout(() => imgController.abort(), 8000);
 
-                        const imgResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`, {
-                            signal: imgController.signal
-                        });
+                        const imgResponse = await proxyFetch(imageUrl, imgController.signal);
                         clearTimeout(imgTimeoutId);
 
                         if (imgResponse.ok) {

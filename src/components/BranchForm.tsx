@@ -186,6 +186,21 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         );
     };
 
+    const proxyFetch = async (url: string): Promise<Response> => {
+        // Try local serverless function first
+        try {
+            const res = await fetch(`/api/fetch-map-image?url=${encodeURIComponent(url)}`);
+            if (res.ok) return res;
+        } catch (e) {
+            console.warn("Local API proxy failed, falling back to public proxy...", e);
+        }
+
+        // Fallback: allorigins public proxy
+        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+        if (!res.ok) throw new Error("CORS Proxy Error");
+        return res;
+    };
+
     const handleFetchGoogleImage = async () => {
         const urlToFetch = mapInput.trim() || formData.mapUrl;
         if (!urlToFetch) {
@@ -197,8 +212,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         const toastId = toast.loading("جاري جلب الصورة من قوقل ماب...");
         try {
             // Step 1: Fetch HTML via CORS proxy
-            const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlToFetch)}`);
-            if (!response.ok) throw new Error("Failed to fetch page HTML");
+            const response = await proxyFetch(urlToFetch);
             const html = await response.text();
 
             // Step 2: Extract og:image
@@ -222,8 +236,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
             }
 
             // Step 3: Fetch the image file (through proxy to avoid CORS)
-            const imgResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`);
-            if (!imgResponse.ok) throw new Error("Failed to download image data");
+            const imgResponse = await proxyFetch(imageUrl);
             const blob = await imgResponse.blob();
 
             // Step 4: Create a File object and set it in state
@@ -234,7 +247,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
             toast.success("تم جلب الصورة من قوقل ماب بنجاح! 📸", { id: toastId });
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || "فشل في جلب الصورة. تأكد من صحة الرابط وجرب مرة أخرى.", { id: toastId });
+            toast.error("فشل في جلب الصورة. تأكد من صحة الرابط وجرب مرة أخرى.", { id: toastId });
         } finally {
             setIsFetchingImage(false);
         }
