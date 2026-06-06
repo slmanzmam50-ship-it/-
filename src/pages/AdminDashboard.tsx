@@ -33,6 +33,7 @@ const AdminDashboard: React.FC = () => {
     const [categoryEditImageUrl, setCategoryEditImageUrl] = useState('');
     const [categoryEditFile, setCategoryEditFile] = useState<File | null>(null);
     const [lang, setLang] = useState<'ar' | 'en'>(() => (localStorage.getItem('lang') as 'ar' | 'en') || 'ar');
+    const [isBatchFetching, setIsBatchFetching] = useState(false);
 
     useEffect(() => {
         const checkLang = setInterval(() => {
@@ -194,6 +195,64 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
+    const handleBatchFetchImages = async () => {
+        if (window.confirm(lang === 'ar' ? 'هل تريد جلب وتحديث صور الغلاف لجميع الفروع من قوقل ماب تلقائياً؟' : 'Do you want to automatically fetch and update cover images for all branches from Google Maps?')) {
+            setIsBatchFetching(true);
+            const toastId = toast.loading(lang === 'ar' ? 'جاري جلب وتحديث صور الفروع من قوقل ماب...' : 'Fetching and updating branch images from Google Maps...');
+            let updatedCount = 0;
+            let failedCount = 0;
+
+            for (const b of branches) {
+                if (!b.mapUrl) continue;
+                try {
+                    const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(b.mapUrl)}`);
+                    if (!response.ok) throw new Error("Failed to fetch HTML");
+                    const html = await response.text();
+
+                    const match = html.match(/property="og:image"\s+content="([^"]+)"/i) || 
+                                  html.match(/content="([^"]+)"\s+property="og:image"/i) ||
+                                  html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i);
+
+                    if (match && match[1]) {
+                        let imageUrl = match[1].replace(/&amp;/g, '&');
+                        
+                        if (imageUrl.includes('googleusercontent.com') || imageUrl.includes('ggpht.com')) {
+                            imageUrl = imageUrl.replace(/=[ws]\d+[^&]*/, '=s800');
+                            if (!imageUrl.includes('=')) {
+                                imageUrl += '=s800';
+                            }
+                        }
+
+                        const imgResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`);
+                        if (imgResponse.ok) {
+                            const blob = await imgResponse.blob();
+                            const filename = `google_map_photo_${b.id}.jpg`;
+                            const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+                            
+                            const finalImageUrl = await uploadImage(file, 'branches');
+                            await updateBranch({ ...b, imageUrl: finalImageUrl });
+                            updatedCount++;
+                        } else {
+                            failedCount++;
+                        }
+                    } else {
+                        failedCount++;
+                    }
+                } catch (e) {
+                    console.error(e);
+                    failedCount++;
+                }
+            }
+            toast.success(
+                lang === 'ar' 
+                    ? `اكتمل التحديث تلقائياً! تم تحديث ${updatedCount} فرع، وفشل ${failedCount} فرع.`
+                    : `Batch update complete! Updated ${updatedCount} branches, failed ${failedCount}.`, 
+                { id: toastId, duration: 6000 }
+            );
+            setIsBatchFetching(false);
+        }
+    };
+
     const getBranchCountByCategory = (catName: string) => branches.filter(b => b.categories?.includes(catName)).length;
 
     return (
@@ -275,6 +334,26 @@ const AdminDashboard: React.FC = () => {
                             >
                                 <FileDown size={18} />
                                 <span className="mobile-hide">{lang === 'ar' ? 'تصدير إكسل' : 'Export Excel'}</span>
+                            </button>
+                            <button 
+                                onClick={handleBatchFetchImages} 
+                                disabled={isBatchFetching}
+                                style={{ 
+                                    background: 'var(--navy-surface)', 
+                                    color: 'white', 
+                                    padding: '0.85rem 1.25rem', 
+                                    borderRadius: '10px', 
+                                    border: '1px solid var(--border-color)', 
+                                    fontWeight: 700, 
+                                    cursor: isBatchFetching ? 'not-allowed' : 'pointer', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '0.5rem',
+                                    fontSize: '14px'
+                                }}
+                            >
+                                {isBatchFetching ? <Loader2 className="animate-spin" size={18} /> : <ImageIcon size={18} />}
+                                <span>{lang === 'ar' ? 'تحديث الصور من قوقل' : 'Update Images from Google'}</span>
                             </button>
                             <button 
                                 onClick={() => setIsFormOpen(true)} 
