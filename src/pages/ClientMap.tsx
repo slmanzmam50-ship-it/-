@@ -321,15 +321,14 @@ const ClientMap: React.FC = () => {
         return () => { unsubBranches(); unsubCategories(); };
     }, []);
 
-    // Handle deep linking from shared links (?branch=id)
+    // Handle deep linking from shared links (?branch=id) -> Redirect directly to Google Maps
     useEffect(() => {
         const branchId = searchParams.get('branch');
         if (branchId && branches.length > 0) {
             const target = branches.find(b => b.id === branchId);
             if (target) {
-                setMapCenter([target.latitude, target.longitude]);
-                setMapZoom(16);
-                setSelectedBranch(target);
+                const mapsUrl = target.mapUrl || `https://www.google.com/maps/search/?api=1&query=${target.latitude},${target.longitude}`;
+                window.location.replace(mapsUrl);
             }
         }
     }, [searchParams, branches]);
