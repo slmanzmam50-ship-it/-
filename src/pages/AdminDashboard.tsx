@@ -250,12 +250,16 @@ const AdminDashboard: React.FC = () => {
 
                         if (imgResponse.ok) {
                             const blob = await imgResponse.blob();
-                            const filename = `google_map_photo_${b.id}.jpg`;
-                            const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
-                            
-                            const finalImageUrl = await uploadImage(file, 'branches');
-                            await updateBranch({ ...b, imageUrl: finalImageUrl });
-                            updatedCount++;
+                            if (blob.type.startsWith('image/')) {
+                                const filename = `google_map_photo_${b.id}.jpg`;
+                                const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+                                
+                                const finalImageUrl = await uploadImage(file, 'branches');
+                                await updateBranch({ ...b, imageUrl: finalImageUrl });
+                                updatedCount++;
+                            } else {
+                                failedCount++;
+                            }
                         } else {
                             failedCount++;
                         }

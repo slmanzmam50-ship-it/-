@@ -238,6 +238,9 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
             // Step 3: Fetch the image file (through proxy to avoid CORS)
             const imgResponse = await proxyFetch(imageUrl);
             const blob = await imgResponse.blob();
+            if (!blob.type.startsWith('image/')) {
+                throw new Error("الملف المسترجع من الرابط ليس صورة صالحة.");
+            }
 
             // Step 4: Create a File object and set it in state
             const filename = `google_map_photo_${Date.now()}.jpg`;
