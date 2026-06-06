@@ -213,16 +213,32 @@ const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.
     });
 };
 
+// Helper to convert File to Base64 data URL
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+    });
+};
+
 // --- Storage Upload ---
 export const uploadImage = async (file: File, path: string): Promise<string> => {
     try {
         const compressedFile = await compressImage(file);
-        const fileExt = compressedFile.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const storageRef = ref(storage, `${path}/${fileName}`);
-        const snapshot = await uploadBytes(storageRef, compressedFile);
-        const downloadUrl = await getDownloadURL(snapshot.ref);
-        return downloadUrl;
+        
+        try {
+            const fileExt = compressedFile.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const storageRef = ref(storage, `${path}/${fileName}`);
+            const snapshot = await uploadBytes(storageRef, compressedFile);
+            const downloadUrl = await getDownloadURL(snapshot.ref);
+            return downloadUrl;
+        } catch (storageError) {
+            console.warn("Firebase Storage failed, falling back to Base64:", storageError);
+            return await fileToBase64(compressedFile);
+        }
     } catch (error) {
         console.error("Error uploading image:", error);
         throw error;
