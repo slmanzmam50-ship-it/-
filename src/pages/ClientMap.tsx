@@ -6,7 +6,7 @@ import type { Language } from '../services/translations';
 import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories } from '../services/storage';
 import { translations } from '../services/translations';
 import type { Branch, Category } from '../types';
-import { Navigation, MessageCircle, Map as MapIcon, List, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc } from 'lucide-react';
+import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LocationLoader from '../components/LocationLoader';
 

@@ -195,20 +195,6 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const proxyFetch = async (url: string, signal?: AbortSignal): Promise<Response> => {
-        // Try local serverless function first
-        try {
-            const res = await fetch(`/api/fetch-map-image?url=${encodeURIComponent(url)}`, { signal });
-            if (res.ok) return res;
-        } catch (e) {
-            console.warn("Local API proxy failed, falling back to public proxy...", e);
-        }
-
-        // Fallback: allorigins public proxy
-        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, { signal });
-        if (!res.ok) throw new Error("CORS Proxy Error");
-        return res;
-    };
 
     const handleBatchFetchImages = async () => {
         if (window.confirm(lang === 'ar' ? 'هل تريد جلب وتحديث صور الغلاف لجميع الفروع من قوقل ماب تلقائياً؟' : 'Do you want to automatically fetch and update cover images for all branches from Google Maps?')) {
