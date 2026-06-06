@@ -169,7 +169,8 @@ const BranchDetailModal: React.FC<{
     congestionLevel: { text: string; class: string; color: string };
     onClose: () => void;
     onNavigate: () => void;
-}> = ({ branch, lang, congestionLevel, onClose, onNavigate }) => {
+    onImageClick: (url: string) => void;
+}> = ({ branch, lang, congestionLevel, onClose, onNavigate, onImageClick }) => {
     const open = isCurrentlyOpen(branch);
     const timeRem = getTimeRemaining(branch, lang);
 
@@ -181,7 +182,10 @@ const BranchDetailModal: React.FC<{
                 </button>
 
                 {branch.imageUrl && (
-                    <div style={{ height: '200px', overflow: 'hidden', borderRadius: '16px 16px 0 0' }}>
+                    <div 
+                        onClick={() => onImageClick(branch.imageUrl!)}
+                        style={{ height: '200px', overflow: 'hidden', borderRadius: '16px 16px 0 0', cursor: 'zoom-in' }}
+                    >
                         <img src={branch.imageUrl} alt={branch.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                 )}
@@ -291,6 +295,7 @@ const ClientMap: React.FC = () => {
     const [popupOpen, setPopupOpen] = useState(false);
     const [isLocatingLoc, setIsLocatingLoc] = useState(false);
     const prevMapZoomRef = useRef<number>(5);
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
     const t = translations[lang];
 
@@ -688,7 +693,10 @@ const ClientMap: React.FC = () => {
                                         <div style={{ minWidth: '220px', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
                                             <h3 style={{ margin: '0 0 6px', color: 'var(--primary-color)', fontSize: '16px' }}>{b.name}</h3>
                                             {b.imageUrl && (
-                                                <div style={{ height: '100px', width: '100%', marginBottom: '8px', borderRadius: '8px', overflow: 'hidden' }}>
+                                                <div 
+                                                    onClick={() => setLightboxImage(b.imageUrl || null)}
+                                                    style={{ height: '100px', width: '100%', marginBottom: '8px', borderRadius: '8px', overflow: 'hidden', cursor: 'zoom-in' }}
+                                                >
                                                     <img src={b.imageUrl} alt={b.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                 </div>
                                             )}
@@ -869,7 +877,64 @@ const ClientMap: React.FC = () => {
                     congestionLevel={getCongestionLevel(selectedBranch.id)}
                     onClose={() => setSelectedBranch(null)}
                     onNavigate={() => { handleNavigate(selectedBranch); setSelectedBranch(null); }}
+                    onImageClick={(url) => setLightboxImage(url)}
                 />
+            )}
+
+            {/* Image Lightbox Preview Overlay */}
+            {lightboxImage && (
+                <div 
+                    onClick={() => setLightboxImage(null)}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        background: 'rgba(0, 0, 0, 0.95)',
+                        zIndex: 99999,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'zoom-out',
+                        animation: 'fadeIn 0.2s ease'
+                    }}
+                >
+                    <button 
+                        onClick={() => setLightboxImage(null)}
+                        style={{
+                            position: 'absolute',
+                            top: '20px',
+                            right: '20px',
+                            background: 'rgba(255,255,255,0.2)',
+                            border: 'none',
+                            color: 'white',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold',
+                            fontSize: '20px',
+                            zIndex: 100000
+                        }}
+                    >
+                        ✕
+                    </button>
+                    <img 
+                        src={lightboxImage} 
+                        alt="Preview" 
+                        style={{
+                            maxWidth: '90%',
+                            maxHeight: '90%',
+                            objectFit: 'contain',
+                            borderRadius: '12px',
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                        }}
+                    />
+                </div>
             )}
 
             <LocationLoader isActive={isLocatingLoc} lang={lang} />
