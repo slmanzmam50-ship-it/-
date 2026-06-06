@@ -734,6 +734,7 @@ const ClientMap: React.FC = () => {
                                     </Popup>
                                 </Marker>
                             );
+                        });
                         })()}
                     </MapContainer>
                 ) : (
