@@ -465,9 +465,20 @@ const AdminDashboard: React.FC = () => {
                                     ) : filteredBranches.map(b => (
                                         <tr key={b.id} className="animate-fade-in">
                                             <td>
-                                                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{b.name}</div>
-                                                <div style={{ display: 'block' }} className="desktop-hide">
-                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{b.address}</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                        {b.imageUrl ? (
+                                                            <img src={b.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        ) : (
+                                                            <ImageIcon size={14} color="var(--text-secondary)" style={{ opacity: 0.5 }} />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{b.name}</div>
+                                                        <div style={{ display: 'block' }} className="desktop-hide">
+                                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{b.address}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="mobile-hide" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '250px' }}>{b.address}</td>
