@@ -33,17 +33,39 @@ const createUserIcon = () => L.divIcon({
     popupAnchor: [0, -12]
 });
 
-// Branch status dot marker
-const createDotIcon = (status: string) => {
-    const isOpen = status === 'مفتوح';
+// Branch status circular marker with branch image and pointer pin
+const createBranchIcon = (branch: Branch, isOpen: boolean) => {
+    const statusColor = isOpen ? '#10b981' : '#ef4444';
+    
+    // SVG store icon placeholder if no image is present
+    const placeholderSvg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${statusColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: ${statusColor}; display: block;">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+    `;
+
+    const htmlContent = `
+        <div class="custom-branch-marker-container">
+            <div class="marker-circle" style="border-color: ${statusColor};">
+                ${branch.imageUrl 
+                    ? `<img src="${branch.imageUrl}" alt="${branch.name}" class="marker-img" />`
+                    : `<div class="marker-placeholder">${placeholderSvg}</div>`
+                }
+            </div>
+            <div class="marker-pin" style="background-color: ${statusColor};"></div>
+        </div>
+    `;
+
     return L.divIcon({
-        className: 'custom-dot-marker',
-        html: `<div class="dot-indicator ${isOpen ? 'dot-open' : 'dot-closed'}"></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-        popupAnchor: [0, -12]
+        className: 'custom-branch-leaflet-icon',
+        html: htmlContent,
+        iconSize: [46, 56],
+        iconAnchor: [23, 56], // Tip of pin points to coordinates
+        popupAnchor: [0, -56]
     });
 };
+
 
 
 
@@ -633,7 +655,7 @@ const ClientMap: React.FC = () => {
                                 <Marker
                                     key={b.id}
                                     position={[b.latitude, b.longitude]}
-                                    icon={createDotIcon(open ? 'مفتوح' : 'مغلق')}
+                                    icon={createBranchIcon(b, open)}
                                     eventHandlers={{
                                         click: () => {
                                             prevMapZoomRef.current = mapZoom;
