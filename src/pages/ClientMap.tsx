@@ -638,21 +638,34 @@ const ClientMap: React.FC = () => {
                                 <Popup>{lang === 'ar' ? '📍 موقعك الحالي' : '📍 Your Location'}</Popup>
                             </Marker>
                         )}
-                        {sortedBranches.map(b => {
-                            const open = isCurrentlyOpen(b);
-                            return (
-                                <Marker
-                                    key={b.id}
-                                    position={[b.latitude, b.longitude]}
-                                    icon={createBranchIcon(b, open)}
-                                    eventHandlers={{
-                                        click: () => {
-                                            prevMapZoomRef.current = mapZoom;
-                                            setMapCenter([b.latitude, b.longitude]);
-                                            setMapZoom(15);
-                                        }
-                                    }}
-                                >
+                        {(() => {
+                            const usedCoords = new Set<string>();
+                            return sortedBranches.map(b => {
+                                const open = isCurrentlyOpen(b);
+                                let lat = b.latitude;
+                                let lng = b.longitude;
+                                const coordKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+                                
+                                if (usedCoords.has(coordKey)) {
+                                    const count = Array.from(usedCoords).filter(k => k === coordKey).length + 1;
+                                    lat += (Math.sin(count * 2.5) * 0.00018);
+                                    lng += (Math.cos(count * 2.5) * 0.00018);
+                                }
+                                usedCoords.add(coordKey);
+
+                                return (
+                                    <Marker
+                                        key={b.id}
+                                        position={[lat, lng]}
+                                        icon={createBranchIcon(b, open)}
+                                        eventHandlers={{
+                                            click: () => {
+                                                prevMapZoomRef.current = mapZoom;
+                                                setMapCenter([b.latitude, b.longitude]);
+                                                setMapZoom(15);
+                                            }
+                                        }}
+                                    >
                                     <Popup className="premium-popup">
                                         <div style={{ minWidth: '220px', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
                                             <h3 style={{ margin: '0 0 6px', color: 'var(--primary-color)', fontSize: '16px' }}>{b.name}</h3>
@@ -721,7 +734,7 @@ const ClientMap: React.FC = () => {
                                     </Popup>
                                 </Marker>
                             );
-                        })}
+                        })()}
                     </MapContainer>
                 ) : (
                     // ============================================================
