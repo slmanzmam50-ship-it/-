@@ -218,56 +218,31 @@ const AdminDashboard: React.FC = () => {
             let failedCount = 0;
 
             const processBranch = async (b: Branch) => {
-                if (!b.mapUrl) return;
                 try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 8000);
+                    const queryVal = b.name + ' ' + (b.address || '');
+                    const apiUrl = `/api/get-google-photo?query=${encodeURIComponent(queryVal)}&lat=${b.latitude}&lng=${b.longitude}`;
 
-                    const response = await proxyFetch(b.mapUrl, controller.signal);
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+                    const response = await fetch(apiUrl, { signal: controller.signal });
                     clearTimeout(timeoutId);
 
-                    const html = await response.text();
-
-                    const match = html.match(/property="og:image"\s+content="([^"]+)"/i) || 
-                                  html.match(/content="([^"]+)"\s+property="og:image"/i) ||
-                                  html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i);
-
-                    if (match && match[1]) {
-                        let imageUrl = match[1].replace(/&amp;/g, '&');
-                        
-                        if (imageUrl.includes('googleusercontent.com') || imageUrl.includes('ggpht.com')) {
-                            imageUrl = imageUrl.replace(/=[ws]\d+[^&]*/, '=s800');
-                            if (!imageUrl.includes('=')) {
-                                imageUrl += '=s800';
-                            }
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        if (blob.type.startsWith('image/')) {
+                            const filename = `google_map_photo_${b.id}.jpg`;
+                            const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+                            
+                            const finalImageUrl = await uploadImage(file, 'branches');
+                            await updateBranch({ ...b, imageUrl: finalImageUrl });
+                            updatedCount++;
+                            return;
                         }
-
-                        const imgController = new AbortController();
-                        const imgTimeoutId = setTimeout(() => imgController.abort(), 8000);
-
-                        const imgResponse = await proxyFetch(imageUrl, imgController.signal);
-                        clearTimeout(imgTimeoutId);
-
-                        if (imgResponse.ok) {
-                            const blob = await imgResponse.blob();
-                            if (blob.type.startsWith('image/')) {
-                                const filename = `google_map_photo_${b.id}.jpg`;
-                                const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
-                                
-                                const finalImageUrl = await uploadImage(file, 'branches');
-                                await updateBranch({ ...b, imageUrl: finalImageUrl });
-                                updatedCount++;
-                            } else {
-                                failedCount++;
-                            }
-                        } else {
-                            failedCount++;
-                        }
-                    } else {
-                        failedCount++;
                     }
+                    failedCount++;
                 } catch (e) {
-                    console.error(`Failed for branch ${b.name}:`, e);
+                    console.error(`Failed to fetch image for branch ${b.name}:`, e);
                     failedCount++;
                 }
             };
