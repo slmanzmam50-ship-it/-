@@ -661,6 +661,9 @@ const ClientMap: React.FC = () => {
                                                     <img src={b.imageUrl} alt={b.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                 </div>
                                             )}
+                                            <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '8px' }}>
+                                                Debug: Image URL? {b.imageUrl ? `Yes (${b.imageUrl.length} chars)` : 'No'}
+                                            </div>
 
                                             {/* #2 Smart open/close indicator */}
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
