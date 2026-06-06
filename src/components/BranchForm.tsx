@@ -186,71 +186,67 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         );
     };
 
-    const proxyFetch = async (url: string): Promise<Response> => {
-        // Try local serverless function first
-        try {
-            const res = await fetch(`/api/fetch-map-image?url=${encodeURIComponent(url)}`);
-            if (res.ok) return res;
-        } catch (e) {
-            console.warn("Local API proxy failed, falling back to public proxy...", e);
-        }
 
-        // Fallback: allorigins public proxy
-        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
-        if (!res.ok) throw new Error("CORS Proxy Error");
-        return res;
-    };
 
     const handleFetchGoogleImage = async () => {
-        const urlToFetch = mapInput.trim() || formData.mapUrl;
-        if (!urlToFetch) {
-            toast.error("يرجى إدخال رابط قوقل ماب في حقل البحث أولاً");
-            return;
-        }
-
         setIsFetchingImage(true);
         const toastId = toast.loading("جاري جلب الصورة من قوقل ماب...");
         try {
-            // Step 1: Fetch HTML via CORS proxy
-            const response = await proxyFetch(urlToFetch);
-            const html = await response.text();
-
-            // Step 2: Extract og:image
-            const match = html.match(/property="og:image"\s+content="([^"]+)"/i) || 
-                          html.match(/content="([^"]+)"\s+property="og:image"/i) ||
-                          html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i);
-
-            if (!match || !match[1]) {
-                throw new Error("لم نتمكن من العثور على صورة في هذا الرابط. تأكد من أنه رابط مكان صحيح في قوقل ماب.");
-            }
-
-            let imageUrl = match[1];
-            imageUrl = imageUrl.replace(/&amp;/g, '&');
-
-            // Boost quality for Google User Content URLs
-            if (imageUrl.includes('googleusercontent.com') || imageUrl.includes('ggpht.com')) {
-                imageUrl = imageUrl.replace(/=[ws]\d+[^&]*/, '=s800');
-                if (!imageUrl.includes('=')) {
-                    imageUrl += '=s800';
-                }
-            }
-
-            // Step 3: Fetch the image file (through proxy to avoid CORS)
-            const imgResponse = await proxyFetch(imageUrl);
-            const blob = await imgResponse.blob();
-            if (!blob.type.startsWith('image/')) {
-                throw new Error("الملف المسترجع من الرابط ليس صورة صالحة.");
-            }
-
-            // Step 4: Create a File object and set it in state
-            const filename = `google_map_photo_${Date.now()}.jpg`;
-            const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+            // Try the official Google Places/StreetView serverless API first
+            const queryVal = formData.name + ' ' + (formData.address || '');
+            const apiUrl = `/api/get-google-photo?query=${encodeURIComponent(queryVal)}&lat=${formData.latitude}&lng=${formData.longitude}`;
             
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error("Google Places API failed");
+            
+            const blob = await response.blob();
+            if (!blob.type.startsWith('image/')) {
+                throw new Error("الملف المسترجع ليس صورة صالحة.");
+            }
+
+            // Create File and set state
+            const filename = `google_map_photo_${Date.now()}.jpg`;
+            const file = new File([blob], filename, { type: blob.type });
             setImageFile(file);
-            toast.success("تم جلب الصورة من قوقل ماب بنجاح! 📸", { id: toastId });
+            
+            toast.success("تم جلب الصورة الرسمية من قوقل ماب بنجاح! 📸", { id: toastId });
         } catch (error: any) {
-            console.error(error);
-            toast.error("فشل في جلب الصورة. تأكد من صحة الرابط وجرب مرة أخرى.", { id: toastId });
+            console.warn("Places API failed, trying legacy scraper fallback...", error);
+            try {
+                const urlToFetch = mapInput.trim() || formData.mapUrl;
+                if (!urlToFetch) throw new Error("No URL to scrape");
+                
+                const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlToFetch)}`);
+                if (!response.ok) throw new Error("Scraper failed");
+                const html = await response.text();
+                
+                const match = html.match(/property="og:image"\s+content="([^"]+)"/i) || 
+                              html.match(/content="([^"]+)"\s+property="og:image"/i) ||
+                              html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i);
+                
+                if (match && match[1]) {
+                    let imageUrl = match[1].replace(/&amp;/g, '&');
+                    
+                    if (imageUrl.includes('googleusercontent.com') || imageUrl.includes('ggpht.com')) {
+                        imageUrl = imageUrl.replace(/=[ws]\d+[^&]*/, '=s800');
+                        if (!imageUrl.includes('=')) {
+                            imageUrl += '=s800';
+                        }
+                    }
+
+                    const imgResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`);
+                    const blob = await imgResponse.blob();
+                    if (blob.type.startsWith('image/')) {
+                        const file = new File([blob], `scraped_${Date.now()}.jpg`, { type: blob.type });
+                        setImageFile(file);
+                        toast.success("تم جلب الصورة الاحتياطية بنجاح! 📸", { id: toastId });
+                        return;
+                    }
+                }
+                throw new Error("Scraper failed");
+            } catch (fallbackError) {
+                toast.error("فشل في جلب الصورة. تأكد من صحة الرابط أو قم بالرفع اليدوي.", { id: toastId });
+            }
         } finally {
             setIsFetchingImage(false);
         }
