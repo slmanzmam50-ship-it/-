@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { useSearchParams } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Language } from '../services/translations';
@@ -303,6 +304,8 @@ const ClientMap: React.FC = () => {
         return () => window.removeEventListener('langChange', handleLangChange);
     }, []);
 
+    const [searchParams] = useSearchParams();
+
     // Subscribe to data
     useEffect(() => {
         const unsubBranches = subscribeToBranches((data) => {
@@ -312,6 +315,19 @@ const ClientMap: React.FC = () => {
         const unsubCategories = subscribeToCategories(setCategories);
         return () => { unsubBranches(); unsubCategories(); };
     }, []);
+
+    // Handle deep linking from shared links (?branch=id)
+    useEffect(() => {
+        const branchId = searchParams.get('branch');
+        if (branchId && branches.length > 0) {
+            const target = branches.find(b => b.id === branchId);
+            if (target) {
+                setMapCenter([target.latitude, target.longitude]);
+                setMapZoom(16);
+                setSelectedBranch(target);
+            }
+        }
+    }, [searchParams, branches]);
 
     useEffect(() => {
         const unsubs: (() => void)[] = [];
@@ -452,16 +468,17 @@ const ClientMap: React.FC = () => {
     }, [userLoc, lang, mapZoom]);
 
     const handleShare = async (branch: Branch) => {
+        const appUrl = `${window.location.origin}/?branch=${branch.id}`;
         const shareData = {
             title: branch.name,
-            text: `${branch.name}\n${branch.address}\n${lang === 'ar' ? 'سلمان زمام الخالدي لخدمة السيارات' : 'Salman Al-Khalidi Auto Service'}`,
-            url: `https://www.google.com/maps/search/?api=1&query=${branch.latitude},${branch.longitude}`
+            text: `${branch.name}\n📍 ${branch.address}\n📞 ${branch.phone || ''}\n${lang === 'ar' ? 'سلمان زمام الخالدي لخدمة السيارات' : 'Salman Al-Khalidi Auto Service'}`,
+            url: appUrl
         };
         if (navigator.share) {
             try { await navigator.share(shareData); } catch { /* ignore */ }
         } else {
-            navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
-            toast.success(lang === 'ar' ? 'تم نسخ تفاصيل الفرع' : 'Branch details copied');
+            navigator.clipboard.writeText(`${shareData.text}\n🔗 رابط الموقع: ${shareData.url}`);
+            toast.success(lang === 'ar' ? 'تم نسخ رابط وتفاصيل الفرع بنجاح!' : 'Branch link and details copied successfully!');
         }
     };
 
@@ -724,13 +741,21 @@ const ClientMap: React.FC = () => {
                                                 </a>
                                             </div>
 
-                                            {/* Details button that opens modal */}
-                                            <button
-                                                onClick={() => setSelectedBranch(b)}
-                                                style={{ width: '100%', marginTop: '8px', background: 'rgba(59,130,246,0.1)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
-                                            >
-                                                {lang === 'ar' ? '📋 تفاصيل أكثر' : '📋 More Details'}
-                                            </button>
+                                            {/* Details button that opens modal & Share button */}
+                                            <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                                                <button
+                                                    onClick={() => setSelectedBranch(b)}
+                                                    style={{ flex: 1.5, background: 'rgba(59,130,246,0.1)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                                >
+                                                    📋 {lang === 'ar' ? 'تفاصيل أكثر' : 'More Details'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleShare(b)}
+                                                    style={{ flex: 1, background: 'rgba(245,158,11,0.1)', color: 'var(--accent-orange)', border: '1px solid var(--accent-orange)', padding: '8px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                                >
+                                                    <Share2 size={12} /> {lang === 'ar' ? 'مشاركة' : 'Share'}
+                                                </button>
+                                            </div>
                                         </div>
                                     </Popup>
                                 </Marker>
