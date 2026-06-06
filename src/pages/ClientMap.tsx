@@ -658,6 +658,7 @@ const ClientMap: React.FC = () => {
                                         key={b.id}
                                         position={[lat, lng]}
                                         icon={createBranchIcon(b, open)}
+                                        zIndexOffset={b.imageUrl ? 1000 : 0}
                                         eventHandlers={{
                                             click: () => {
                                                 prevMapZoomRef.current = mapZoom;
