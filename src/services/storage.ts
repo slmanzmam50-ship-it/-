@@ -232,11 +232,18 @@ export const uploadImage = async (file: File, path: string): Promise<string> => 
             const fileExt = compressedFile.name.split('.').pop();
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
             const storageRef = ref(storage, `${path}/${fileName}`);
-            const snapshot = await uploadBytes(storageRef, compressedFile);
+            
+            // Promise.race with a 2-second timeout to prevent indefinite hanging if Firebase Storage is disabled/not created
+            const uploadPromise = uploadBytes(storageRef, compressedFile);
+            const timeoutPromise = new Promise<never>((_, reject) => 
+                setTimeout(() => reject(new Error('Firebase Storage upload timed out')), 2000)
+            );
+            
+            const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
             const downloadUrl = await getDownloadURL(snapshot.ref);
             return downloadUrl;
         } catch (storageError) {
-            console.warn("Firebase Storage failed, falling back to Base64:", storageError);
+            console.warn("Firebase Storage failed or timed out, falling back to Base64:", storageError);
             return await fileToBase64(compressedFile);
         }
     } catch (error) {
