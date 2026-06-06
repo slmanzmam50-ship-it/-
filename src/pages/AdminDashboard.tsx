@@ -202,10 +202,17 @@ const AdminDashboard: React.FC = () => {
             let updatedCount = 0;
             let failedCount = 0;
 
-            for (const b of branches) {
-                if (!b.mapUrl) continue;
+            const processBranch = async (b: Branch) => {
+                if (!b.mapUrl) return;
                 try {
-                    const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(b.mapUrl)}`);
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+                    const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(b.mapUrl)}`, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
                     if (!response.ok) throw new Error("Failed to fetch HTML");
                     const html = await response.text();
 
@@ -223,7 +230,14 @@ const AdminDashboard: React.FC = () => {
                             }
                         }
 
-                        const imgResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`);
+                        const imgController = new AbortController();
+                        const imgTimeoutId = setTimeout(() => imgController.abort(), 8000);
+
+                        const imgResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`, {
+                            signal: imgController.signal
+                        });
+                        clearTimeout(imgTimeoutId);
+
                         if (imgResponse.ok) {
                             const blob = await imgResponse.blob();
                             const filename = `google_map_photo_${b.id}.jpg`;
@@ -239,10 +253,14 @@ const AdminDashboard: React.FC = () => {
                         failedCount++;
                     }
                 } catch (e) {
-                    console.error(e);
+                    console.error(`Failed for branch ${b.name}:`, e);
                     failedCount++;
                 }
-            }
+            };
+
+            // Process all in parallel (fast and robust)
+            await Promise.all(branches.map(b => processBranch(b)));
+
             toast.success(
                 lang === 'ar' 
                     ? `اكتمل التحديث تلقائياً! تم تحديث ${updatedCount} فرع، وفشل ${failedCount} فرع.`
