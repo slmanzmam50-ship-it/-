@@ -562,26 +562,34 @@ const ClientMap: React.FC = () => {
     return (
         <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
-            <div className="branch-directory-header">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', width: '100%', maxWidth: '600px' }}>
-                    <h1 style={{ margin: 0, fontSize: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <MapPin size={24} color="var(--accent-orange)" /> {lang === 'ar' ? 'دليل الفروع' : 'Branch Directory'}
-                    </h1>
+            <div className="branch-directory-header" style={{ padding: '8px 12px', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '600px' }}>
+                    <div className="search-pill-container" style={{ flex: 1, position: 'relative', margin: 0 }}>
+                        <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={16} />
+                        <input
+                            className="search-pill"
+                            type="text"
+                            placeholder={lang === 'ar' ? 'ابحث بالاسم، المدينة...' : 'Search by name, city...'}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{ padding: '8px 36px 8px 12px', fontSize: '14px', height: '38px' }}
+                        />
+                    </div>
                     {/* Sort Button */}
                     <div style={{ position: 'relative' }}>
                         <button
                             onClick={() => setShowSortMenu(!showSortMenu)}
-                            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', padding: '8px 14px', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', padding: '8px 12px', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', height: '38px', whiteSpace: 'nowrap' }}
                         >
-                            <SortAsc size={16} /> {sortLabels[sortBy]} <ChevronDown size={14} />
+                            <SortAsc size={16} /> <span className="mobile-hide">{sortLabels[sortBy]}</span> <ChevronDown size={12} />
                         </button>
                         {showSortMenu && (
-                            <div style={{ position: 'absolute', top: '110%', left: 0, background: 'var(--navy-surface)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', padding: '8px', zIndex: 9999, minWidth: '160px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                            <div style={{ position: 'absolute', top: '110%', left: 0, background: 'var(--navy-surface)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', padding: '6px', zIndex: 9999, minWidth: '140px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
                                 {(['default', 'open', 'nearest', 'name'] as const).map(opt => (
                                     <button
                                         key={opt}
                                         onClick={() => { setSortBy(opt); setShowSortMenu(false); }}
-                                        style={{ display: 'block', width: '100%', padding: '10px 14px', background: sortBy === opt ? 'var(--accent-orange)' : 'transparent', color: 'white', border: 'none', borderRadius: '8px', textAlign: lang === 'ar' ? 'right' : 'left', fontWeight: 600, cursor: 'pointer', fontSize: '14px' }}
+                                        style={{ display: 'block', width: '100%', padding: '8px 12px', background: sortBy === opt ? 'var(--accent-orange)' : 'transparent', color: 'white', border: 'none', borderRadius: '8px', textAlign: lang === 'ar' ? 'right' : 'left', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                     >
                                         {sortLabels[opt]}
                                     </button>
@@ -591,28 +599,8 @@ const ClientMap: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="search-pill-container" style={{ marginTop: 0 }}>
-                    <Search style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={20} />
-                    <input
-                        className="search-pill"
-                        type="text"
-                        placeholder={lang === 'ar' ? 'ابحث بالاسم، المدينة، أو الخدمة...' : 'Search by name, city or service...'}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                </div>
-
-                <div className="segmented-toggle">
-                    <button className={`toggle-btn ${viewMode === 'map' ? 'active' : ''}`} onClick={() => setViewMode('map')}>
-                        <MapIcon size={18} /> {lang === 'ar' ? 'الخريطة' : 'Map'}
-                    </button>
-                    <button className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}>
-                        <List size={18} /> {lang === 'ar' ? 'القائمة' : 'List'}
-                    </button>
-                </div>
-
-                <div className="pills-row">
-                    <button className={`pill-btn ${categoryFilter === 'all' ? 'active' : ''}`} onClick={() => setCategoryFilter('all')}>
+                <div className="pills-row" style={{ display: 'flex', gap: '6px', overflowX: 'auto', width: '100%', maxWidth: '600px', margin: 0, paddingBottom: '2px' }}>
+                    <button className={`pill-btn ${categoryFilter === 'all' ? 'active' : ''}`} onClick={() => setCategoryFilter('all')} style={{ padding: '6px 12px', fontSize: '12px' }}>
                         {lang === 'ar' ? 'الكل' : 'All'}
                     </button>
                     {categories.map(cat => (
@@ -620,6 +608,7 @@ const ClientMap: React.FC = () => {
                             key={cat.id}
                             className={`pill-btn ${categoryFilter === cat.name ? 'active' : ''}`}
                             onClick={() => setCategoryFilter(cat.name)}
+                            style={{ padding: '6px 12px', fontSize: '12px' }}
                         >
                             {cat.name}
                         </button>
