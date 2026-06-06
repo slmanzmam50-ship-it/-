@@ -472,17 +472,17 @@ const ClientMap: React.FC = () => {
     }, [userLoc, lang, mapZoom]);
 
     const handleShare = async (branch: Branch) => {
-        const appUrl = `${window.location.origin}/?branch=${branch.id}`;
+        const mapsUrl = branch.mapUrl || `https://www.google.com/maps/search/?api=1&query=${branch.latitude},${branch.longitude}`;
         const shareData = {
             title: branch.name,
             text: `${branch.name}\n📍 ${branch.address}\n📞 ${branch.phone || ''}\n${lang === 'ar' ? 'سلمان زمام الخالدي لخدمة السيارات' : 'Salman Al-Khalidi Auto Service'}`,
-            url: appUrl
+            url: mapsUrl
         };
         if (navigator.share) {
             try { await navigator.share(shareData); } catch { /* ignore */ }
         } else {
-            navigator.clipboard.writeText(`${shareData.text}\n🔗 رابط الموقع: ${shareData.url}`);
-            toast.success(lang === 'ar' ? 'تم نسخ رابط وتفاصيل الفرع بنجاح!' : 'Branch link and details copied successfully!');
+            navigator.clipboard.writeText(`${shareData.text}\n🔗 موقع قوقل ماب: ${shareData.url}`);
+            toast.success(lang === 'ar' ? 'تم نسخ رابط قوقل ماب وتفاصيل الفرع بنجاح!' : 'Google Maps link and details copied successfully!');
         }
     };
 
