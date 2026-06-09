@@ -282,11 +282,21 @@ const BranchDetailModal: React.FC<{
     );
 };
 
+const normalizeArabic = (str: string): string => {
+    if (!str) return '';
+    return str
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/[\u064B-\u0652]/g, ''); // remove diacritics
+};
+
 // ============================================================
 // MAIN COMPONENT
 // ============================================================
 const ClientMap: React.FC = () => {
     const [branches, setBranches] = useState<Branch[]>([]);
+    const [customLocInput, setCustomLocInput] = useState('');
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     // #3 - Use CustomEvent instead of setInterval for language
@@ -378,6 +388,70 @@ const formatTime = (time: string, lang: Language): string => {
     }
     return `${hour}:${minute} ${isPM ? "PM" : "AM"}`;
 };
+
+    const handleParseCustomLoc = async () => {
+        const input = customLocInput.trim();
+        if (!input) return;
+
+        // Try extracting coordinates
+        let lat: number | null = null;
+        let lng: number | null = null;
+
+        // Pattern A: @lat,lng
+        const matchAt = input.match(/@(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+        if (matchAt) {
+            lat = parseFloat(matchAt[1]);
+            lng = parseFloat(matchAt[2]);
+        } else {
+            const matchQuery = input.match(/[?&/](?:q|query|loc|place|dir|ll|cbll|addr)=?(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)/);
+            if (matchQuery) {
+                lat = parseFloat(matchQuery[1]);
+                lng = parseFloat(matchQuery[2]);
+            } else {
+                const matchPlain = input.match(/^[\s]*(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)[\s]*$/);
+                if (matchPlain) {
+                    lat = parseFloat(matchPlain[1]);
+                    lng = parseFloat(matchPlain[2]);
+                }
+            }
+        }
+
+        if (lat !== null && lng !== null) {
+            const loc: [number, number] = [lat, lng];
+            setUserLoc(loc);
+            setMapCenter(loc);
+            setMapZoom(13);
+            setSortBy('nearest');
+            toast.success(lang === 'ar' ? 'تم تحديد موقع العميل المخصص وفرز الفروع القريبة!' : 'Custom location set and nearby branches sorted!');
+        } else {
+            // Address search fallback
+            const toastId = toast.loading(lang === 'ar' ? 'جاري البحث عن العنوان...' : 'Searching for address...');
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(input)}`);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    const first = data[0];
+                    const loc: [number, number] = [parseFloat(first.lat), parseFloat(first.lon)];
+                    setUserLoc(loc);
+                    setMapCenter(loc);
+                    setMapZoom(13);
+                    setSortBy('nearest');
+                    toast.success(lang === 'ar' ? `تم تحديد الموقع: ${first.display_name.split(',')[0]} ✅` : `Location set: ${first.display_name.split(',')[0]} ✅`, { id: toastId });
+                } else {
+                    toast.error(lang === 'ar' ? 'لم نتمكن من العثور على هذا الموقع.' : 'Could not find this location.', { id: toastId });
+                }
+            } catch {
+                toast.error(lang === 'ar' ? 'خطأ في الاتصال بخدمة البحث.' : 'Error connecting to search service.', { id: toastId });
+            }
+        }
+    };
+
+    const handleClearCustomLoc = () => {
+        setUserLoc(null);
+        setCustomLocInput('');
+        setSortBy('default');
+        toast.success(lang === 'ar' ? 'تم إعادة تعيين الموقع.' : 'Location reset.');
+    };
 
     // ─── Smart 3-phase geolocation ────────────────────────────────────────
     const locateAndCenter = (loc: [number, number]) => {
@@ -479,14 +553,22 @@ const formatTime = (time: string, lang: Language): string => {
 
 
     const handleNavigate = useCallback(async (branch: Branch) => {
-        if (!userLoc) {
-            toast.error(lang === 'ar' ? 'يرجى تحديد موقعك أولاً' : 'Locate yourself first');
-            return;
+        let etaMinutes = 15;
+        if (userLoc) {
+            const distance = calculateDistance(userLoc[0], userLoc[1], branch.latitude, branch.longitude);
+            etaMinutes = Math.max(5, Math.ceil(distance / 0.66));
+        } else {
+            // Silently request geolocation for future uses
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => setUserLoc([pos.coords.latitude, pos.coords.longitude]),
+                    () => {},
+                    { enableHighAccuracy: false, timeout: 5000 }
+                );
+            }
         }
-        // #8 - Arabic toasts
+        
         toast.loading(lang === 'ar' ? 'جاري تجهيز المسار...' : 'Planning route...', { id: 'nav-toast' });
-        const distance = calculateDistance(userLoc[0], userLoc[1], branch.latitude, branch.longitude);
-        const etaMinutes = Math.max(5, Math.ceil(distance / 0.66));
         try {
             await addNavigationIntent(branch.id, etaMinutes);
             const etaMsg = lang === 'ar' ? `الوقت المقدر: ${etaMinutes} دقيقة` : `ETA: ${etaMinutes} mins`;
@@ -494,9 +576,9 @@ const formatTime = (time: string, lang: Language): string => {
             setCongestionData(prev => ({ ...prev, [branch.id]: (prev[branch.id] || 0) + 1 }));
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`, '_blank');
         } catch {
-            toast.error(lang === 'ar' ? 'حدث خطأ' : 'Error occurred', { id: 'nav-toast' });
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`, '_blank');
         }
-    }, [userLoc, lang, mapZoom]);
+    }, [userLoc, lang]);
 
     const handleShare = async (branch: Branch) => {
         const mapsUrl = branch.mapUrl || `https://www.google.com/maps/search/?api=1&query=${branch.latitude},${branch.longitude}`;
@@ -525,14 +607,20 @@ const formatTime = (time: string, lang: Language): string => {
         }
     };
 
-    // #5 - Enhanced search including categories
+    // #5 - Enhanced search including categories (tolerant to Arabic spelling variations like ة/ه, أ/ا, etc.)
     const filteredBranches = branches.filter(branch => {
-        const q = searchQuery.toLowerCase();
-        const matchesSearch = !q ||
-            branch.name.toLowerCase().includes(q) ||
-            branch.address.toLowerCase().includes(q) ||
-            branch.categories?.some(c => c.toLowerCase().includes(q)) ||
-            branch.managerName?.toLowerCase().includes(q);
+        const q = normalizeArabic(searchQuery.toLowerCase().trim());
+        if (!q) {
+            const matchesCategory = categoryFilter === 'all' || branch.categories?.includes(categoryFilter);
+            return matchesCategory;
+        }
+
+        const matchesSearch = 
+            normalizeArabic(branch.name.toLowerCase()).includes(q) ||
+            normalizeArabic(branch.address.toLowerCase()).includes(q) ||
+            branch.categories?.some(c => normalizeArabic(c.toLowerCase()).includes(q)) ||
+            (branch.managerName && normalizeArabic(branch.managerName.toLowerCase()).includes(q));
+
         const matchesCategory = categoryFilter === 'all' || branch.categories?.includes(categoryFilter);
         return matchesSearch && matchesCategory;
     });
@@ -622,7 +710,7 @@ const formatTime = (time: string, lang: Language): string => {
     return (
         <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
-            <div className="branch-directory-header" style={{ padding: '8px 12px', gap: '8px' }}>
+            <div className="branch-directory-header" style={{ padding: '8px 12px', gap: '8px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '600px' }}>
                     <div className="search-pill-container" style={{ flex: 1, position: 'relative', margin: 0 }}>
                         <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={16} />
@@ -673,6 +761,63 @@ const formatTime = (time: string, lang: Language): string => {
                             {cat.name}
                         </button>
                     ))}
+                </div>
+
+                {/* Set Custom Location (ضع الموقع) */}
+                <div style={{ display: 'flex', gap: '6px', width: '100%', maxWidth: '600px', margin: 0 }}>
+                    <input
+                        type="text"
+                        placeholder={lang === 'ar' ? 'ضع رابط موقع العميل أو الإحداثيات هنا...' : 'Paste client location link or coordinates...'}
+                        value={customLocInput}
+                        onChange={(e) => setCustomLocInput(e.target.value)}
+                        style={{
+                            flex: 1,
+                            padding: '8px 12px',
+                            borderRadius: '10px',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            background: 'rgba(255,255,255,0.08)',
+                            color: 'white',
+                            fontSize: '12px',
+                            outline: 'none',
+                            height: '36px'
+                        }}
+                    />
+                    <button
+                        onClick={handleParseCustomLoc}
+                        style={{
+                            background: 'var(--accent-orange)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0 12px',
+                            borderRadius: '10px',
+                            fontWeight: 700,
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            height: '36px'
+                        }}
+                    >
+                        {lang === 'ar' ? 'تحديد' : 'Locate'}
+                    </button>
+                    {userLoc && (
+                        <button
+                            onClick={handleClearCustomLoc}
+                            style={{
+                                background: 'rgba(239, 68, 68, 0.2)',
+                                color: '#ef4444',
+                                border: '1px solid rgba(239, 68, 68, 0.4)',
+                                padding: '0 10px',
+                                borderRadius: '10px',
+                                fontWeight: 700,
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                height: '36px',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            {lang === 'ar' ? 'إعادة تعيين' : 'Reset'}
+                        </button>
+                    )}
                 </div>
             </div>
 
