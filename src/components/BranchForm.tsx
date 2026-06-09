@@ -118,16 +118,29 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                 toast.loading("جاري تحليل الرابط واستخراج الموقع...", { id: "extract-link" });
             }
             
-            // Try resolving via multiple CORS proxies for maximum reliability
+            // Try resolving via multiple CORS proxies for maximum reliability with timeouts
             const fetchHTML = async () => {
+                const fetchWithTimeout = async (url: string, timeout = 4000) => {
+                    const controller = new AbortController();
+                    const id = setTimeout(() => controller.abort(), timeout);
+                    try {
+                        const response = await fetch(url, { signal: controller.signal });
+                        clearTimeout(id);
+                        return response;
+                    } catch (error) {
+                        clearTimeout(id);
+                        throw error;
+                    }
+                };
+
                 try {
-                    // Try corsproxy.io first
-                    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(input)}`);
+                    // Try corsproxy.io first with 4s timeout
+                    const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(input)}`, 4000);
                     if (!res.ok) throw new Error();
                     return await res.text();
                 } catch {
-                    // Fallback to allorigins
-                    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(input)}`);
+                    // Fallback to allorigins with 4s timeout
+                    const res = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(input)}`, 4000);
                     if (!res.ok) throw new Error("Redirect lookup failed");
                     return await res.text();
                 }
@@ -179,13 +192,15 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                     }
 
                     if (!silent) {
-                        toast.success("تم حفظ الرابط! يرجى البحث باسم المكان لإيجاده على الخريطة.", { id: "extract-link" });
+                        toast.dismiss("extract-link");
+                        toast.error("لم نتمكن من استخراج الإحداثيات تلقائياً. جاري البحث عن اسم المكان...");
                         handleSearchAddress();
                     }
                 })
                 .catch(() => {
                     if (!silent) {
-                        toast.success("تم حفظ الرابط! يرجى البحث باسم المكان لإيجاده على الخريطة.", { id: "extract-link" });
+                        toast.dismiss("extract-link");
+                        toast.error("فشل الاتصال بخدمة تحليل الروابط. جاري البحث عن اسم المكان...");
                         handleSearchAddress();
                     }
                 });
