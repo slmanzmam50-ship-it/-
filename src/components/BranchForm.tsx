@@ -16,7 +16,13 @@ const customIcon = L.divIcon({
 
 const ChangeView = ({ center }: { center: [number, number] }) => {
     const map = useMap();
-    map.flyTo(center, map.getZoom());
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            map.invalidateSize();
+            map.flyTo(center, map.getZoom());
+        }, 250); // Give the modal transition time to complete
+        return () => clearTimeout(timer);
+    }, [center, map]);
     return null;
 };
 
