@@ -132,6 +132,20 @@ const isCurrentlyOpen = (branch: Branch): boolean => {
     }
 };
 
+// Utility to format 24‑hour time strings to 12‑hour with Arabic/English suffixes
+const formatTime = (time: string, lang: Language): string => {
+    const [hStr, mStr] = time.split(":");
+    let hour = parseInt(hStr, 10);
+    const minute = mStr;
+    const isPM = hour >= 12;
+    if (hour === 0) hour = 12; // midnight => 12 AM
+    else if (hour > 12) hour = hour - 12;
+    if (lang === "ar") {
+        return `${hour}:${minute} ${isPM ? "م" : "ص"}`;
+    }
+    return `${hour}:${minute} ${isPM ? "PM" : "AM"}`;
+};
+
 const getTimeRemaining = (branch: Branch, lang: Language): string => {
     if (branch.status === 'تحت الصيانة') return '';
     try {
@@ -375,19 +389,7 @@ const ClientMap: React.FC = () => {
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
 
-// Utility to format 24‑hour time strings to 12‑hour with Arabic/English suffixes
-const formatTime = (time: string, lang: Language): string => {
-    const [hStr, mStr] = time.split(":");
-    let hour = parseInt(hStr, 10);
-    const minute = mStr;
-    const isPM = hour >= 12;
-    if (hour === 0) hour = 12; // midnight => 12 AM
-    else if (hour > 12) hour = hour - 12;
-    if (lang === "ar") {
-        return `${hour}:${minute} ${isPM ? "م" : "ص"}`;
-    }
-    return `${hour}:${minute} ${isPM ? "PM" : "AM"}`;
-};
+
 
     const handleParseCustomLoc = async () => {
         const input = customLocInput.trim();
