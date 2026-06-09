@@ -118,36 +118,14 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                 toast.loading("جاري تحليل الرابط واستخراج الموقع...", { id: "extract-link" });
             }
             
-            // Try resolving via multiple CORS proxies for maximum reliability with timeouts
-            const fetchHTML = async () => {
-                const fetchWithTimeout = async (url: string, timeout = 4000) => {
-                    const controller = new AbortController();
-                    const id = setTimeout(() => controller.abort(), timeout);
-                    try {
-                        const response = await fetch(url, { signal: controller.signal });
-                        clearTimeout(id);
-                        return response;
-                    } catch (error) {
-                        clearTimeout(id);
-                        throw error;
-                    }
-                };
+            const resolveLink = async () => {
+                // Phase 1: Try backend serverless resolver (100% reliable, bypasses CORS)
+                const resolvedViaBackend = await tryBackendResolve();
+                if (resolvedViaBackend) return;
 
+                // Phase 2: Client-side CORS proxy fallback
                 try {
-                    // Try corsproxy.io first with 4s timeout
-                    const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(input)}`, 4000);
-                    if (!res.ok) throw new Error();
-                    return await res.text();
-                } catch {
-                    // Fallback to allorigins with 4s timeout
-                    const res = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(input)}`, 4000);
-                    if (!res.ok) throw new Error("Redirect lookup failed");
-                    return await res.text();
-                }
-            };
-
-            fetchHTML()
-                .then(html => {
+                    const html = await fetchHTML();
                     // A. First try to find exact pin coordinates (!3dLAT!4dLNG)
                     const pinMatch = html.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
                     if (pinMatch) {
@@ -196,14 +174,64 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                         toast.error("لم نتمكن من استخراج الإحداثيات تلقائياً. جاري البحث عن اسم المكان...");
                         handleSearchAddress();
                     }
-                })
-                .catch(() => {
+                } catch {
                     if (!silent) {
                         toast.dismiss("extract-link");
                         toast.error("فشل الاتصال بخدمة تحليل الروابط. جاري البحث عن اسم المكان...");
                         handleSearchAddress();
                     }
-                });
+                }
+            };
+
+            const tryBackendResolve = async () => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
+                try {
+                    const res = await fetch(`/api/resolve-short-url?url=${encodeURIComponent(input)}`, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    if (data.latitude && data.longitude) {
+                        setFormData(prev => ({ ...prev, latitude: data.latitude, longitude: data.longitude }));
+                        if (!silent) toast.success("تم تحديد الموقع بنجاح عبر السيرفر! ✅", { id: "extract-link" });
+                        return true;
+                    }
+                    return false;
+                } catch {
+                    clearTimeout(timeoutId);
+                    return false;
+                }
+            };
+            
+            // Try resolving via multiple CORS proxies for maximum reliability with timeouts
+            const fetchHTML = async () => {
+                const fetchWithTimeout = async (url: string, timeout = 4000) => {
+                    const controller = new AbortController();
+                    const id = setTimeout(() => controller.abort(), timeout);
+                    try {
+                        const response = await fetch(url, { signal: controller.signal });
+                        clearTimeout(id);
+                        return response;
+                    } catch (error) {
+                        clearTimeout(id);
+                        throw error;
+                    }
+                };
+
+                try {
+                    // Try corsproxy.io first with 4s timeout
+                    const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(input)}`, 4000);
+                    if (!res.ok) throw new Error();
+                    return await res.text();
+                } catch {
+                    // Fallback to allorigins with 4s timeout
+                    const res = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(input)}`, 4000);
+                    if (!res.ok) throw new Error("Redirect lookup failed");
+                    return await res.text();
+                }
+            };
+
+            resolveLink();
             return;
         }
 
