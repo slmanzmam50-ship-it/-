@@ -151,7 +151,7 @@ export const deleteCategory = async (id: string): Promise<void> => {
 export const seedDatabaseIfNeeded = async () => {};
 
 // Helper to compress image client-side using Canvas
-const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.7): Promise<File> => {
+const compressImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.85): Promise<File> => {
     return new Promise((resolve) => {
         if (!file.type.startsWith('image/')) {
             resolve(file);

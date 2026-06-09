@@ -36,7 +36,7 @@ const createUserIcon = () => L.divIcon({
 
 // Branch status circular marker with branch image and pointer pin
 const createBranchIcon = (branch: Branch, isOpen: boolean) => {
-    const statusColor = isOpen ? '#10b981' : '#ef4444';
+    const statusColor = branch.status === 'تحت الصيانة' ? '#f97316' : (isOpen ? '#10b981' : '#ef4444');
     
     // SVG store icon placeholder if no image is present
     const placeholderSvg = `
@@ -114,7 +114,7 @@ const MapController: React.FC<{
 // #2 - Auto detect if branch is open based on current time
 // ============================================================
 const isCurrentlyOpen = (branch: Branch): boolean => {
-    if (branch.status === 'مغلق') return false;
+    if (branch.status === 'مغلق' || branch.status === 'تحت الصيانة') return false;
     try {
         const now = new Date();
         const [startH, startM] = branch.workingHours.start.split(':').map(Number);
@@ -133,6 +133,7 @@ const isCurrentlyOpen = (branch: Branch): boolean => {
 };
 
 const getTimeRemaining = (branch: Branch, lang: Language): string => {
+    if (branch.status === 'تحت الصيانة') return '';
     try {
         const now = new Date();
         const [startH, startM] = branch.workingHours.start.split(':').map(Number);
@@ -200,10 +201,22 @@ const BranchDetailModal: React.FC<{
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                         <span style={{
                             padding: '6px 14px', borderRadius: '20px', fontWeight: 800, fontSize: '13px',
-                            background: open ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-                            color: open ? 'var(--success)' : 'var(--error)'
+                            background: branch.status === 'تحت الصيانة'
+                                ? 'rgba(249, 115, 22, 0.15)'
+                                : open 
+                                    ? 'rgba(16,185,129,0.15)' 
+                                    : 'rgba(239,68,68,0.15)',
+                            color: branch.status === 'تحت الصيانة'
+                                ? '#f97316'
+                                : open 
+                                    ? 'var(--success)' 
+                                    : 'var(--error)'
                         }}>
-                            {open ? (lang === 'ar' ? '🟢 مفتوح الآن' : '🟢 Open Now') : (lang === 'ar' ? '🔴 مغلق الآن' : '🔴 Closed Now')}
+                            {branch.status === 'تحت الصيانة'
+                                ? (lang === 'ar' ? '🟠 تحت الصيانة' : '🟠 Under Maint.')
+                                : open 
+                                    ? (lang === 'ar' ? '🟢 مفتوح الآن' : '🟢 Open Now') 
+                                    : (lang === 'ar' ? '🔴 مغلق الآن' : '🔴 Closed Now')}
                         </span>
                         {timeRem && (
                             <span style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
@@ -216,7 +229,7 @@ const BranchDetailModal: React.FC<{
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                         <div style={{ background: 'var(--bg-color)', padding: '12px', borderRadius: '12px' }}>
                             <p style={{ margin: '0 0 4px', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>{lang === 'ar' ? 'ساعات العمل' : 'Working Hours'}</p>
-                            <p style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{branch.workingHours.start} – {branch.workingHours.end}</p>
+                            <p style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{formatTime(branch.workingHours.start, lang)} – {formatTime(branch.workingHours.end, lang)}</p>
                         </div>
                         <div style={{ background: 'var(--bg-color)', padding: '12px', borderRadius: '12px' }}>
                             <p style={{ margin: '0 0 4px', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>{lang === 'ar' ? 'الازدحام' : 'Congestion'}</p>
@@ -351,6 +364,20 @@ const ClientMap: React.FC = () => {
         const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
+
+// Utility to format 24‑hour time strings to 12‑hour with Arabic/English suffixes
+const formatTime = (time: string, lang: Language): string => {
+    const [hStr, mStr] = time.split(":");
+    let hour = parseInt(hStr, 10);
+    const minute = mStr;
+    const isPM = hour >= 12;
+    if (hour === 0) hour = 12; // midnight => 12 AM
+    else if (hour > 12) hour = hour - 12;
+    if (lang === "ar") {
+        return `${hour}:${minute} ${isPM ? "م" : "ص"}`;
+    }
+    return `${hour}:${minute} ${isPM ? "PM" : "AM"}`;
+};
 
     // ─── Smart 3-phase geolocation ────────────────────────────────────────
     const locateAndCenter = (loc: [number, number]) => {
@@ -719,13 +746,23 @@ const ClientMap: React.FC = () => {
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
                                                 <span style={{
                                                     fontSize: '11px', fontWeight: 800, padding: '3px 10px', borderRadius: '12px',
-                                                    background: open ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-                                                    color: open ? 'var(--success)' : 'var(--error)'
+                                                    background: b.status === 'تحت الصيانة'
+                                                        ? 'rgba(249, 115, 22, 0.15)'
+                                                        : open 
+                                                            ? 'rgba(16,185,129,0.15)' 
+                                                            : 'rgba(239,68,68,0.15)',
+                                                    color: b.status === 'تحت الصيانة'
+                                                        ? '#f97316'
+                                                        : open 
+                                                            ? 'var(--success)' 
+                                                            : 'var(--error)'
                                                 }}>
-                                                    {open ? (lang === 'ar' ? '🟢 مفتوح' : '🟢 Open') : (lang === 'ar' ? '🔴 مغلق' : '🔴 Closed')}
+                                                    {b.status === 'تحت الصيانة'
+                                                        ? (lang === 'ar' ? '🟠 تحت الصيانة' : '🟠 Maint.')
+                                                        : open ? (lang === 'ar' ? '🟢 مفتوح' : '🟢 Open') : (lang === 'ar' ? '🔴 مغلق' : '🔴 Closed')}
                                                 </span>
                                                 <span style={{ fontSize: '11px', opacity: 0.7, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                                    <Clock size={11} /> {b.workingHours.start}–{b.workingHours.end}
+                                                    <Clock size={11} /> {formatTime(b.workingHours.start, lang)}–{formatTime(b.workingHours.end, lang)}
                                                 </span>
                                             </div>
 
@@ -808,10 +845,20 @@ const ClientMap: React.FC = () => {
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                                             <span style={{
                                                 padding: '3px 10px', borderRadius: '12px', fontWeight: 800, fontSize: '11px', whiteSpace: 'nowrap',
-                                                background: open ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)',
-                                                color: open ? '#10b981' : '#ef4444'
+                                                background: b.status === 'تحت الصيانة'
+                                                    ? 'rgba(249, 115, 22, 0.2)'
+                                                    : open 
+                                                        ? 'rgba(16,185,129,0.2)' 
+                                                        : 'rgba(239,68,68,0.2)',
+                                                color: b.status === 'تحت الصيانة'
+                                                    ? '#f97316'
+                                                    : open 
+                                                        ? '#10b981' 
+                                                        : '#ef4444'
                                             }}>
-                                                {open ? (lang === 'ar' ? '🟢 مفتوح' : '🟢 Open') : (lang === 'ar' ? '🔴 مغلق' : '🔴 Closed')}
+                                                {b.status === 'تحت الصيانة'
+                                                    ? (lang === 'ar' ? '🟠 تحت الصيانة' : '🟠 Maint.')
+                                                    : open ? (lang === 'ar' ? '🟢 مفتوح' : '🟢 Open') : (lang === 'ar' ? '🔴 مغلق' : '🔴 Closed')}
                                             </span>
                                             <div className={`congestion-badge ${getCongestionLevel(b.id).class}`}>
                                                 <BarChart2 size={11} /> {getCongestionLevel(b.id).text}

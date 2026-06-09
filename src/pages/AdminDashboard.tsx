@@ -447,8 +447,16 @@ const AdminDashboard: React.FC = () => {
                                                 <span style={{ 
                                                     padding: '4px 10px', 
                                                     borderRadius: '8px', 
-                                                    background: b.status === 'مفتوح' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
-                                                    color: b.status === 'مفتوح' ? 'var(--success)' : 'var(--error)', 
+                                                    background: b.status === 'مفتوح' 
+                                                        ? 'rgba(16, 185, 129, 0.1)' 
+                                                        : b.status === 'تحت الصيانة' 
+                                                            ? 'rgba(249, 115, 22, 0.1)' 
+                                                            : 'rgba(239, 68, 68, 0.1)', 
+                                                    color: b.status === 'مفتوح' 
+                                                        ? 'var(--success)' 
+                                                        : b.status === 'تحت الصيانة' 
+                                                            ? '#f97316' 
+                                                            : 'var(--error)', 
                                                     fontSize: '0.75rem', 
                                                     fontWeight: 800 
                                                 }}>

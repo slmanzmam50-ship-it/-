@@ -1,5 +1,5 @@
 export type BranchCategory = string;
-export type BranchStatus = 'مفتوح' | 'مغلق';
+export type BranchStatus = 'مفتوح' | 'مغلق' | 'تحت الصيانة';
 export type CongestionLevel = 'متاح' | 'متوسط' | 'مزدحم';
 
 export interface WorkingHours {

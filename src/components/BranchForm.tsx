@@ -109,13 +109,79 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         if (input.includes("goo.gl") || input.includes("maps.app.goo.gl")) {
             setFormData(prev => ({ ...prev, mapUrl: input }));
             if (!silent) {
-                toast.success("تم حفظ الرابط! يرجى النقر على 'تحديد' أو البحث باسم المكان لإيجاده على الخريطة.");
-                handleSearchAddress();
+                toast.loading("جاري تحليل الرابط واستخراج الموقع...", { id: "extract-link" });
             }
+            
+            // Try resolving via CORS proxy
+            fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(input)}`)
+                .then(res => {
+                    if (!res.ok) throw new Error("Redirect lookup failed");
+                    return res.text();
+                })
+                .then(html => {
+                    // Look for meta redirects, canonical URLs, og:url, or coordinates inside html
+                    const ogUrlMatch = html.match(/property="og:url"\s+content="([^"]+)"/i) || 
+                                     html.match(/content="([^"]+)"\s+property="og:url"/i) ||
+                                     html.match(/href="https:\/\/www\.google\.com\/maps\/[^"]*@(-?\d+\.\d+),(-?\d+\.\d+)/i) ||
+                                     html.match(/google\.com\/maps\/preview\/place\/[^\/]*\/@(-?\d+\.\d+),(-?\d+\.\d+)/i);
+                    
+                    let resolvedUrl = "";
+                    if (ogUrlMatch) {
+                        resolvedUrl = ogUrlMatch[1] || ogUrlMatch[0];
+                    }
+
+                    // Try parsing coords directly from html text
+                    const coordMatch = html.match(/ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) ||
+                                       html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+                                       html.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+
+                    if (coordMatch) {
+                        const resolvedLat = parseFloat(coordMatch[1]);
+                        const resolvedLng = parseFloat(coordMatch[2]);
+                        setFormData(prev => ({
+                            ...prev,
+                            latitude: resolvedLat,
+                            longitude: resolvedLng
+                        }));
+                        if (!silent) {
+                            toast.success("تم تحديد الموقع بنجاح من الرابط المختصر! ✅", { id: "extract-link" });
+                        }
+                    } else if (resolvedUrl) {
+                        // Resolve coords from the extracted og:url
+                        const resolvedMatch = resolvedUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+                                              resolvedUrl.match(/[?&/](?:q|query|loc|place|dir|ll|cbll|addr)=?(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)/);
+                        if (resolvedMatch) {
+                            setFormData(prev => ({
+                                ...prev,
+                                latitude: parseFloat(resolvedMatch[1]),
+                                longitude: parseFloat(resolvedMatch[2])
+                            }));
+                            if (!silent) {
+                                toast.success("تم تحديد الموقع بنجاح! ✅", { id: "extract-link" });
+                            }
+                        } else {
+                            if (!silent) {
+                                toast.success("تم حفظ الرابط! يرجى البحث باسم المكان لإيجاده على الخريطة.", { id: "extract-link" });
+                                handleSearchAddress();
+                            }
+                        }
+                    } else {
+                        if (!silent) {
+                            toast.success("تم حفظ الرابط! يرجى البحث باسم المكان لإيجاده على الخريطة.", { id: "extract-link" });
+                            handleSearchAddress();
+                        }
+                    }
+                })
+                .catch(() => {
+                    if (!silent) {
+                        toast.success("تم حفظ الرابط! يرجى البحث باسم المكان لإيجاده على الخريطة.", { id: "extract-link" });
+                        handleSearchAddress();
+                    }
+                });
             return;
         }
 
-        // 2. Extract coordinates from URL or text
+        // 2. Extract coordinates or unique places from URL/text
         let lat: number | null = null;
         let lng: number | null = null;
 
@@ -150,6 +216,15 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                 mapUrl: input.startsWith('http') ? input : prev.mapUrl 
             }));
             if (!silent) toast.success("تم تحديد الموقع تلقائياً! ✅");
+            return;
+        }
+
+        // Pattern D: Google Maps short location code / place ID text (e.g. WbXghYH9PnCAgoDe6 or /place/Name)
+        // Check if input looks like a search term/address or a place code rather than a coordinates link
+        if (!input.startsWith('http') && input.length > 5) {
+            if (!silent) {
+                handleSearchAddress();
+            }
             return;
         }
 
@@ -483,6 +558,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                 style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }}>
                                 <option value="مفتوح">مفتوح</option>
                                 <option value="مغلق">مغلق</option>
+                                <option value="تحت الصيانة">تحت الصيانة</option>
                             </select>
                         </div>
                         <div>
