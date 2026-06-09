@@ -11,7 +11,7 @@ const Login: React.FC = () => {
         e.preventDefault();
 
         // استخدام كلمة المرور التي طلبها المستخدم
-        if (password === 'salman.zmam') {
+        if (password === '0539893200') {
             sessionStorage.setItem('isAuthenticated', 'true');
             navigate('/admin');
         } else {
