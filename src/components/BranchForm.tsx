@@ -112,25 +112,34 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                 toast.loading("جاري تحليل الرابط واستخراج الموقع...", { id: "extract-link" });
             }
             
-            // Try resolving via CORS proxy
-            fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(input)}`)
-                .then(res => {
+            // Try resolving via multiple CORS proxies for maximum reliability
+            const fetchHTML = async () => {
+                try {
+                    // Try corsproxy.io first
+                    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(input)}`);
+                    if (!res.ok) throw new Error();
+                    return await res.text();
+                } catch {
+                    // Fallback to allorigins
+                    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(input)}`);
                     if (!res.ok) throw new Error("Redirect lookup failed");
-                    return res.text();
-                })
+                    return await res.text();
+                }
+            };
+
+            fetchHTML()
                 .then(html => {
-                    // Look for meta redirects, canonical URLs, og:url, or coordinates inside html
-                    const ogUrlMatch = html.match(/property="og:url"\s+content="([^"]+)"/i) || 
-                                     html.match(/content="([^"]+)"\s+property="og:url"/i) ||
-                                     html.match(/href="https:\/\/www\.google\.com\/maps\/[^"]*@(-?\d+\.\d+),(-?\d+\.\d+)/i) ||
-                                     html.match(/google\.com\/maps\/preview\/place\/[^\/]*\/@(-?\d+\.\d+),(-?\d+\.\d+)/i);
-                    
-                    let resolvedUrl = "";
-                    if (ogUrlMatch) {
-                        resolvedUrl = ogUrlMatch[1] || ogUrlMatch[0];
+                    // A. First try to find exact pin coordinates (!3dLAT!4dLNG)
+                    const pinMatch = html.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+                    if (pinMatch) {
+                        const resolvedLat = parseFloat(pinMatch[1]);
+                        const resolvedLng = parseFloat(pinMatch[2]);
+                        setFormData(prev => ({ ...prev, latitude: resolvedLat, longitude: resolvedLng }));
+                        if (!silent) toast.success("تم تحديد موقع الدبوس بدقة! ✅", { id: "extract-link" });
+                        return;
                     }
 
-                    // Try parsing coords directly from html text
+                    // B. Fallback to general coordinate patterns in HTML
                     const coordMatch = html.match(/ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) ||
                                        html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
                                        html.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
@@ -138,17 +147,19 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                     if (coordMatch) {
                         const resolvedLat = parseFloat(coordMatch[1]);
                         const resolvedLng = parseFloat(coordMatch[2]);
-                        setFormData(prev => ({
-                            ...prev,
-                            latitude: resolvedLat,
-                            longitude: resolvedLng
-                        }));
-                        if (!silent) {
-                            toast.success("تم تحديد الموقع بنجاح من الرابط المختصر! ✅", { id: "extract-link" });
-                        }
-                    } else if (resolvedUrl) {
-                        // Resolve coords from the extracted og:url
-                        const resolvedMatch = resolvedUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+                        setFormData(prev => ({ ...prev, latitude: resolvedLat, longitude: resolvedLng }));
+                        if (!silent) toast.success("تم تحديد الموقع بنجاح من الرابط! ✅", { id: "extract-link" });
+                        return;
+                    }
+
+                    // C. Fallback to og:url
+                    const ogUrlMatch = html.match(/property="og:url"\s+content="([^"]+)"/i) || 
+                                     html.match(/content="([^"]+)"\s+property="og:url"/i);
+                    
+                    if (ogUrlMatch && ogUrlMatch[1]) {
+                        const resolvedUrl = ogUrlMatch[1];
+                        const resolvedMatch = resolvedUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) ||
+                                              resolvedUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
                                               resolvedUrl.match(/[?&/](?:q|query|loc|place|dir|ll|cbll|addr)=?(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)/);
                         if (resolvedMatch) {
                             setFormData(prev => ({
@@ -156,20 +167,14 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                 latitude: parseFloat(resolvedMatch[1]),
                                 longitude: parseFloat(resolvedMatch[2])
                             }));
-                            if (!silent) {
-                                toast.success("تم تحديد الموقع بنجاح! ✅", { id: "extract-link" });
-                            }
-                        } else {
-                            if (!silent) {
-                                toast.success("تم حفظ الرابط! يرجى البحث باسم المكان لإيجاده على الخريطة.", { id: "extract-link" });
-                                handleSearchAddress();
-                            }
+                            if (!silent) toast.success("تم تحديد الموقع بنجاح! ✅", { id: "extract-link" });
+                            return;
                         }
-                    } else {
-                        if (!silent) {
-                            toast.success("تم حفظ الرابط! يرجى البحث باسم المكان لإيجاده على الخريطة.", { id: "extract-link" });
-                            handleSearchAddress();
-                        }
+                    }
+
+                    if (!silent) {
+                        toast.success("تم حفظ الرابط! يرجى البحث باسم المكان لإيجاده على الخريطة.", { id: "extract-link" });
+                        handleSearchAddress();
                     }
                 })
                 .catch(() => {
@@ -181,29 +186,36 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
             return;
         }
 
-        // 2. Extract coordinates or unique places from URL/text
+        // 2. Extract coordinates or unique places from standard URL/text
         let lat: number | null = null;
         let lng: number | null = null;
 
-        // Pattern A: @lat,lng (standard Google Maps URL)
-        const matchAt = input.match(/@(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-        if (matchAt) {
-            lat = parseFloat(matchAt[1]);
-            lng = parseFloat(matchAt[2]);
-        } 
-        // Pattern B: search?q=lat,lng or query=lat,lng or dir/lat,lng
-        else {
-            const matchQuery = input.match(/[?&/](?:q|query|loc|place|dir|ll|cbll|addr)=?(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)/);
-            if (matchQuery) {
-                lat = parseFloat(matchQuery[1]);
-                lng = parseFloat(matchQuery[2]);
-            }
-            // Pattern C: plain coordinates "lat, lng" (very flexible)
+        // Try exact pin coordinates !3dLAT!4dLNG first
+        const matchPin = input.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+        if (matchPin) {
+            lat = parseFloat(matchPin[1]);
+            lng = parseFloat(matchPin[2]);
+        } else {
+            // Pattern A: @lat,lng (standard Google Maps URL view center)
+            const matchAt = input.match(/@(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+            if (matchAt) {
+                lat = parseFloat(matchAt[1]);
+                lng = parseFloat(matchAt[2]);
+            } 
+            // Pattern B: search?q=lat,lng or query=lat,lng or dir/lat,lng
             else {
-                const matchPlain = input.match(/^[\s]*(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)[\s]*$/);
-                if (matchPlain) {
-                    lat = parseFloat(matchPlain[1]);
-                    lng = parseFloat(matchPlain[2]);
+                const matchQuery = input.match(/[?&/](?:q|query|loc|place|dir|ll|cbll|addr)=?(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)/);
+                if (matchQuery) {
+                    lat = parseFloat(matchQuery[1]);
+                    lng = parseFloat(matchQuery[2]);
+                }
+                // Pattern C: plain coordinates "lat, lng" (very flexible)
+                else {
+                    const matchPlain = input.match(/^[\s]*(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)[\s]*$/);
+                    if (matchPlain) {
+                        lat = parseFloat(matchPlain[1]);
+                        lng = parseFloat(matchPlain[2]);
+                    }
                 }
             }
         }
@@ -219,8 +231,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
             return;
         }
 
-        // Pattern D: Google Maps short location code / place ID text (e.g. WbXghYH9PnCAgoDe6 or /place/Name)
-        // Check if input looks like a search term/address or a place code rather than a coordinates link
+        // Pattern D: Google Maps short location code / place ID text
         if (!input.startsWith('http') && input.length > 5) {
             if (!silent) {
                 handleSearchAddress();
