@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest } from '../services/storage';
 import type { CompanyAccount, ServiceRequest } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, LogOut } from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, LogOut, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
@@ -14,6 +14,7 @@ const CompanyDashboard: React.FC = () => {
     
     // Login and session states
     const [loggedInCompany, setLoggedInCompany] = useState<CompanyAccount | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     // QR Code modal state
     const [selectedQrRequest, setSelectedQrRequest] = useState<ServiceRequest | null>(null);
@@ -54,6 +55,7 @@ const CompanyDashboard: React.FC = () => {
                     setLoggedInCompany(found);
                 }
             }
+            setIsLoading(false);
         });
         const unsubRequests = subscribeToServiceRequests(setRequests);
         return () => { unsubCompanies(); unsubRequests(); };
@@ -107,6 +109,17 @@ const CompanyDashboard: React.FC = () => {
     const companyRequests = loggedInCompany ? requests.filter(r => r.companyId === loggedInCompany.id) : [];
     const activeRequests = companyRequests.filter(r => r.status === 'active');
     const completedRequests = companyRequests.filter(r => r.status === 'completed');
+
+    if (isLoading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', padding: '0 16px', direction: 'rtl' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                    <Loader2 className="animate-spin" size={40} style={{ color: 'var(--primary-color)' }} />
+                    <p style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>جاري التحميل...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!loggedInCompany) {
         return <Navigate to="/login?type=company" replace />;

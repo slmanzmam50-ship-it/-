@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToBranches, subscribeToServiceRequests, updateServiceRequestStatus } from '../services/storage';
 import type { Branch, ServiceRequest } from '../types';
-import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, LogOut } from 'lucide-react';
+import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, LogOut, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 
@@ -14,6 +14,7 @@ const BranchPanel: React.FC = () => {
 
     // Login and session states
     const [loggedInBranch, setLoggedInBranch] = useState<Branch | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     // QR Code scanner hook
     useEffect(() => {
@@ -65,6 +66,7 @@ const BranchPanel: React.FC = () => {
                     setLoggedInBranch(found);
                 }
             }
+            setIsLoading(false);
         });
         const unsubRequests = subscribeToServiceRequests(setRequests);
         return () => { unsubBranches(); unsubRequests(); };
@@ -115,6 +117,17 @@ const BranchPanel: React.FC = () => {
         r.completedAt && 
         new Date(r.completedAt).toDateString() === new Date().toDateString()
     ) : [];
+
+    if (isLoading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', padding: '0 16px', direction: 'rtl' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                    <Loader2 className="animate-spin" size={40} style={{ color: 'var(--primary-color)' }} />
+                    <p style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>جاري التحميل...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!loggedInBranch) {
         return <Navigate to="/login?type=branch" replace />;
