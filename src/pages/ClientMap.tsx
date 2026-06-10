@@ -396,6 +396,8 @@ const ClientMap: React.FC = () => {
 
 
 
+
+
     const handleParseCustomLoc = async () => {
         const input = customLocInput.trim();
         if (!input) return;
@@ -424,53 +426,126 @@ const ClientMap: React.FC = () => {
         // If it's a shortened google maps link, resolve it first
         if (input.includes("goo.gl") || input.includes("maps.app.goo.gl")) {
             const toastId = toast.loading(lang === 'ar' ? 'جاري تحليل رابط موقع العميل...' : 'Analyzing client location link...');
-            try {
-                const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(input)}`);
-                if (!res.ok) throw new Error("Redirect lookup failed");
-                const html = await res.text();
-                
-                const ogUrlMatch = html.match(/property="og:url"\s+content="([^"]+)"/i) || 
-                                 html.match(/content="([^"]+)"\s+property="og:url"/i) ||
-                                 html.match(/href="https:\/\/www\.google\.com\/maps\/[^"]*@(-?\d+\.\d+),(-?\d+\.\d+)/i) ||
-                                 html.match(/google\.com\/maps\/preview\/place\/[^\/]*\/@(-?\d+\.\d+),(-?\d+\.\d+)/i);
-                
-                let resolvedUrl = ogUrlMatch ? (ogUrlMatch[1] || ogUrlMatch[0]) : "";
+            
+            const tryBackendResolve = async () => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
+                try {
+                    const res = await fetch(`/api/resolve-short-url?url=${encodeURIComponent(input)}`, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    if (data.latitude && data.longitude) {
+                        const loc: [number, number] = [data.latitude, data.longitude];
+                        setUserLoc(loc);
+                        setMapCenter(loc);
+                        setMapZoom(13);
+                        setSortBy('nearest');
+                        toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح عبر السيرفر! ✅' : 'Location resolved successfully via server! ✅', { id: toastId });
+                        return true;
+                    }
+                    return false;
+                } catch {
+                    clearTimeout(timeoutId);
+                    return false;
+                }
+            };
 
-                const coordMatch = html.match(/ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) ||
-                                   html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
-                                   html.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+            const fetchHTML = async () => {
+                const fetchWithTimeout = async (url: string, timeout = 4000) => {
+                    const controller = new AbortController();
+                    const id = setTimeout(() => controller.abort(), timeout);
+                    try {
+                        const response = await fetch(url, { signal: controller.signal });
+                        clearTimeout(id);
+                        return response;
+                    } catch (error) {
+                        clearTimeout(id);
+                        throw error;
+                    }
+                };
 
-                if (coordMatch) {
-                    const resolvedLat = parseFloat(coordMatch[1]);
-                    const resolvedLng = parseFloat(coordMatch[2]);
-                    const loc: [number, number] = [resolvedLat, resolvedLng];
-                    setUserLoc(loc);
-                    setMapCenter(loc);
-                    setMapZoom(13);
-                    setSortBy('nearest');
-                    toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! فرز الفروع القريبة جارٍ...' : 'Location resolved successfully! Sorting nearby branches...', { id: toastId });
-                } else if (resolvedUrl) {
-                    const resolvedMatch = resolvedUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
-                                          resolvedUrl.match(/[?&/](?:q|query|loc|place|dir|ll|cbll|addr)=?(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)/);
-                    if (resolvedMatch) {
-                        const resolvedLat = parseFloat(resolvedMatch[1]);
-                        const resolvedLng = parseFloat(resolvedMatch[2]);
+                try {
+                    const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(input)}`, 4000);
+                    if (!res.ok) throw new Error();
+                    return await res.text();
+                } catch {
+                    const res = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(input)}`, 4000);
+                    if (!res.ok) throw new Error("Redirect lookup failed");
+                    return await res.text();
+                }
+            };
+
+            const resolveLink = async () => {
+                const resolvedViaBackend = await tryBackendResolve();
+                if (resolvedViaBackend) return;
+
+                try {
+                    const html = await fetchHTML();
+                    
+                    // A. Exact pin coordinates match
+                    const pinMatch = html.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+                    if (pinMatch) {
+                        const resolvedLat = parseFloat(pinMatch[1]);
+                        const resolvedLng = parseFloat(pinMatch[2]);
                         const loc: [number, number] = [resolvedLat, resolvedLng];
                         setUserLoc(loc);
                         setMapCenter(loc);
                         setMapZoom(13);
                         setSortBy('nearest');
-                        toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! فرز الفروع جارٍ...' : 'Location resolved successfully! Sorting branches...', { id: toastId });
-                    } else {
-                        // Fallback to text geocoding if we got a URL but no clean coordinates in it
-                        await performGeocode(input, toastId);
+                        toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح من الدبوس! ✅' : 'Location resolved from exact pin! ✅', { id: toastId });
+                        return;
                     }
-                } else {
+
+                    // B. Fallback coordinate matches
+                    const coordMatch = html.match(/ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) ||
+                                       html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+                                       html.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+
+                    if (coordMatch) {
+                        const resolvedLat = parseFloat(coordMatch[1]);
+                        const resolvedLng = parseFloat(coordMatch[2]);
+                        const loc: [number, number] = [resolvedLat, resolvedLng];
+                        setUserLoc(loc);
+                        setMapCenter(loc);
+                        setMapZoom(13);
+                        setSortBy('nearest');
+                        toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! ✅' : 'Location resolved successfully! ✅', { id: toastId });
+                        return;
+                    }
+
+                    // C. Fallback og:url match
+                    const ogUrlMatch = html.match(/property="og:url"\s+content="([^"]+)"/i) || 
+                                     html.match(/content="([^"]+)"\s+property="og:url"/i);
+                    
+                    if (ogUrlMatch && ogUrlMatch[1]) {
+                        const resolvedUrl = ogUrlMatch[1];
+                        const resolvedMatch = resolvedUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) ||
+                                              resolvedUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+                                              resolvedUrl.match(/[?&/](?:q|query|loc|place|dir|ll|cbll|addr)=?(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)/);
+                        if (resolvedMatch) {
+                            const resolvedLat = parseFloat(resolvedMatch[1]);
+                            const resolvedLng = parseFloat(resolvedMatch[2]);
+                            const loc: [number, number] = [resolvedLat, resolvedLng];
+                            setUserLoc(loc);
+                            setMapCenter(loc);
+                            setMapZoom(13);
+                            setSortBy('nearest');
+                            toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! ✅' : 'Location resolved successfully! ✅', { id: toastId });
+                            return;
+                        }
+                    }
+
+                    toast.dismiss(toastId);
+                    toast.error(lang === 'ar' ? 'لم نتمكن من استخراج الإحداثيات تلقائياً. جاري البحث عن اسم المكان...' : 'Could not extract coordinates automatically. Searching location name...');
+                    await performGeocode(input, toastId);
+                } catch {
+                    toast.dismiss(toastId);
                     await performGeocode(input, toastId);
                 }
-            } catch {
-                await performGeocode(input, toastId);
-            }
+            };
+
+            resolveLink();
             return;
         }
 
