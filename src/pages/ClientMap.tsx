@@ -391,8 +391,11 @@ const ClientMap: React.FC = () => {
         const query = searchQuery.trim();
         if (!query || sortedBranches.length === 0) return;
         
-        // Find the best match: prioritize branches whose names start with or contain the query, otherwise use the first sorted match
+        // Prioritize matching the location/address first (city/neighborhood), then fall back to matching branch name
         const bestMatch = sortedBranches.find(b => 
+            normalizeArabic(b.address).includes(normalizeArabic(query)) ||
+            normalizeArabicSimple(b.address).includes(normalizeArabicSimple(query))
+        ) || sortedBranches.find(b => 
             normalizeArabic(b.name).includes(normalizeArabic(query)) ||
             normalizeArabicSimple(b.name).includes(normalizeArabicSimple(query))
         ) || sortedBranches[0];
