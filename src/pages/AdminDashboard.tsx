@@ -44,6 +44,8 @@ const AdminDashboard: React.FC = () => {
     const [newCompanyName, setNewCompanyName] = useState('');
     const [newCompanyPhone, setNewCompanyPhone] = useState('');
     const [newCompanyManager, setNewCompanyManager] = useState('');
+    const [newCompanyUsername, setNewCompanyUsername] = useState('');
+    const [newCompanyPassword, setNewCompanyPassword] = useState('');
     const [isAddingCompany, setIsAddingCompany] = useState(false);
 
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
@@ -270,21 +272,33 @@ const AdminDashboard: React.FC = () => {
     // --- Companies helpers ---
     const handleAddCompany = async () => {
         const name = newCompanyName.trim();
+        const usernameVal = newCompanyUsername.trim();
+        const passwordVal = newCompanyPassword.trim();
+        
         if (!name) {
             toast.error('الرجاء إدخال اسم الشركة');
             return;
         }
+        if (!usernameVal || !passwordVal) {
+            toast.error('الرجاء إدخال اسم المستخدم وكلمة المرور للشركة');
+            return;
+        }
+
         setIsAddingCompany(true);
         try {
             await addCompany({
                 name,
                 phone: newCompanyPhone.trim(),
-                managerName: newCompanyManager.trim()
+                managerName: newCompanyManager.trim(),
+                username: usernameVal,
+                password: passwordVal
             });
             setNewCompanyName('');
             setNewCompanyPhone('');
             setNewCompanyManager('');
-            toast.success('تم إضافة الشركة بنجاح ✅');
+            setNewCompanyUsername('');
+            setNewCompanyPassword('');
+            toast.success('تم إضافة الشركة ببيانات الدخول بنجاح ✅');
         } catch (error) {
             console.error(error);
             toast.error('حدث خطأ أثناء إضافة الشركة');
@@ -736,36 +750,50 @@ const AdminDashboard: React.FC = () => {
                     {/* Add Company Card */}
                     <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px' }}>
                         <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800 }}>➕ إضافة حساب شركة جديد</h3>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
                             <input 
                                 type="text"
                                 placeholder="اسم الشركة (مثال: أرامكو)"
                                 value={newCompanyName}
                                 onChange={(e) => setNewCompanyName(e.target.value)}
-                                style={{ flex: 1, minWidth: '200px', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }}
+                                style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
                             />
                             <input 
                                 type="text"
                                 placeholder="رقم الجوال (اختياري)"
                                 value={newCompanyPhone}
                                 onChange={(e) => setNewCompanyPhone(e.target.value)}
-                                style={{ flex: 1, minWidth: '150px', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }}
+                                style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
                             />
                             <input 
                                 type="text"
                                 placeholder="المسؤول/المدير (اختياري)"
                                 value={newCompanyManager}
                                 onChange={(e) => setNewCompanyManager(e.target.value)}
-                                style={{ flex: 1, minWidth: '150px', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }}
+                                style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
                             />
-                            <button 
-                                onClick={handleAddCompany}
-                                disabled={isAddingCompany}
-                                style={{ background: 'var(--success)', color: 'white', padding: '0 24px', height: '44px', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer' }}
-                            >
-                                {isAddingCompany ? <Loader2 className="animate-spin" size={18} /> : 'إضافة الشركة'}
-                            </button>
+                            <input 
+                                type="text"
+                                placeholder="اسم المستخدم للدخول (مطلوب)"
+                                value={newCompanyUsername}
+                                onChange={(e) => setNewCompanyUsername(e.target.value)}
+                                style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
+                            />
+                            <input 
+                                type="text"
+                                placeholder="كلمة المرور (مطلوب)"
+                                value={newCompanyPassword}
+                                onChange={(e) => setNewCompanyPassword(e.target.value)}
+                                style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
+                            />
                         </div>
+                        <button 
+                            onClick={handleAddCompany}
+                            disabled={isAddingCompany}
+                            style={{ background: 'var(--success)', color: 'white', padding: '12px 24px', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'block', width: 'fit-content' }}
+                        >
+                            {isAddingCompany ? <Loader2 className="animate-spin" size={18} /> : 'إضافة الشركة ببيانات الدخول'}
+                        </button>
                     </div>
 
                     {/* Companies List Table */}
@@ -774,6 +802,8 @@ const AdminDashboard: React.FC = () => {
                             <thead>
                                 <tr>
                                     <th>اسم الشركة</th>
+                                    <th>اسم المستخدم</th>
+                                    <th>كلمة المرور</th>
                                     <th>رقم الجوال</th>
                                     <th>المسؤول</th>
                                     <th>تاريخ التسجيل</th>
@@ -783,7 +813,7 @@ const AdminDashboard: React.FC = () => {
                             <tbody>
                                 {companies.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+                                        <td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
                                             لا توجد شركات مسجلة حالياً.
                                         </td>
                                     </tr>
@@ -791,6 +821,8 @@ const AdminDashboard: React.FC = () => {
                                     companies.map(c => (
                                         <tr key={c.id}>
                                             <td style={{ fontWeight: 700 }}>{c.name}</td>
+                                            <td style={{ fontFamily: 'monospace', color: 'var(--primary-color)', fontWeight: 600 }}>{c.username || '-'}</td>
+                                            <td style={{ fontFamily: 'monospace' }}>{c.password || '-'}</td>
                                             <td>{c.phone || '-'}</td>
                                             <td>{c.managerName || '-'}</td>
                                             <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>

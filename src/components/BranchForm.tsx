@@ -54,6 +54,8 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         phone: '',
         mapUrl: '',
         managerName: '',
+        username: '',
+        password: '',
     });
     const [mapInput, setMapInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -67,7 +69,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
             // Handle legacy data: ensure categories is an array
             const legacyBranch = branch as any;
             const categories = branch.categories || (legacyBranch.category ? [legacyBranch.category] : ['صيانة عامة']);
-            setFormData({ ...branch, categories });
+            setFormData({ username: '', password: '', ...branch, categories });
         }
     }, [branch]);
 
@@ -702,6 +704,24 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                 {isFetchingImage ? <Loader2 className="animate-spin" size={16} /> : <ImageIcon size={16} />}
                                 {isFetchingImage ? 'جاري جلب الصورة...' : 'جلب صورة الغلاف تلقائياً من رابط قوقل ماب'}
                             </button>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ gridColumn: 'span 2' }}>
+                            <h4 style={{ margin: '0 0 8px', fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-color)' }}>🔑 بيانات تسجيل الدخول للفرع</h4>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.85rem' }}>اسم المستخدم</label>
+                            <input type="text" name="username" value={formData.username || ''} onChange={handleChange}
+                                placeholder="مثال: branch_riyadh"
+                                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none', fontSize: '13px' }} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.85rem' }}>كلمة المرور</label>
+                            <input type="password" name="password" value={formData.password || ''} onChange={handleChange}
+                                placeholder="أدخل كلمة المرور"
+                                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none', fontSize: '13px' }} />
                         </div>
                     </div>
 

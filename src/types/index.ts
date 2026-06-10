@@ -22,6 +22,8 @@ export interface Branch {
     maxCapacity?: number; 
     actualLoad?: number;  
     managerName?: string;
+    username?: string;
+    password?: string;
 }
 
 export interface NavigationIntent {
@@ -57,4 +59,6 @@ export interface CompanyAccount {
     phone?: string;
     managerName?: string;
     createdAt: number;
+    username?: string;
+    password?: string;
 }
