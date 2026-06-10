@@ -387,21 +387,40 @@ const ClientMap: React.FC = () => {
     }, [searchParams, branches]);
 
     // Automatically zoom/center on search results when the query changes to make it responsive
+    // In addition, if no branches are found locally, resolve it using Geocoding (like Google Maps) to fly to that city/neighborhood
     useEffect(() => {
         const query = searchQuery.trim();
-        if (!query || sortedBranches.length === 0) return;
-        
-        // Prioritize matching the location/address first (city/neighborhood), then fall back to matching branch name
-        const bestMatch = sortedBranches.find(b => 
-            normalizeArabic(b.address).includes(normalizeArabic(query)) ||
-            normalizeArabicSimple(b.address).includes(normalizeArabicSimple(query))
-        ) || sortedBranches.find(b => 
-            normalizeArabic(b.name).includes(normalizeArabic(query)) ||
-            normalizeArabicSimple(b.name).includes(normalizeArabicSimple(query))
-        ) || sortedBranches[0];
+        if (!query) return;
 
-        setMapCenter([bestMatch.latitude, bestMatch.longitude]);
-        setMapZoom(13);
+        if (sortedBranches.length > 0) {
+            // Prioritize matching the location/address first (city/neighborhood), then fall back to matching branch name
+            const bestMatch = sortedBranches.find(b => 
+                normalizeArabic(b.address).includes(normalizeArabic(query)) ||
+                normalizeArabicSimple(b.address).includes(normalizeArabicSimple(query))
+            ) || sortedBranches.find(b => 
+                normalizeArabic(b.name).includes(normalizeArabic(query)) ||
+                normalizeArabicSimple(b.name).includes(normalizeArabicSimple(query))
+            ) || sortedBranches[0];
+
+            setMapCenter([bestMatch.latitude, bestMatch.longitude]);
+            setMapZoom(13);
+        } else {
+            // Geocoding fallback: if user types a city/neighborhood where we don't have a branch yet, or to search any place like Google Maps
+            const timer = setTimeout(async () => {
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=sa`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        const first = data[0];
+                        setMapCenter([parseFloat(first.lat), parseFloat(first.lon)]);
+                        setMapZoom(12);
+                    }
+                } catch (e) {
+                    // Ignore geocode errors silently
+                }
+            }, 1200); // 1.2s debounce to avoid spamming the geocoder API on every keystroke
+            return () => clearTimeout(timer);
+        }
     }, [searchQuery]);
 
     useEffect(() => {
