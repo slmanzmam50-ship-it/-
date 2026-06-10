@@ -386,6 +386,17 @@ const ClientMap: React.FC = () => {
         }
     }, [searchParams, branches]);
 
+    // Automatically zoom/center on search results when the query changes to make it responsive
+    useEffect(() => {
+        const query = searchQuery.trim();
+        if (!query || filteredBranches.length === 0) return;
+        
+        // Centering on first matched branch, and zooming in close (e.g., zoom level 13)
+        const firstMatch = filteredBranches[0];
+        setMapCenter([firstMatch.latitude, firstMatch.longitude]);
+        setMapZoom(12);
+    }, [searchQuery]);
+
     useEffect(() => {
         const unsubs: (() => void)[] = [];
         branches.forEach(b => {
