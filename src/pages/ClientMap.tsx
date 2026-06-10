@@ -337,6 +337,7 @@ const ClientMap: React.FC = () => {
     const [prevZoom] = useState<number>(5);
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [geocodedSearchLoc, setGeocodedSearchLoc] = useState<[number, number] | null>(null);
     const [congestionData, setCongestionData] = useState<Record<string, number>>({});
     const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
     // #6 - Sort state
@@ -386,41 +387,31 @@ const ClientMap: React.FC = () => {
         }
     }, [searchParams, branches]);
 
-    // Automatically zoom/center on search results when the query changes to make it responsive
-    // In addition, if no branches are found locally, resolve it using Geocoding (like Google Maps) to fly to that city/neighborhood
+    // Debounced geocoding effect for searchQuery
     useEffect(() => {
         const query = searchQuery.trim();
-        if (!query) return;
-
-        if (sortedBranches.length > 0) {
-            // Prioritize matching the location/address first (city/neighborhood), then fall back to matching branch name
-            const bestMatch = sortedBranches.find(b => 
-                normalizeArabic(b.address).includes(normalizeArabic(query)) ||
-                normalizeArabicSimple(b.address).includes(normalizeArabicSimple(query))
-            ) || sortedBranches.find(b => 
-                normalizeArabic(b.name).includes(normalizeArabic(query)) ||
-                normalizeArabicSimple(b.name).includes(normalizeArabicSimple(query))
-            ) || sortedBranches[0];
-
-            setMapCenter([bestMatch.latitude, bestMatch.longitude]);
-            setMapZoom(13);
-        } else {
-            // Geocoding fallback: if user types a city/neighborhood where we don't have a branch yet, or to search any place like Google Maps
-            const timer = setTimeout(async () => {
-                try {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=sa`);
-                    const data = await response.json();
-                    if (data && data.length > 0) {
-                        const first = data[0];
-                        setMapCenter([parseFloat(first.lat), parseFloat(first.lon)]);
-                        setMapZoom(12);
-                    }
-                } catch (e) {
-                    // Ignore geocode errors silently
-                }
-            }, 1200); // 1.2s debounce to avoid spamming the geocoder API on every keystroke
-            return () => clearTimeout(timer);
+        if (!query) {
+            setGeocodedSearchLoc(null);
+            return;
         }
+
+        const timer = setTimeout(async () => {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=sa`);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    const first = data[0];
+                    const lat = parseFloat(first.lat);
+                    const lon = parseFloat(first.lon);
+                    setGeocodedSearchLoc([lat, lon]);
+                } else {
+                    setGeocodedSearchLoc(null);
+                }
+            } catch (e) {
+                setGeocodedSearchLoc(null);
+            }
+        }, 600); // 600ms debounce
+        return () => clearTimeout(timer);
     }, [searchQuery]);
 
     useEffect(() => {
@@ -829,9 +820,18 @@ const ClientMap: React.FC = () => {
                 normalizeArabicSimple(managerClean).includes(qSimple)
             );
         });
+        // Check geographic distance match if geocoded location is available
+        let matchesGeocode = false;
+        if (geocodedSearchLoc) {
+            const dist = calculateDistance(geocodedSearchLoc[0], geocodedSearchLoc[1], branch.latitude, branch.longitude);
+            // 25km radius covers any city/neighborhood level searches
+            if (dist <= 25) {
+                matchesGeocode = true;
+            }
+        }
 
         const matchesCategory = categoryFilter === 'all' || branch.categories?.includes(categoryFilter);
-        return matchesSearch && matchesCategory;
+        return (matchesSearch || matchesGeocode) && matchesCategory;
     });
 
     // #6 - Sort filtered branches
@@ -850,6 +850,29 @@ const ClientMap: React.FC = () => {
         }
         return 0;
     });
+
+    // Automatically zoom/center on search results when the query or geocoded location updates
+    useEffect(() => {
+        const query = searchQuery.trim();
+        if (!query) return;
+
+        if (sortedBranches.length > 0) {
+            // Prioritize matching the location/address first (city/neighborhood), then fall back to matching branch name
+            const bestMatch = sortedBranches.find(b => 
+                normalizeArabic(b.address).includes(normalizeArabic(query)) ||
+                normalizeArabicSimple(b.address).includes(normalizeArabicSimple(query))
+            ) || sortedBranches.find(b => 
+                normalizeArabic(b.name).includes(normalizeArabic(query)) ||
+                normalizeArabicSimple(b.name).includes(normalizeArabicSimple(query))
+            ) || sortedBranches[0];
+
+            setMapCenter([bestMatch.latitude, bestMatch.longitude]);
+            setMapZoom(13);
+        } else if (geocodedSearchLoc) {
+            setMapCenter(geocodedSearchLoc);
+            setMapZoom(12);
+        }
+    }, [searchQuery, geocodedSearchLoc, sortedBranches.length]);
 
     const getCongestionLevel = (branchId: string) => {
         const count = congestionData[branchId] || 0;
