@@ -225,7 +225,7 @@ const Header: React.FC = () => {
                             <div 
                                 onClick={() => {
                                     setShowOptionsModal(false);
-                                    toast.success(isAr ? 'قسم الشركة قيد التطوير وسيتم توفيره قريباً 🏢' : 'Company section is under development 🏢');
+                                    navigate('/company');
                                 }}
                                 className="option-card"
                                 style={{
@@ -262,7 +262,7 @@ const Header: React.FC = () => {
                             <div 
                                 onClick={() => {
                                     setShowOptionsModal(false);
-                                    toast.success(isAr ? 'قسم الفروع قيد التطوير وسيتم توفيره قريباً 📍' : 'Branches section is under development 📍');
+                                    navigate('/branch');
                                 }}
                                 className="option-card"
                                 style={{

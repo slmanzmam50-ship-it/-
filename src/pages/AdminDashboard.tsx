@@ -8,9 +8,13 @@ import {
     deleteCategory, 
     subscribeToBranches, 
     subscribeToCategories,
-    uploadImage
+    uploadImage,
+    subscribeToCompanies,
+    addCompany,
+    deleteCompany,
+    subscribeToServiceRequests
 } from '../services/storage';
-import type { Branch, Category } from '../types';
+import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
 import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -25,7 +29,7 @@ const AdminDashboard: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
-    const [activeTab, setActiveTab] = useState<'branches' | 'categories'>('branches');
+    const [activeTab, setActiveTab] = useState<'branches' | 'categories' | 'companies' | 'requests'>('branches');
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [categoryEditName, setCategoryEditName] = useState('');
     const [newCategoryImageUrl, setNewCategoryImageUrl] = useState('');
@@ -34,6 +38,17 @@ const AdminDashboard: React.FC = () => {
     const [categoryEditFile, setCategoryEditFile] = useState<File | null>(null);
     const [lang, setLang] = useState<'ar' | 'en'>(() => (localStorage.getItem('lang') as 'ar' | 'en') || 'ar');
     const [isBatchFetching, setIsBatchFetching] = useState(false);
+
+    // New corporate/request states
+    const [companies, setCompanies] = useState<CompanyAccount[]>([]);
+    const [newCompanyName, setNewCompanyName] = useState('');
+    const [newCompanyPhone, setNewCompanyPhone] = useState('');
+    const [newCompanyManager, setNewCompanyManager] = useState('');
+    const [isAddingCompany, setIsAddingCompany] = useState(false);
+
+    const [requests, setRequests] = useState<ServiceRequest[]>([]);
+    const [requestSearch, setRequestSearch] = useState('');
+    const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'active' | 'completed'>('all');
 
     useEffect(() => {
         const checkLang = setInterval(() => {
@@ -50,9 +65,13 @@ const AdminDashboard: React.FC = () => {
             setIsLoading(false);
         });
         const unsubCats = subscribeToCategories(setCategories);
+        const unsubCompanies = subscribeToCompanies(setCompanies);
+        const unsubRequests = subscribeToServiceRequests(setRequests);
         return () => {
              unsubBranches();
              unsubCats();
+             unsubCompanies();
+             unsubRequests();
         };
     }, []);
 
@@ -248,9 +267,83 @@ const AdminDashboard: React.FC = () => {
 
     const getBranchCountByCategory = (catName: string) => branches.filter(b => b.categories?.includes(catName)).length;
 
+    // --- Companies helpers ---
+    const handleAddCompany = async () => {
+        const name = newCompanyName.trim();
+        if (!name) {
+            toast.error('الرجاء إدخال اسم الشركة');
+            return;
+        }
+        setIsAddingCompany(true);
+        try {
+            await addCompany({
+                name,
+                phone: newCompanyPhone.trim(),
+                managerName: newCompanyManager.trim()
+            });
+            setNewCompanyName('');
+            setNewCompanyPhone('');
+            setNewCompanyManager('');
+            toast.success('تم إضافة الشركة بنجاح ✅');
+        } catch (error) {
+            console.error(error);
+            toast.error('حدث خطأ أثناء إضافة الشركة');
+        } finally {
+            setIsAddingCompany(false);
+        }
+    };
+
+    const handleDeleteCompany = async (id: string, name: string) => {
+        if (window.confirm(`هل أنت متأكد من حذف شركة "${name}"؟ جميع طلباتها ستظل محفوظة للإرشيف.`)) {
+            try {
+                await deleteCompany(id);
+                toast.success('تم حذف الشركة بنجاح');
+            } catch (error) {
+                console.error(error);
+                toast.error('فشل حذف الشركة');
+            }
+        }
+    };
+
+    // --- Service Requests Excel Export ---
+    const handleExportRequestsExcel = () => {
+        const headers = ["رقم الطلب", "الشركة", "رقم اللوحة", "الخدمة المطلوبة", "الحالة", "تاريخ الإنشاء", "تاريخ التنفيذ", "الفرع المنفذ"];
+        const rows = requests.map(r => [
+            r.id,
+            r.companyName,
+            r.plateNumber,
+            r.serviceDescription,
+            r.status === 'active' ? 'نشط' : 'منفذ ومستلم',
+            new Date(r.createdAt).toLocaleString('ar-SA'),
+            r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : "",
+            r.branchName || ""
+        ]);
+
+        const worksheet = utils.aoa_to_sheet([headers, ...rows]);
+        worksheet['!dir'] = 'rtl';
+
+        const colWidths = [
+            { wch: 15 }, // ID
+            { wch: 25 }, // Company
+            { wch: 15 }, // Plate
+            { wch: 35 }, // Service
+            { wch: 15 }, // Status
+            { wch: 25 }, // Created At
+            { wch: 25 }, // Completed At
+            { wch: 25 }  // Executing Branch
+        ];
+        worksheet['!cols'] = colWidths;
+
+        const workbook = utils.book_new();
+        utils.book_append_sheet(workbook, worksheet, "الطلبات العام");
+
+        writeFile(workbook, `requests_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+        toast.success('تم تصدير سجل الطلبات بنجاح 📊');
+    };
+
     return (
         <div className="admin-container">
-            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
                 <button 
                     onClick={() => setActiveTab('branches')} 
                     className="tab-button"
@@ -285,9 +378,43 @@ const AdminDashboard: React.FC = () => {
                 >
                     الأقسام
                 </button>
+                <button 
+                    onClick={() => setActiveTab('companies')} 
+                    className="tab-button"
+                    style={{ 
+                        padding: '0.75rem 1.5rem', 
+                        borderRadius: '12px', 
+                        border: 'none', 
+                        background: activeTab === 'companies' ? 'var(--primary-color)' : 'var(--bg-color)', 
+                        color: activeTab === 'companies' ? 'white' : 'var(--text-secondary)', 
+                        cursor: 'pointer', 
+                        fontWeight: 700,
+                        flex: activeTab === 'companies' ? 1.2 : 1,
+                        transition: 'all 0.3s ease'
+                    }}
+                >
+                    الشركات
+                </button>
+                <button 
+                    onClick={() => setActiveTab('requests')} 
+                    className="tab-button"
+                    style={{ 
+                        padding: '0.75rem 1.5rem', 
+                        borderRadius: '12px', 
+                        border: 'none', 
+                        background: activeTab === 'requests' ? 'var(--primary-color)' : 'var(--bg-color)', 
+                        color: activeTab === 'requests' ? 'white' : 'var(--text-secondary)', 
+                        cursor: 'pointer', 
+                        fontWeight: 700,
+                        flex: activeTab === 'requests' ? 1.2 : 1,
+                        transition: 'all 0.3s ease'
+                    }}
+                >
+                    سجل الطلبات
+                </button>
             </div>
 
-            {activeTab === 'branches' ? (
+            {activeTab === 'branches' && (
                 <>
                     <div className="admin-header-row">
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>الفروع <span style={{ color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: 500 }}>({totalBranches})</span></h2>
@@ -488,7 +615,9 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     )}
                 </>
-            ) : (
+            )}
+
+            {activeTab === 'categories' && (
                 <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '2rem' }}>
                         <input 
@@ -599,6 +728,220 @@ const AdminDashboard: React.FC = () => {
                             ))}
                         </div>
                     )}
+                </div>
+            )}
+
+            {activeTab === 'companies' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {/* Add Company Card */}
+                    <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px' }}>
+                        <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800 }}>➕ إضافة حساب شركة جديد</h3>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                            <input 
+                                type="text"
+                                placeholder="اسم الشركة (مثال: أرامكو)"
+                                value={newCompanyName}
+                                onChange={(e) => setNewCompanyName(e.target.value)}
+                                style={{ flex: 1, minWidth: '200px', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }}
+                            />
+                            <input 
+                                type="text"
+                                placeholder="رقم الجوال (اختياري)"
+                                value={newCompanyPhone}
+                                onChange={(e) => setNewCompanyPhone(e.target.value)}
+                                style={{ flex: 1, minWidth: '150px', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }}
+                            />
+                            <input 
+                                type="text"
+                                placeholder="المسؤول/المدير (اختياري)"
+                                value={newCompanyManager}
+                                onChange={(e) => setNewCompanyManager(e.target.value)}
+                                style={{ flex: 1, minWidth: '150px', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)' }}
+                            />
+                            <button 
+                                onClick={handleAddCompany}
+                                disabled={isAddingCompany}
+                                style={{ background: 'var(--success)', color: 'white', padding: '0 24px', height: '44px', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                                {isAddingCompany ? <Loader2 className="animate-spin" size={18} /> : 'إضافة الشركة'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Companies List Table */}
+                    <div className="responsive-table-container glass">
+                        <table className="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>اسم الشركة</th>
+                                    <th>رقم الجوال</th>
+                                    <th>المسؤول</th>
+                                    <th>تاريخ التسجيل</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {companies.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+                                            لا توجد شركات مسجلة حالياً.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    companies.map(c => (
+                                        <tr key={c.id}>
+                                            <td style={{ fontWeight: 700 }}>{c.name}</td>
+                                            <td>{c.phone || '-'}</td>
+                                            <td>{c.managerName || '-'}</td>
+                                            <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                                {new Date(c.createdAt).toLocaleDateString('ar-SA')}
+                                            </td>
+                                            <td>
+                                                <button 
+                                                    onClick={() => handleDeleteCompany(c.id, c.name)} 
+                                                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 700 }}
+                                                >
+                                                    <Trash2 size={14} style={{ display: 'inline', marginInlineEnd: '4px' }} /> حذف
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'requests' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {/* Filters & Export Header */}
+                    <div className="admin-header-row" style={{ margin: 0 }}>
+                        <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>سجل طلبات الصيانة العام</h2>
+                        <div className="admin-actions">
+                            <div style={{ position: 'relative', width: '240px' }}>
+                                <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }} size={16} color="var(--text-secondary)" />
+                                <input 
+                                    type="text" 
+                                    placeholder="بحث برقم اللوحة أو رقم الطلب..." 
+                                    value={requestSearch} 
+                                    onChange={(e) => setRequestSearch(e.target.value)} 
+                                    style={{ 
+                                        padding: '10px 40px 10px 12px', 
+                                        borderRadius: '10px', 
+                                        border: '1px solid var(--border-color)', 
+                                        width: '100%',
+                                        background: 'var(--surface-color)',
+                                        fontSize: '13px'
+                                    }} 
+                                />
+                            </div>
+                            <select 
+                                value={requestStatusFilter}
+                                onChange={(e) => setRequestStatusFilter(e.target.value as any)}
+                                style={{
+                                    padding: '10px 14px',
+                                    borderRadius: '10px',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--surface-color)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '13px',
+                                    fontWeight: 700,
+                                    outline: 'none',
+                                    height: '40px'
+                                }}
+                            >
+                                <option value="all">كل الحالات</option>
+                                <option value="active">نشطة (قيد الانتظار)</option>
+                                <option value="completed">مكتملة ومستلمة</option>
+                            </select>
+                            <button 
+                                onClick={handleExportRequestsExcel} 
+                                style={{ 
+                                    background: 'var(--surface-color)', 
+                                    color: 'var(--text-primary)', 
+                                    padding: '10px 18px', 
+                                    borderRadius: '10px', 
+                                    border: '1px solid var(--border-color)', 
+                                    fontWeight: 700, 
+                                    cursor: 'pointer', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '6px',
+                                    fontSize: '13px',
+                                    height: '40px'
+                                }}
+                            >
+                                <FileDown size={16} />
+                                <span>تصدير الطلبات</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Requests Logs Table */}
+                    <div className="responsive-table-container glass">
+                        <table className="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>رقم الطلب</th>
+                                    <th>الشركة</th>
+                                    <th>رقم اللوحة</th>
+                                    <th>الخدمة المطلوبة</th>
+                                    <th>الحالة</th>
+                                    <th>تاريخ الإنشاء</th>
+                                    <th>تاريخ التنفيذ</th>
+                                    <th>الفرع المنفذ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(() => {
+                                    const filtered = requests.filter(r => {
+                                        const matchesQuery = r.plateNumber.toLowerCase().includes(requestSearch.toLowerCase()) || r.id.toLowerCase().includes(requestSearch.toLowerCase());
+                                        const matchesStatus = requestStatusFilter === 'all' || r.status === requestStatusFilter;
+                                        return matchesQuery && matchesStatus;
+                                    });
+
+                                    if (filtered.length === 0) {
+                                        return (
+                                            <tr>
+                                                <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+                                                    لا توجد طلبات مطابقة للبحث.
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+
+                                    return filtered.map(r => (
+                                        <tr key={r.id}>
+                                            <td style={{ fontWeight: 800, color: 'var(--primary-color)' }}>{r.id}</td>
+                                            <td style={{ fontWeight: 700 }}>{r.companyName}</td>
+                                            <td style={{ fontWeight: 700 }}>{r.plateNumber}</td>
+                                            <td style={{ fontSize: '13px' }}>{r.serviceDescription}</td>
+                                            <td>
+                                                <span style={{ 
+                                                    padding: '4px 10px', 
+                                                    borderRadius: '8px', 
+                                                    background: r.status === 'active' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', 
+                                                    color: r.status === 'active' ? 'var(--accent-orange)' : 'var(--success)', 
+                                                    fontSize: '0.75rem', 
+                                                    fontWeight: 800 
+                                                }}>
+                                                    {r.status === 'active' ? 'نشط' : 'منفذ ومستلم'}
+                                                </span>
+                                            </td>
+                                            <td style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                                {new Date(r.createdAt).toLocaleString('ar-SA')}
+                                            </td>
+                                            <td style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                                {r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : '-'}
+                                            </td>
+                                            <td style={{ fontWeight: 700, fontSize: '13px' }}>{r.branchName || '-'}</td>
+                                        </tr>
+                                    ));
+                                })()}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
             {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} />}

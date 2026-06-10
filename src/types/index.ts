@@ -37,3 +37,24 @@ export interface Category {
     name: string;
     imageUrl?: string;
 }
+
+export interface ServiceRequest {
+    id: string; // Request ID (e.g. RQ-1002 or random string)
+    companyId: string;
+    companyName: string;
+    plateNumber: string;
+    serviceDescription: string;
+    status: 'active' | 'completed';
+    createdAt: number;
+    completedAt?: number;
+    branchId?: string;
+    branchName?: string;
+}
+
+export interface CompanyAccount {
+    id: string;
+    name: string;
+    phone?: string;
+    managerName?: string;
+    createdAt: number;
+}

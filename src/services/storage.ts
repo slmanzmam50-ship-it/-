@@ -1,4 +1,4 @@
-import type { Branch, NavigationIntent, Category } from '../types';
+import type { Branch, NavigationIntent, Category, ServiceRequest, CompanyAccount } from '../types';
 import { db, storage } from './firebase';
 import { collection, onSnapshot, query, where, getDocs, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -6,6 +6,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 const COLLECTION_NAME = 'branches';
 const CATEGORIES_COLLECTION = 'categories';
 const INTENTS_COLLECTION = 'active_navigators';
+const COMPANIES_COLLECTION = 'company_accounts';
+const REQUESTS_COLLECTION = 'service_requests';
 
 // --- Branches Real-time Sync ---
 export const subscribeToBranches = (callback: (branches: Branch[]) => void) => {
@@ -250,5 +252,74 @@ export const uploadImage = async (file: File, path: string): Promise<string> => 
         console.error("Error uploading image:", error);
         throw error;
     }
+};
+
+// --- Company Accounts CRUD ---
+export const subscribeToCompanies = (callback: (companies: CompanyAccount[]) => void) => {
+    return onSnapshot(collection(db, COMPANIES_COLLECTION), (snapshot) => {
+        const companies: CompanyAccount[] = [];
+        snapshot.forEach((doc) => {
+            companies.push({ id: doc.id, ...doc.data() } as CompanyAccount);
+        });
+        callback(companies.sort((a, b) => b.createdAt - a.createdAt));
+    }, (error) => {
+        console.error("Error subscribing to companies:", error);
+    });
+};
+
+export const addCompany = async (company: Omit<CompanyAccount, 'id' | 'createdAt'>): Promise<CompanyAccount> => {
+    const id = 'CO-' + Date.now().toString() + Math.random().toString(36).substr(2, 4);
+    const newCompany: CompanyAccount = {
+        ...company,
+        id,
+        createdAt: Date.now()
+    };
+    await setDoc(doc(db, COMPANIES_COLLECTION, id), newCompany);
+    return newCompany;
+};
+
+export const deleteCompany = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, COMPANIES_COLLECTION, id));
+};
+
+// --- Service Requests CRUD ---
+export const subscribeToServiceRequests = (callback: (requests: ServiceRequest[]) => void) => {
+    return onSnapshot(collection(db, REQUESTS_COLLECTION), (snapshot) => {
+        const requests: ServiceRequest[] = [];
+        snapshot.forEach((doc) => {
+            requests.push({ id: doc.id, ...doc.data() } as ServiceRequest);
+        });
+        callback(requests.sort((a, b) => b.createdAt - a.createdAt));
+    }, (error) => {
+        console.error("Error subscribing to service requests:", error);
+    });
+};
+
+export const addServiceRequest = async (request: Omit<ServiceRequest, 'id' | 'status' | 'createdAt'>): Promise<ServiceRequest> => {
+    const id = 'RQ-' + Math.floor(1000 + Math.random() * 9000);
+    const newRequest: ServiceRequest = {
+        ...request,
+        id,
+        status: 'active',
+        createdAt: Date.now()
+    };
+    await setDoc(doc(db, REQUESTS_COLLECTION, id), newRequest);
+    return newRequest;
+};
+
+export const updateServiceRequestStatus = async (
+    requestId: string,
+    status: 'active' | 'completed',
+    branchId?: string,
+    branchName?: string
+): Promise<void> => {
+    const reqRef = doc(db, REQUESTS_COLLECTION, requestId);
+    const updates: any = { status };
+    if (status === 'completed') {
+        updates.completedAt = Date.now();
+        if (branchId) updates.branchId = branchId;
+        if (branchName) updates.branchName = branchName;
+    }
+    await updateDoc(reqRef, updates);
 };
 
