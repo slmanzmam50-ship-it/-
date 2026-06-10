@@ -767,3 +767,10 @@ button {
 .congestion-quiet   { background: rgba(16,185,129,0.15); color: var(--success); }
 .congestion-busy    { background: rgba(251,191,36,0.15);  color: #fbbf24; }
 .congestion-crowded { background: rgba(239,68,68,0.15);   color: var(--error); }
+
+/* Option Card Hover Effect */
+.option-card:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  filter: brightness(1.05);
+}
