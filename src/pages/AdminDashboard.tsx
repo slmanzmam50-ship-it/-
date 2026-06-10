@@ -16,7 +16,7 @@ import {
 } from '../services/storage';
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
 
@@ -51,6 +51,30 @@ const AdminDashboard: React.FC = () => {
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [requestSearch, setRequestSearch] = useState('');
     const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'active' | 'completed'>('all');
+
+    // Company invoices modal states
+    const [selectedCompanyForInvoices, setSelectedCompanyForInvoices] = useState<CompanyAccount | null>(null);
+    const [companyInvoiceSearch, setCompanyInvoiceSearch] = useState('');
+    const [companyInvoiceStatusFilter, setCompanyInvoiceStatusFilter] = useState<'all' | 'active' | 'completed'>('all');
+
+    const handleExportCompanyRequestsExcel = (company: CompanyAccount) => {
+        const companyRequests = requests.filter(r => r.companyId === company.id);
+        const data = companyRequests.map(r => ({
+            'رقم الطلب': r.id,
+            'رقم اللوحة': r.plateNumber,
+            'الخدمة المطلوبة': r.serviceDescription,
+            'الحالة': r.status === 'active' ? 'نشط (قيد الانتظار)' : 'مكتمل ومستلم',
+            'تاريخ الإنشاء': new Date(r.createdAt).toLocaleString('ar-SA'),
+            'تاريخ التنفيذ': r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : '-',
+            'الفرع المنفذ': r.branchName || '-'
+        }));
+
+        const ws = utils.json_to_sheet(data);
+        const wb = utils.book_new();
+        utils.book_append_sheet(wb, ws, 'الفواتير');
+        writeFile(wb, `فواتير_شركة_${company.name}.xlsx`);
+        toast.success('تم تصدير الفواتير بنجاح');
+    };
 
     useEffect(() => {
         const checkLang = setInterval(() => {
@@ -830,6 +854,16 @@ const AdminDashboard: React.FC = () => {
                                             </td>
                                             <td>
                                                 <button 
+                                                    onClick={() => {
+                                                        setSelectedCompanyForInvoices(c);
+                                                        setCompanyInvoiceSearch('');
+                                                        setCompanyInvoiceStatusFilter('all');
+                                                    }} 
+                                                    style={{ background: 'rgba(59, 130, 246, 0.1)', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, marginInlineEnd: '8px' }}
+                                                >
+                                                    <FileText size={14} style={{ display: 'inline', marginInlineEnd: '4px' }} /> الفواتير
+                                                </button>
+                                                <button 
                                                     onClick={() => handleDeleteCompany(c.id, c.name)} 
                                                     style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 700 }}
                                                 >
@@ -977,6 +1011,197 @@ const AdminDashboard: React.FC = () => {
                 </div>
             )}
             {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} />}
+
+            {/* Invoices/Requests Modal for Selected Company */}
+            {selectedCompanyForInvoices && (
+                <div 
+                    onClick={() => setSelectedCompanyForInvoices(null)}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        background: 'rgba(15, 23, 42, 0.75)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        zIndex: 99999,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        animation: 'fadeIn 0.2s ease',
+                        direction: 'rtl'
+                    }}
+                >
+                    <div 
+                        onClick={(e) => e.stopPropagation()}
+                        className="glass animate-scale-in"
+                        style={{
+                            width: '90%',
+                            maxWidth: '920px',
+                            background: 'var(--surface-color)',
+                            borderRadius: '24px',
+                            padding: '28px 24px',
+                            border: '1px solid var(--border-color)',
+                            position: 'relative',
+                            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        }}
+                    >
+                        <button 
+                            onClick={() => setSelectedCompanyForInvoices(null)}
+                            style={{
+                                position: 'absolute',
+                                top: '16px',
+                                right: '16px',
+                                background: 'rgba(0,0,0,0.05)',
+                                border: 'none',
+                                color: 'var(--text-primary)',
+                                borderRadius: '50%',
+                                width: '36px',
+                                height: '36px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <CloseIcon size={18} />
+                        </button>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px', paddingInlineEnd: '40px' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                🧾 فواتير وطلبات شركة: <span style={{ color: 'var(--primary-color)' }}>{selectedCompanyForInvoices.name}</span>
+                            </h3>
+                            <button
+                                onClick={() => handleExportCompanyRequestsExcel(selectedCompanyForInvoices)}
+                                style={{
+                                    background: 'var(--grad-primary)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '10px 18px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '13px',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)'
+                                }}
+                            >
+                                <FileDown size={16} /> تصدير إكسل للشركة
+                            </button>
+                        </div>
+
+                        {/* Search and Filters inside modal */}
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                            <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+                                <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }} size={16} color="var(--text-secondary)" />
+                                <input 
+                                    type="text" 
+                                    placeholder="بحث برقم اللوحة أو رقم الطلب..." 
+                                    value={companyInvoiceSearch} 
+                                    onChange={(e) => setCompanyInvoiceSearch(e.target.value)} 
+                                    style={{ 
+                                        padding: '10px 40px 10px 12px', 
+                                        borderRadius: '10px', 
+                                        border: '1px solid var(--border-color)', 
+                                        width: '100%',
+                                        background: 'var(--bg-color)',
+                                        color: 'var(--text-primary)',
+                                        fontSize: '13px',
+                                        outline: 'none'
+                                    }} 
+                                />
+                            </div>
+                            <select 
+                                value={companyInvoiceStatusFilter}
+                                onChange={(e) => setCompanyInvoiceStatusFilter(e.target.value as any)}
+                                style={{
+                                    padding: '10px 14px',
+                                    borderRadius: '10px',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--bg-color)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '13px',
+                                    fontWeight: 700,
+                                    outline: 'none',
+                                    height: '40px'
+                                }}
+                            >
+                                <option value="all">كل الحالات</option>
+                                <option value="active">نشطة (قيد الانتظار)</option>
+                                <option value="completed">مكتملة ومستلمة</option>
+                            </select>
+                        </div>
+
+                        {/* Invoices List Table */}
+                        <div className="responsive-table-container" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                            <table className="admin-table">
+                                <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                                    <tr>
+                                        <th>رقم الطلب</th>
+                                        <th>رقم اللوحة</th>
+                                        <th>الخدمة المطلوبة</th>
+                                        <th>الحالة</th>
+                                        <th>تاريخ الإنشاء</th>
+                                        <th>تاريخ التنفيذ</th>
+                                        <th>الفرع المنفذ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(() => {
+                                        const companyRequests = requests.filter(r => r.companyId === selectedCompanyForInvoices.id);
+                                        const filtered = companyRequests.filter(r => {
+                                            const matchesQuery = r.plateNumber.toLowerCase().includes(companyInvoiceSearch.toLowerCase()) || r.id.toLowerCase().includes(companyInvoiceSearch.toLowerCase());
+                                            const matchesStatus = companyInvoiceStatusFilter === 'all' || r.status === companyInvoiceStatusFilter;
+                                            return matchesQuery && matchesStatus;
+                                        });
+
+                                        if (filtered.length === 0) {
+                                            return (
+                                                <tr>
+                                                    <td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+                                                        لا توجد فواتير مطابقة للبحث.
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+
+                                        return filtered.map(r => (
+                                            <tr key={r.id}>
+                                                <td style={{ fontWeight: 800, color: 'var(--primary-color)' }}>{r.id}</td>
+                                                <td style={{ fontWeight: 700 }}>{r.plateNumber}</td>
+                                                <td>{r.serviceDescription}</td>
+                                                <td>
+                                                    <span style={{ 
+                                                        background: r.status === 'active' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', 
+                                                        color: r.status === 'active' ? 'var(--accent-orange)' : 'var(--success)', 
+                                                        padding: '4px 10px', 
+                                                        borderRadius: '8px', 
+                                                        fontSize: '11px', 
+                                                        fontWeight: 800,
+                                                    }}>
+                                                        {r.status === 'active' ? 'نشط' : 'منفذ ومستلم'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                                    {new Date(r.createdAt).toLocaleString('ar-SA')}
+                                                </td>
+                                                <td style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                                    {r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : '-'}
+                                                </td>
+                                                <td style={{ fontWeight: 700 }}>{r.branchName || '-'}</td>
+                                            </tr>
+                                        ));
+                                    })()}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
