@@ -802,6 +802,9 @@ const ClientMap: React.FC = () => {
             return matchesCategory;
         }
 
+        // Clean punctuation from text for seamless matching (e.g. commas, dashes)
+        const cleanString = (s: string) => s.replace(/[،,.\-\/]/g, ' ');
+
         // Split query into individual words/terms to support multi-word search (e.g. "الدمام العمامرة")
         const terms = queryText.split(/\s+/).filter(Boolean);
         
@@ -810,16 +813,20 @@ const ClientMap: React.FC = () => {
             const q = normalizeArabic(term);
             const qSimple = normalizeArabicSimple(term);
 
+            const nameClean = cleanString(branch.name);
+            const addressClean = cleanString(branch.address);
+            const managerClean = cleanString(branch.managerName || '');
+
             return (
-                normalizeArabic(branch.name).includes(q) ||
-                normalizeArabic(branch.address).includes(q) ||
-                branch.categories?.some(c => normalizeArabic(c).includes(q)) ||
-                (branch.managerName && normalizeArabic(branch.managerName).includes(q)) ||
+                normalizeArabic(nameClean).includes(q) ||
+                normalizeArabic(addressClean).includes(q) ||
+                branch.categories?.some(c => normalizeArabic(cleanString(c)).includes(q)) ||
+                normalizeArabic(managerClean).includes(q) ||
                 // Fallback simple matches (without Al- prefix removal)
-                normalizeArabicSimple(branch.name).includes(qSimple) ||
-                normalizeArabicSimple(branch.address).includes(qSimple) ||
-                branch.categories?.some(c => normalizeArabicSimple(c).includes(qSimple)) ||
-                (branch.managerName && normalizeArabicSimple(branch.managerName).includes(qSimple))
+                normalizeArabicSimple(nameClean).includes(qSimple) ||
+                normalizeArabicSimple(addressClean).includes(qSimple) ||
+                branch.categories?.some(c => normalizeArabicSimple(cleanString(c)).includes(qSimple)) ||
+                normalizeArabicSimple(managerClean).includes(qSimple)
             );
         });
 
