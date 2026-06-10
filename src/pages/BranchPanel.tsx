@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { subscribeToBranches, subscribeToServiceRequests, updateServiceRequestStatus } from '../services/storage';
 import type { Branch, ServiceRequest } from '../types';
-import { Search, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Html5Qrcode } from 'html5-qrcode';
 
 const BranchPanel: React.FC = () => {
     const [branches, setBranches] = useState<Branch[]>([]);
@@ -10,6 +11,47 @@ const BranchPanel: React.FC = () => {
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+    // QR Code scanner hook
+    useEffect(() => {
+        let html5QrCode: Html5Qrcode | null = null;
+        if (isScannerOpen) {
+            // Wait slightly for container to render in DOM
+            const timer = setTimeout(() => {
+                const element = document.getElementById("qr-reader");
+                if (element) {
+                    html5QrCode = new Html5Qrcode("qr-reader");
+                    html5QrCode.start(
+                        { facingMode: "environment" },
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 }
+                        },
+                        (decodedText) => {
+                            setSearchQuery(decodedText.trim());
+                            toast.success('تم مسح الرمز بنجاح!');
+                            setIsScannerOpen(false);
+                        },
+                        () => {
+                            // Suppress scanning loop errors
+                        }
+                    ).catch(err => {
+                        console.error('Error starting scanner', err);
+                        toast.error('لم نتمكن من تشغيل الكاميرا. الرجاء تفعيل صلاحية الكاميرا.');
+                        setIsScannerOpen(false);
+                    });
+                }
+            }, 100);
+
+            return () => {
+                clearTimeout(timer);
+                if (html5QrCode && html5QrCode.isScanning) {
+                    html5QrCode.stop().catch(err => console.error('Error stopping scanner', err));
+                }
+            };
+        }
+    }, [isScannerOpen]);
 
     // Subscribe to branches and requests
     useEffect(() => {
@@ -106,25 +148,47 @@ const BranchPanel: React.FC = () => {
                         <h3 style={{ margin: '0 0 16px', fontSize: '1.25rem', fontWeight: 800 }}>
                             🔍 البحث عن طلب خدمة واستلامه
                         </h3>
-                        <div style={{ position: 'relative', width: '100%', maxWidth: '500px', marginBottom: '24px' }}>
-                            <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={18} />
-                            <input 
-                                type="text"
-                                placeholder="ادخل رقم الطلب هنا... (مثال: RQ-1234)"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                        <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '600px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                            <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
+                                <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={18} />
+                                <input 
+                                    type="text"
+                                    placeholder="ادخل رقم الطلب هنا... (مثال: RQ-1234)"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px 40px 12px 14px',
+                                        borderRadius: '10px',
+                                        border: '1px solid var(--border-color)',
+                                        background: 'var(--bg-color)',
+                                        color: 'var(--text-primary)',
+                                        fontSize: '14px',
+                                        fontWeight: 600,
+                                        outline: 'none'
+                                    }}
+                                />
+                            </div>
+                            <button
+                                onClick={() => setIsScannerOpen(true)}
                                 style={{
-                                    width: '100%',
-                                    padding: '12px 40px 12px 14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    background: 'var(--primary-color)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 20px',
                                     borderRadius: '10px',
-                                    border: '1px solid var(--border-color)',
-                                    background: 'var(--bg-color)',
-                                    color: 'var(--text-primary)',
+                                    fontWeight: 800,
                                     fontSize: '14px',
-                                    fontWeight: 600,
-                                    outline: 'none'
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)'
                                 }}
-                            />
+                            >
+                                <QrCode size={18} /> مسح الرمز (QR) بالكاميرا
+                            </button>
                         </div>
 
                         {/* Search Results Display */}
@@ -216,6 +280,91 @@ const BranchPanel: React.FC = () => {
                                 ))}
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Camera QR Scanner Modal */}
+            {isScannerOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.8)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000,
+                    padding: '16px'
+                }}>
+                    <div className="glass animate-scale-up" style={{
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '480px',
+                        padding: '24px',
+                        position: 'relative',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                        textAlign: 'center'
+                    }}>
+                        <button 
+                            onClick={() => setIsScannerOpen(false)}
+                            style={{
+                                position: 'absolute',
+                                top: '16px',
+                                right: '16px',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '50%',
+                                width: '36px',
+                                height: '36px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                zIndex: 10
+                            }}
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800 }}>مسح الرمز (QR Code)</h3>
+                        <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>قم بتوجيه كاميرا جهازك نحو رمز الاستجابة السريع للطلب</p>
+
+                        <div 
+                            id="qr-reader" 
+                            style={{ 
+                                width: '100%', 
+                                overflow: 'hidden', 
+                                borderRadius: '16px', 
+                                border: '1px solid var(--border-color)',
+                                background: 'black',
+                                marginBottom: '20px'
+                            }}
+                        ></div>
+
+                        <button
+                            onClick={() => setIsScannerOpen(false)}
+                            style={{
+                                width: '100%',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--text-primary)',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                fontWeight: 800,
+                                fontSize: '14px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            إلغاء وإغلاق الكاميرا
+                        </button>
                     </div>
                 </div>
             )}
