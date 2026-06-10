@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Splash from './components/Splash';
 import ClientMap from './pages/ClientMap';
 import AdminDashboard from './pages/AdminDashboard';
+import CompanyInvoices from './pages/CompanyInvoices';
 import Login from './pages/Login';
 import CompanyDashboard from './pages/CompanyDashboard';
 import BranchPanel from './pages/BranchPanel';
@@ -30,6 +31,7 @@ function App() {
             <Route path="branch" element={<BranchPanel />} />
             <Route element={<ProtectedRoute />}>
               <Route path="admin" element={<AdminDashboard />} />
+              <Route path="admin/company-invoices/:companyId" element={<CompanyInvoices />} />
             </Route>
           </Route>
         </Routes>
