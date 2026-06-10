@@ -303,10 +303,21 @@ const normalizeArabic = (str: string): string => {
         .replace(/[أإآ]/g, 'ا')
         .replace(/ة/g, 'ه')
         .replace(/ى/g, 'ي')
-        // Remove 'ال' definition prefix if it is at the beginning of a word or after a space/punctuation
-        .replace(/(^|\s)ال/g, '$1')
         .replace(/[\u064B-\u0652]/g, '') // remove diacritics
+        .replace(/(^|\s)ال/g, '$1') // remove 'ال' definition prefix
         .replace(/\s+/g, ' ') // normalize spaces
+        .trim();
+};
+
+const normalizeArabicSimple = (str: string): string => {
+    if (!str) return '';
+    return str
+        .toLowerCase()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/[\u064B-\u0652]/g, '')
+        .replace(/\s+/g, ' ')
         .trim();
 };
 
@@ -748,17 +759,23 @@ const ClientMap: React.FC = () => {
 
     // #5 - Enhanced search including categories (tolerant to Arabic spelling variations like ة/ه, أ/ا, etc.)
     const filteredBranches = branches.filter(branch => {
-        const q = normalizeArabic(searchQuery.toLowerCase().trim());
+        const q = normalizeArabic(searchQuery.trim());
+        const qSimple = normalizeArabicSimple(searchQuery.trim());
         if (!q) {
             const matchesCategory = categoryFilter === 'all' || branch.categories?.includes(categoryFilter);
             return matchesCategory;
         }
 
         const matchesSearch = 
-            normalizeArabic(branch.name.toLowerCase()).includes(q) ||
-            normalizeArabic(branch.address.toLowerCase()).includes(q) ||
-            branch.categories?.some(c => normalizeArabic(c.toLowerCase()).includes(q)) ||
-            (branch.managerName && normalizeArabic(branch.managerName.toLowerCase()).includes(q));
+            normalizeArabic(branch.name).includes(q) ||
+            normalizeArabic(branch.address).includes(q) ||
+            branch.categories?.some(c => normalizeArabic(c).includes(q)) ||
+            (branch.managerName && normalizeArabic(branch.managerName).includes(q)) ||
+            // Fallback simple matches (without Al- prefix removal)
+            normalizeArabicSimple(branch.name).includes(qSimple) ||
+            normalizeArabicSimple(branch.address).includes(qSimple) ||
+            branch.categories?.some(c => normalizeArabicSimple(c).includes(qSimple)) ||
+            (branch.managerName && normalizeArabicSimple(branch.managerName).includes(qSimple));
 
         const matchesCategory = categoryFilter === 'all' || branch.categories?.includes(categoryFilter);
         return matchesSearch && matchesCategory;
