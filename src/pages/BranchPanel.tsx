@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import { subscribeToBranches, subscribeToServiceRequests, updateServiceRequestStatus } from '../services/storage';
 import type { Branch, ServiceRequest } from '../types';
-import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, LogOut, Lock, User } from 'lucide-react';
+import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 
 const BranchPanel: React.FC = () => {
-    const [branches, setBranches] = useState<Branch[]>([]);
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -14,8 +14,6 @@ const BranchPanel: React.FC = () => {
 
     // Login and session states
     const [loggedInBranch, setLoggedInBranch] = useState<Branch | null>(null);
-    const [loginUsername, setLoginUsername] = useState('');
-    const [loginPassword, setLoginPassword] = useState('');
 
     // QR Code scanner hook
     useEffect(() => {
@@ -60,7 +58,6 @@ const BranchPanel: React.FC = () => {
     // Subscribe to branches and requests
     useEffect(() => {
         const unsubBranches = subscribeToBranches((data) => {
-            setBranches(data);
             const storedBranchId = sessionStorage.getItem('logged_branch_id');
             if (storedBranchId) {
                 const found = data.find(b => b.id === storedBranchId);
@@ -73,31 +70,11 @@ const BranchPanel: React.FC = () => {
         return () => { unsubBranches(); unsubRequests(); };
     }, []);
 
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault();
-        const u = loginUsername.trim();
-        const p = loginPassword.trim();
-        
-        if (!u || !p) {
-            toast.error('الرجاء إدخال اسم المستخدم وكلمة المرور');
-            return;
-        }
 
-        const found = branches.find(b => b.username === u && b.password === p);
-        if (found) {
-            setLoggedInBranch(found);
-            sessionStorage.setItem('logged_branch_id', found.id);
-            toast.success(`مرحباً بك! تم تسجيل الدخول لـ ${found.name} 👋`);
-        } else {
-            toast.error('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
-        }
-    };
 
     const handleLogout = () => {
         setLoggedInBranch(null);
         sessionStorage.removeItem('logged_branch_id');
-        setLoginUsername('');
-        setLoginPassword('');
         toast.success('تم تسجيل الخروج بنجاح');
     };
 
@@ -140,54 +117,7 @@ const BranchPanel: React.FC = () => {
     ) : [];
 
     if (!loggedInBranch) {
-        return (
-            <div style={{ maxWidth: '440px', margin: '60px auto', padding: '0 16px', direction: 'rtl' }}>
-                <div className="glass animate-scale-up" style={{ padding: '32px', borderRadius: '24px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', textAlign: 'center' }}>
-                    <div style={{ background: 'rgba(59, 130, 246, 0.1)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--primary-color)' }}>
-                        <Lock size={30} style={{ margin: 'auto' }} />
-                    </div>
-                    <h2 style={{ margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>تسجيل دخول الفروع</h2>
-                    <p style={{ margin: '0 0 24px', fontSize: '14px', color: 'var(--text-secondary)' }}>الرجاء إدخال بيانات الدخول المخصصة لفرعكم من قبل الإدارة</p>
-                    
-                    <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>اسم المستخدم للفرع:</label>
-                            <div style={{ position: 'relative' }}>
-                                <User size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                                <input 
-                                    type="text" 
-                                    placeholder="أدخل اسم مستخدم الفرع"
-                                    value={loginUsername}
-                                    onChange={(e) => setLoginUsername(e.target.value)}
-                                    required
-                                    style={{ width: '100%', padding: '12px 40px 12px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }}
-                                />
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>كلمة المرور للفرع:</label>
-                            <div style={{ position: 'relative' }}>
-                                <Lock size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                                <input 
-                                    type="password" 
-                                    placeholder="أدخل كلمة مرور الفرع"
-                                    value={loginPassword}
-                                    onChange={(e) => setLoginPassword(e.target.value)}
-                                    required
-                                    style={{ width: '100%', padding: '12px 40px 12px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }}
-                                />
-                            </div>
-                        </div>
-                        <button 
-                            type="submit" 
-                            style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 800, fontSize: '15px', cursor: 'pointer', marginTop: '8px', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s' }}
-                        >
-                            تسجيل الدخول للفرع
-                        </button>
-                    </form>
-                </div>
-            </div>
-        );
+        return <Navigate to="/login?type=branch" replace />;
     }
 
     return (

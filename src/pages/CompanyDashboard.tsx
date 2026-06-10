@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest } from '../services/storage';
 import type { CompanyAccount, ServiceRequest } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, LogOut, Lock, User } from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
 const CompanyDashboard: React.FC = () => {
-    const [companies, setCompanies] = useState<CompanyAccount[]>([]);
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [plateNumber, setPlateNumber] = useState('');
     const [serviceDescription, setServiceDescription] = useState('');
@@ -14,8 +14,6 @@ const CompanyDashboard: React.FC = () => {
     
     // Login and session states
     const [loggedInCompany, setLoggedInCompany] = useState<CompanyAccount | null>(null);
-    const [loginUsername, setLoginUsername] = useState('');
-    const [loginPassword, setLoginPassword] = useState('');
 
     // QR Code modal state
     const [selectedQrRequest, setSelectedQrRequest] = useState<ServiceRequest | null>(null);
@@ -49,7 +47,6 @@ const CompanyDashboard: React.FC = () => {
     // Subscribe to companies and requests
     useEffect(() => {
         const unsubCompanies = subscribeToCompanies((data) => {
-            setCompanies(data);
             const storedCompanyId = sessionStorage.getItem('logged_company_id');
             if (storedCompanyId) {
                 const found = data.find(c => c.id === storedCompanyId);
@@ -62,31 +59,11 @@ const CompanyDashboard: React.FC = () => {
         return () => { unsubCompanies(); unsubRequests(); };
     }, []);
 
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault();
-        const u = loginUsername.trim();
-        const p = loginPassword.trim();
-        
-        if (!u || !p) {
-            toast.error('الرجاء إدخال اسم المستخدم وكلمة المرور');
-            return;
-        }
 
-        const found = companies.find(c => c.username === u && c.password === p);
-        if (found) {
-            setLoggedInCompany(found);
-            sessionStorage.setItem('logged_company_id', found.id);
-            toast.success(`مرحباً بك! تم تسجيل الدخول لـ ${found.name} 👋`);
-        } else {
-            toast.error('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
-        }
-    };
 
     const handleLogout = () => {
         setLoggedInCompany(null);
         sessionStorage.removeItem('logged_company_id');
-        setLoginUsername('');
-        setLoginPassword('');
         toast.success('تم تسجيل الخروج بنجاح');
     };
 
@@ -132,54 +109,7 @@ const CompanyDashboard: React.FC = () => {
     const completedRequests = companyRequests.filter(r => r.status === 'completed');
 
     if (!loggedInCompany) {
-        return (
-            <div style={{ maxWidth: '440px', margin: '60px auto', padding: '0 16px', direction: 'rtl' }}>
-                <div className="glass animate-scale-up" style={{ padding: '32px', borderRadius: '24px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', textAlign: 'center' }}>
-                    <div style={{ background: 'rgba(59, 130, 246, 0.1)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--primary-color)' }}>
-                        <Lock size={30} style={{ margin: 'auto' }} />
-                    </div>
-                    <h2 style={{ margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>تسجيل دخول الشركات</h2>
-                    <p style={{ margin: '0 0 24px', fontSize: '14px', color: 'var(--text-secondary)' }}>الرجاء إدخال بيانات الدخول المخصصة لشركتكم من قبل الإدارة</p>
-                    
-                    <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>اسم المستخدم:</label>
-                            <div style={{ position: 'relative' }}>
-                                <User size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                                <input 
-                                    type="text" 
-                                    placeholder="أدخل اسم المستخدم"
-                                    value={loginUsername}
-                                    onChange={(e) => setLoginUsername(e.target.value)}
-                                    required
-                                    style={{ width: '100%', padding: '12px 40px 12px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }}
-                                />
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>كلمة المرور:</label>
-                            <div style={{ position: 'relative' }}>
-                                <Lock size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                                <input 
-                                    type="password" 
-                                    placeholder="أدخل كلمة المرور"
-                                    value={loginPassword}
-                                    onChange={(e) => setLoginPassword(e.target.value)}
-                                    required
-                                    style={{ width: '100%', padding: '12px 40px 12px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }}
-                                />
-                            </div>
-                        </div>
-                        <button 
-                            type="submit" 
-                            style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 800, fontSize: '15px', cursor: 'pointer', marginTop: '8px', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)', transition: 'all 0.2s' }}
-                        >
-                            تسجيل الدخول
-                        </button>
-                    </form>
-                </div>
-            </div>
-        );
+        return <Navigate to="/login?type=company" replace />;
     }
 
     return (

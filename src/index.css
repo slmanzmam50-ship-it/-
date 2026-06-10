@@ -137,6 +137,16 @@ button {
 .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
 .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
 .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.animate-scale-up { animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
 
 /* --- Empty States --- */
 .empty-state-container {
