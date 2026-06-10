@@ -389,12 +389,16 @@ const ClientMap: React.FC = () => {
     // Automatically zoom/center on search results when the query changes to make it responsive
     useEffect(() => {
         const query = searchQuery.trim();
-        if (!query || filteredBranches.length === 0) return;
+        if (!query || sortedBranches.length === 0) return;
         
-        // Centering on first matched branch, and zooming in close (e.g., zoom level 13)
-        const firstMatch = filteredBranches[0];
-        setMapCenter([firstMatch.latitude, firstMatch.longitude]);
-        setMapZoom(12);
+        // Find the best match: prioritize branches whose names start with or contain the query, otherwise use the first sorted match
+        const bestMatch = sortedBranches.find(b => 
+            normalizeArabic(b.name).includes(normalizeArabic(query)) ||
+            normalizeArabicSimple(b.name).includes(normalizeArabicSimple(query))
+        ) || sortedBranches[0];
+
+        setMapCenter([bestMatch.latitude, bestMatch.longitude]);
+        setMapZoom(13);
     }, [searchQuery]);
 
     useEffect(() => {
