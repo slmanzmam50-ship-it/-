@@ -299,10 +299,15 @@ const BranchDetailModal: React.FC<{
 const normalizeArabic = (str: string): string => {
     if (!str) return '';
     return str
+        .toLowerCase()
         .replace(/[أإآ]/g, 'ا')
         .replace(/ة/g, 'ه')
         .replace(/ى/g, 'ي')
-        .replace(/[\u064B-\u0652]/g, ''); // remove diacritics
+        // Remove 'ال' definition prefix if it is at the beginning of a word or after a space/punctuation
+        .replace(/(^|\s)ال/g, '$1')
+        .replace(/[\u064B-\u0652]/g, '') // remove diacritics
+        .replace(/\s+/g, ' ') // normalize spaces
+        .trim();
 };
 
 // ============================================================
@@ -395,7 +400,81 @@ const ClientMap: React.FC = () => {
         const input = customLocInput.trim();
         if (!input) return;
 
-        // Try extracting coordinates
+        const performGeocode = async (queryStr: string, toastId?: string) => {
+            const currentToastId = toastId || toast.loading(lang === 'ar' ? 'جاري البحث عن الموقع...' : 'Searching for location...');
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}`);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    const first = data[0];
+                    const loc: [number, number] = [parseFloat(first.lat), parseFloat(first.lon)];
+                    setUserLoc(loc);
+                    setMapCenter(loc);
+                    setMapZoom(13);
+                    setSortBy('nearest');
+                    toast.success(lang === 'ar' ? `تم تحديد الموقع: ${first.display_name.split(',')[0]} ✅` : `Location set: ${first.display_name.split(',')[0]} ✅`, { id: currentToastId });
+                } else {
+                    toast.error(lang === 'ar' ? 'لم نتمكن من العثور على هذا الموقع.' : 'Could not find this location.', { id: currentToastId });
+                }
+            } catch {
+                toast.error(lang === 'ar' ? 'خطأ في الاتصال بخدمة البحث.' : 'Error connecting to search service.', { id: currentToastId });
+            }
+        };
+
+        // If it's a shortened google maps link, resolve it first
+        if (input.includes("goo.gl") || input.includes("maps.app.goo.gl")) {
+            const toastId = toast.loading(lang === 'ar' ? 'جاري تحليل رابط موقع العميل...' : 'Analyzing client location link...');
+            try {
+                const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(input)}`);
+                if (!res.ok) throw new Error("Redirect lookup failed");
+                const html = await res.text();
+                
+                const ogUrlMatch = html.match(/property="og:url"\s+content="([^"]+)"/i) || 
+                                 html.match(/content="([^"]+)"\s+property="og:url"/i) ||
+                                 html.match(/href="https:\/\/www\.google\.com\/maps\/[^"]*@(-?\d+\.\d+),(-?\d+\.\d+)/i) ||
+                                 html.match(/google\.com\/maps\/preview\/place\/[^\/]*\/@(-?\d+\.\d+),(-?\d+\.\d+)/i);
+                
+                let resolvedUrl = ogUrlMatch ? (ogUrlMatch[1] || ogUrlMatch[0]) : "";
+
+                const coordMatch = html.match(/ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) ||
+                                   html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+                                   html.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+
+                if (coordMatch) {
+                    const resolvedLat = parseFloat(coordMatch[1]);
+                    const resolvedLng = parseFloat(coordMatch[2]);
+                    const loc: [number, number] = [resolvedLat, resolvedLng];
+                    setUserLoc(loc);
+                    setMapCenter(loc);
+                    setMapZoom(13);
+                    setSortBy('nearest');
+                    toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! فرز الفروع القريبة جارٍ...' : 'Location resolved successfully! Sorting nearby branches...', { id: toastId });
+                } else if (resolvedUrl) {
+                    const resolvedMatch = resolvedUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+                                          resolvedUrl.match(/[?&/](?:q|query|loc|place|dir|ll|cbll|addr)=?(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)/);
+                    if (resolvedMatch) {
+                        const resolvedLat = parseFloat(resolvedMatch[1]);
+                        const resolvedLng = parseFloat(resolvedMatch[2]);
+                        const loc: [number, number] = [resolvedLat, resolvedLng];
+                        setUserLoc(loc);
+                        setMapCenter(loc);
+                        setMapZoom(13);
+                        setSortBy('nearest');
+                        toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! فرز الفروع جارٍ...' : 'Location resolved successfully! Sorting branches...', { id: toastId });
+                    } else {
+                        // Fallback to text geocoding if we got a URL but no clean coordinates in it
+                        await performGeocode(input, toastId);
+                    }
+                } else {
+                    await performGeocode(input, toastId);
+                }
+            } catch {
+                await performGeocode(input, toastId);
+            }
+            return;
+        }
+
+        // Try extracting coordinates directly from text
         let lat: number | null = null;
         let lng: number | null = null;
 
@@ -427,24 +506,7 @@ const ClientMap: React.FC = () => {
             toast.success(lang === 'ar' ? 'تم تحديد موقع العميل المخصص وفرز الفروع القريبة!' : 'Custom location set and nearby branches sorted!');
         } else {
             // Address search fallback
-            const toastId = toast.loading(lang === 'ar' ? 'جاري البحث عن العنوان...' : 'Searching for address...');
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(input)}`);
-                const data = await response.json();
-                if (data && data.length > 0) {
-                    const first = data[0];
-                    const loc: [number, number] = [parseFloat(first.lat), parseFloat(first.lon)];
-                    setUserLoc(loc);
-                    setMapCenter(loc);
-                    setMapZoom(13);
-                    setSortBy('nearest');
-                    toast.success(lang === 'ar' ? `تم تحديد الموقع: ${first.display_name.split(',')[0]} ✅` : `Location set: ${first.display_name.split(',')[0]} ✅`, { id: toastId });
-                } else {
-                    toast.error(lang === 'ar' ? 'لم نتمكن من العثور على هذا الموقع.' : 'Could not find this location.', { id: toastId });
-                }
-            } catch {
-                toast.error(lang === 'ar' ? 'خطأ في الاتصال بخدمة البحث.' : 'Error connecting to search service.', { id: toastId });
-            }
+            await performGeocode(input);
         }
     };
 
