@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest } from '../services/storage';
-import type { CompanyAccount, ServiceRequest } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, LogOut, Loader2 } from 'lucide-react';
+import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest, subscribeToBranches, updateServiceRequestBranch } from '../services/storage';
+import type { CompanyAccount, ServiceRequest, Branch } from '../types';
+import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, LogOut, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
 const CompanyDashboard: React.FC = () => {
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
+    const [branches, setBranches] = useState<Branch[]>([]);
     const [plateNumber, setPlateNumber] = useState('');
     const [serviceDescription, setServiceDescription] = useState('');
+    const [targetBranchIds, setTargetBranchIds] = useState<string[]>(['all']);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     // Login and session states
@@ -19,6 +21,11 @@ const CompanyDashboard: React.FC = () => {
     // QR Code modal state
     const [selectedQrRequest, setSelectedQrRequest] = useState<ServiceRequest | null>(null);
     const [modalQrUrl, setModalQrUrl] = useState<string>('');
+
+    // Re-route Modal state
+    const [reRouteRequest, setReRouteRequest] = useState<ServiceRequest | null>(null);
+    const [newTargetBranchIds, setNewTargetBranchIds] = useState<string[]>([]);
+    const [isReRouting, setIsReRouting] = useState(false);
 
     // Generate QR Code data URL when selection changes
     useEffect(() => {
@@ -45,8 +52,9 @@ const CompanyDashboard: React.FC = () => {
         toast.success('تم تحميل رمز QR بنجاح');
     };
 
-    // Subscribe to companies and requests
+    // Subscribe to branches, companies, and requests
     useEffect(() => {
+        const unsubBranches = subscribeToBranches(setBranches);
         const unsubCompanies = subscribeToCompanies((data) => {
             const storedCompanyId = sessionStorage.getItem('logged_company_id');
             if (storedCompanyId) {
@@ -58,10 +66,8 @@ const CompanyDashboard: React.FC = () => {
             setIsLoading(false);
         });
         const unsubRequests = subscribeToServiceRequests(setRequests);
-        return () => { unsubCompanies(); unsubRequests(); };
+        return () => { unsubBranches(); unsubCompanies(); unsubRequests(); };
     }, []);
-
-
 
     const handleLogout = () => {
         setLoggedInCompany(null);
@@ -86,6 +92,10 @@ const CompanyDashboard: React.FC = () => {
             toast.error('الرجاء إدخال الخدمة المطلوبة');
             return;
         }
+        if (targetBranchIds.length === 0) {
+            toast.error('الرجاء تحديد فرع واحد على الأقل أو اختيار "الكل"');
+            return;
+        }
 
         setIsSubmitting(true);
         try {
@@ -93,11 +103,13 @@ const CompanyDashboard: React.FC = () => {
                 companyId: loggedInCompany.id,
                 companyName: loggedInCompany.name,
                 plateNumber: pNum,
-                serviceDescription: sDesc
+                serviceDescription: sDesc,
+                targetBranchIds: targetBranchIds
             });
             toast.success(`تم إنشاء الطلب بنجاح! رقم الطلب: ${newReq.id} 🎉`);
             setPlateNumber('');
             setServiceDescription('');
+            setTargetBranchIds(['all']);
         } catch (error) {
             console.error(error);
             toast.error('حدث خطأ أثناء إنشاء الطلب');
@@ -106,9 +118,58 @@ const CompanyDashboard: React.FC = () => {
         }
     };
 
+    const handleBranchSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const values = Array.from(e.target.selectedOptions, option => option.value);
+        if (values.includes('all')) {
+            setTargetBranchIds(['all']);
+        } else {
+            setTargetBranchIds(values);
+        }
+    };
+
+    const handleReRouteBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const values = Array.from(e.target.selectedOptions, option => option.value);
+        if (values.includes('all')) {
+            setNewTargetBranchIds(['all']);
+        } else {
+            setNewTargetBranchIds(values);
+        }
+    };
+
+    const openReRouteModal = (req: ServiceRequest) => {
+        setReRouteRequest(req);
+        setNewTargetBranchIds(req.targetBranchIds || ['all']);
+    };
+
+    const handleExecuteReRoute = async () => {
+        if (!reRouteRequest) return;
+        if (newTargetBranchIds.length === 0) {
+            toast.error('الرجاء تحديد فرع واحد على الأقل');
+            return;
+        }
+
+        setIsReRouting(true);
+        try {
+            await updateServiceRequestBranch(reRouteRequest.id, newTargetBranchIds);
+            toast.success('تم تعديل فروع الطلب بنجاح وإعادة تنشيطه! 🔄');
+            setReRouteRequest(null);
+        } catch (error) {
+            console.error(error);
+            toast.error('حدث خطأ أثناء تعديل فروع الطلب');
+        } finally {
+            setIsReRouting(false);
+        }
+    };
+
     const companyRequests = loggedInCompany ? requests.filter(r => r.companyId === loggedInCompany.id) : [];
-    const activeRequests = companyRequests.filter(r => r.status === 'active');
+    const activeRequests = companyRequests.filter(r => r.status === 'active' || r.status === 'transferred');
     const completedRequests = companyRequests.filter(r => r.status === 'completed');
+    const rejectedRequests = companyRequests.filter(r => r.status === 'rejected');
+
+    const getBranchNamesStr = (ids: string[]) => {
+        if (!ids || ids.includes('all')) return 'جميع الفروع (الكل)';
+        return ids.map(id => branches.find(b => b.id === id)?.name || id).join('، ');
+    };
 
     if (isLoading) {
         return (
@@ -131,7 +192,7 @@ const CompanyDashboard: React.FC = () => {
             <div className="glass animate-fade-in" style={{ padding: '20px 24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                 <div>
                     <h2 style={{ margin: '0 0 4px', fontSize: '1.4rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        🏢 لوحة تحكم الشركات
+                        🏢 لوحة تحكم الشركات B2B
                     </h2>
                     <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
                         مرحباً بك، أنت مسجل الدخول باسم: <strong style={{ color: 'var(--primary-color)' }}>{loggedInCompany.name}</strong>
@@ -158,14 +219,14 @@ const CompanyDashboard: React.FC = () => {
                 </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* Create Request Section */}
                 <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
                     <h3 style={{ margin: '0 0 20px', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
                         <PlusCircle size={20} /> إنشاء طلب خدمة جديد لـ ({loggedInCompany.name})
                     </h3>
                     <form onSubmit={handleCreateRequest} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>رقم لوحة السيارة:</label>
                                 <input 
@@ -205,6 +266,37 @@ const CompanyDashboard: React.FC = () => {
                                 />
                             </div>
                         </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                الفرع الموجه إليه الطلب (اضغط Ctrl لتحديد أكثر من فرع):
+                            </label>
+                            <select
+                                multiple
+                                value={targetBranchIds}
+                                onChange={handleBranchSelectChange}
+                                style={{
+                                    padding: '10px',
+                                    borderRadius: '10px',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--bg-color)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    minHeight: '120px',
+                                    outline: 'none'
+                                }}
+                            >
+                                <option value="all">الكل (جميع الفروع)</option>
+                                {branches.map(b => (
+                                    <option key={b.id} value={b.id}>{b.name}</option>
+                                ))}
+                            </select>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                * افتراضياً يوجه الطلب لجميع الفروع. إذا كان لفرع محدد، قم بتحديده من القائمة.
+                            </span>
+                        </div>
+
                         <button 
                             type="submit" 
                             disabled={isSubmitting}
@@ -232,7 +324,7 @@ const CompanyDashboard: React.FC = () => {
                     {/* Active Requests */}
                     <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
                         <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)' }}>
-                            <ClipboardList size={20} /> الطلبات النشطة ({activeRequests.length})
+                            <ClipboardList size={20} /> الطلبات النشطة والمحولة ({activeRequests.length})
                         </h3>
                         {activeRequests.length === 0 ? (
                             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', margin: '30px 0' }}>
@@ -241,39 +333,71 @@ const CompanyDashboard: React.FC = () => {
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {activeRequests.map(r => (
-                                    <div key={r.id} style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ flex: 1 }}>
-                                            <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '15px' }}>رقم اللوحة: {r.plateNumber}</p>
-                                            <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-secondary)' }}>{r.serviceDescription}</p>
-                                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <Clock size={12} /> {new Date(r.createdAt).toLocaleString('ar-SA')}
-                                            </span>
+                                    <div key={r.id} style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                    <p style={{ margin: 0, fontWeight: 800, fontSize: '15px' }}>رقم اللوحة: {r.plateNumber}</p>
+                                                    {r.status === 'transferred' && (
+                                                        <span style={{ fontSize: '10px', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--primary-color)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>محول</span>
+                                                    )}
+                                                </div>
+                                                <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-secondary)' }}>{r.serviceDescription}</p>
+                                                <p style={{ margin: '0 0 6px', fontSize: '12px', color: 'var(--primary-color)', fontWeight: 700 }}>
+                                                    📌 الفروع المحددة: {getBranchNamesStr(r.targetBranchIds)}
+                                                </p>
+                                                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <Clock size={12} /> {new Date(r.createdAt).toLocaleString('ar-SA')}
+                                                </span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <button 
+                                                    onClick={() => setSelectedQrRequest(r)}
+                                                    title="عرض رمز الـ QR"
+                                                    style={{
+                                                        background: 'rgba(59, 130, 246, 0.1)',
+                                                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                        borderRadius: '8px',
+                                                        padding: '8px',
+                                                        color: 'var(--primary-color)',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <QrCode size={18} />
+                                                </button>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '4px' }}>رقم الطلب</span>
+                                                    <span style={{ background: 'var(--accent-orange)', color: 'white', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '14px' }}>
+                                                        {r.id}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تعديل توجيه الفرع؟</span>
                                             <button 
-                                                onClick={() => setSelectedQrRequest(r)}
-                                                title="عرض رمز الـ QR"
+                                                onClick={() => openReRouteModal(r)}
                                                 style={{
-                                                    background: 'rgba(59, 130, 246, 0.1)',
-                                                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                    background: 'rgba(255, 255, 255, 0.05)',
+                                                    border: '1px solid var(--border-color)',
                                                     borderRadius: '8px',
-                                                    padding: '8px',
-                                                    color: 'var(--primary-color)',
+                                                    padding: '6px 12px',
+                                                    fontSize: '12px',
+                                                    fontWeight: 700,
+                                                    color: 'var(--text-primary)',
                                                     cursor: 'pointer',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center',
+                                                    gap: '6px',
                                                     transition: 'all 0.2s'
                                                 }}
                                             >
-                                                <QrCode size={18} />
+                                                <ArrowLeftRight size={14} /> تغيير الفرع
                                             </button>
-                                            <div style={{ textAlign: 'center' }}>
-                                                <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '4px' }}>رقم الطلب</span>
-                                                <span style={{ background: 'var(--accent-orange)', color: 'white', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '14px' }}>
-                                                    {r.id}
-                                                </span>
-                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -281,53 +405,58 @@ const CompanyDashboard: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Completed Requests */}
+                    {/* Rejected Requests */}
                     <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
-                        <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success)' }}>
-                            <CheckCircle size={20} /> الطلبات المنفذة والمستلمة ({completedRequests.length})
+                        <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--error)' }}>
+                            <AlertTriangle size={20} /> الطلبات المرفوضة ({rejectedRequests.length})
                         </h3>
-                        {completedRequests.length === 0 ? (
+                        {rejectedRequests.length === 0 ? (
                             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', margin: '30px 0' }}>
-                                لا توجد طلبات منفذة بعد.
+                                لا توجد طلبات مرفوضة.
                             </p>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {completedRequests.map(r => (
-                                    <div key={r.id} style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ flex: 1 }}>
-                                            <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '15px' }}>رقم اللوحة: {r.plateNumber}</p>
-                                            <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-secondary)' }}>{r.serviceDescription}</p>
-                                            <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--success)', fontWeight: 700 }}>
-                                                🟢 نُفّذ في فرع: {r.branchName || 'غير معروف'}
-                                            </p>
-                                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <Clock size={12} /> {r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : ''}
+                                {rejectedRequests.map(r => (
+                                    <div key={r.id} style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '15px' }}>رقم اللوحة: {r.plateNumber} (الطلب: {r.id})</p>
+                                                <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-secondary)' }}>{r.serviceDescription}</p>
+                                                <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--error)', fontWeight: 700 }}>
+                                                    ❌ رُفض في فرع: {r.branchName || 'غير معروف'}
+                                                </p>
+                                                {r.rejectionReason && (
+                                                    <p style={{ margin: '0 0 6px', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(239, 68, 68, 0.05)', padding: '6px 10px', borderRadius: '6px', borderLeft: '3px solid var(--error)' }}>
+                                                        <strong>السبب:</strong> {r.rejectionReason}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <span style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '13px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                                مرفوض
                                             </span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تغيير التوجيه لإعادة التفعيل:</span>
                                             <button 
-                                                onClick={() => setSelectedQrRequest(r)}
-                                                title="عرض رمز الـ QR"
+                                                onClick={() => openReRouteModal(r)}
                                                 style={{
-                                                    background: 'rgba(59, 130, 246, 0.1)',
-                                                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                    background: 'var(--primary-color)',
+                                                    border: 'none',
                                                     borderRadius: '8px',
-                                                    padding: '8px',
-                                                    color: 'var(--primary-color)',
+                                                    padding: '6px 12px',
+                                                    fontSize: '12px',
+                                                    fontWeight: 800,
+                                                    color: 'white',
                                                     cursor: 'pointer',
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    transition: 'all 0.2s'
+                                                    gap: '6px',
+                                                    transition: 'all 0.2s',
+                                                    boxShadow: '0 2px 6px rgba(59, 130, 246, 0.2)'
                                                 }}
                                             >
-                                                <QrCode size={18} />
+                                                <RefreshCw size={12} /> إعادة توجيه وتفعيل الطلب
                                             </button>
-                                            <div>
-                                                <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '12px', border: '1px solid var(--success)' }}>
-                                                    {r.id}
-                                                </span>
-                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -335,16 +464,190 @@ const CompanyDashboard: React.FC = () => {
                         )}
                     </div>
                 </div>
+
+                {/* Completed Requests */}
+                <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                    <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success)' }}>
+                        <CheckCircle size={20} /> الطلبات المنفذة والمستلمة ({completedRequests.length})
+                    </h3>
+                    {completedRequests.length === 0 ? (
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', margin: '30px 0' }}>
+                            لا توجد طلبات منفذة بعد.
+                        </p>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', flexWrap: 'wrap' }}>
+                            {completedRequests.map(r => (
+                                <div key={r.id} style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '15px' }}>رقم اللوحة: {r.plateNumber}</p>
+                                        <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-secondary)' }}>{r.serviceDescription}</p>
+                                        <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--success)', fontWeight: 700 }}>
+                                            🟢 نُفّذ في فرع: {r.branchName || 'غير معروف'}
+                                        </p>
+                                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <Clock size={12} /> {r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : ''}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <button 
+                                            onClick={() => setSelectedQrRequest(r)}
+                                            title="عرض رمز الـ QR"
+                                            style={{
+                                                background: 'rgba(59, 130, 246, 0.1)',
+                                                border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                borderRadius: '8px',
+                                                padding: '8px',
+                                                color: 'var(--primary-color)',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <QrCode size={18} />
+                                        </button>
+                                        <div>
+                                            <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '12px', border: '1px solid var(--success)' }}>
+                                                {r.id}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* Re-Route branch Modal */}
+            {reRouteRequest && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000,
+                    padding: '16px'
+                }}>
+                    <div className="glass animate-scale-up" style={{
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '460px',
+                        padding: '24px',
+                        position: 'relative',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+                    }}>
+                        <button 
+                            onClick={() => setReRouteRequest(null)}
+                            style={{
+                                position: 'absolute',
+                                top: '16px',
+                                right: '16px',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '50%',
+                                width: '36px',
+                                height: '36px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800 }}>تعديل توجيه الطلب (إعادة التعيين)</h3>
+                        <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                            تعديل الفروع المستهدفة للطلب رقم <strong style={{ color: 'var(--accent-orange)' }}>{reRouteRequest.id}</strong> (اللوحة: {reRouteRequest.plateNumber})
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', textAlign: 'right' }}>
+                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                حدد الفروع الموجه إليها الطلب:
+                            </label>
+                            <select
+                                multiple
+                                value={newTargetBranchIds}
+                                onChange={handleReRouteBranchChange}
+                                style={{
+                                    padding: '10px',
+                                    borderRadius: '10px',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--bg-color)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    minHeight: '150px',
+                                    outline: 'none'
+                                }}
+                            >
+                                <option value="all">الكل (جميع الفروع)</option>
+                                {branches.map(b => (
+                                    <option key={b.id} value={b.id}>{b.name}</option>
+                                ))}
+                            </select>
+                            <div style={{ padding: '10px', background: 'rgba(59,130,246,0.05)', borderRadius: '8px', border: '1px solid rgba(59,130,246,0.1)', fontSize: '12px', color: 'var(--text-primary)' }}>
+                                💡 لتحديد فروع متعددة، يرجى الاستمرار بالضغط على زر <strong>Ctrl</strong> (أو <strong>Cmd</strong> في الماك) أثناء النقر على الفروع المطلوبة.
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={handleExecuteReRoute}
+                                disabled={isReRouting}
+                                style={{
+                                    flex: 1,
+                                    background: 'var(--primary-color)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+                                }}
+                            >
+                                {isReRouting ? 'جاري الحفظ...' : 'تحديث وتنشيط الطلب'}
+                            </button>
+                            <button
+                                onClick={() => setReRouteRequest(null)}
+                                style={{
+                                    flex: 1,
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--border-color)',
+                                    color: 'var(--text-primary)',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* QR Code Viewer Modal */}
             {selectedQrRequest && (
                 <div style={{
                     position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
+                    top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.6)',
                     backdropFilter: 'blur(10px)',
                     display: 'flex',
@@ -379,8 +682,7 @@ const CompanyDashboard: React.FC = () => {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 color: 'var(--text-primary)',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
+                                cursor: 'pointer'
                             }}
                         >
                             <X size={18} />
@@ -422,10 +724,16 @@ const CompanyDashboard: React.FC = () => {
                                 <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم اللوحة:</span>
                                 <span style={{ fontWeight: 800 }}>{selectedQrRequest.plateNumber}</span>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                 <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>الخدمة المطلوبة:</span>
                                 <span style={{ fontWeight: 600, maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={selectedQrRequest.serviceDescription}>
                                     {selectedQrRequest.serviceDescription}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>الفروع الموجه إليها:</span>
+                                <span style={{ fontWeight: 600, maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--primary-color)' }}>
+                                    {getBranchNamesStr(selectedQrRequest.targetBranchIds)}
                                 </span>
                             </div>
                         </div>

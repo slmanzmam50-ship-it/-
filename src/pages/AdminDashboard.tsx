@@ -898,7 +898,9 @@ const AdminDashboard: React.FC = () => {
                             >
                                 <option value="all">كل الحالات</option>
                                 <option value="active">نشطة (قيد الانتظار)</option>
+                                <option value="transferred">محولة (عامة)</option>
                                 <option value="completed">مكتملة ومستلمة</option>
+                                <option value="rejected">مرفوضة</option>
                             </select>
                             <button 
                                 onClick={handleExportRequestsExcel} 
@@ -932,6 +934,7 @@ const AdminDashboard: React.FC = () => {
                                     <th>الشركة</th>
                                     <th>رقم اللوحة</th>
                                     <th>الخدمة المطلوبة</th>
+                                    <th>الفروع الموجهة</th>
                                     <th>الحالة</th>
                                     <th>تاريخ الإنشاء</th>
                                     <th>تاريخ التنفيذ</th>
@@ -949,12 +952,17 @@ const AdminDashboard: React.FC = () => {
                                     if (filtered.length === 0) {
                                         return (
                                             <tr>
-                                                <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+                                                <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
                                                     لا توجد طلبات مطابقة للبحث.
                                                 </td>
                                             </tr>
                                         );
                                     }
+
+                                    const getBranchNamesStr = (ids: string[]) => {
+                                        if (!ids || ids.includes('all')) return 'الكل';
+                                        return ids.map(id => branches.find(b => b.id === id)?.name || id).join('، ');
+                                    };
 
                                     return filtered.map(r => (
                                         <tr key={r.id}>
@@ -962,17 +970,37 @@ const AdminDashboard: React.FC = () => {
                                             <td style={{ fontWeight: 700 }}>{r.companyName}</td>
                                             <td style={{ fontWeight: 700 }}>{r.plateNumber}</td>
                                             <td style={{ fontSize: '13px' }}>{r.serviceDescription}</td>
+                                            <td style={{ fontSize: '12px', color: 'var(--primary-color)', fontWeight: 600 }}>
+                                                {getBranchNamesStr(r.targetBranchIds)}
+                                            </td>
                                             <td>
                                                 <span style={{ 
                                                     padding: '4px 10px', 
                                                     borderRadius: '8px', 
-                                                    background: r.status === 'active' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', 
-                                                    color: r.status === 'active' ? 'var(--accent-orange)' : 'var(--success)', 
+                                                    background: r.status === 'active' 
+                                                        ? 'rgba(245, 158, 11, 0.15)' 
+                                                        : r.status === 'transferred'
+                                                            ? 'rgba(59, 130, 246, 0.15)'
+                                                            : r.status === 'rejected'
+                                                                ? 'rgba(239, 68, 68, 0.15)'
+                                                                : 'rgba(16, 185, 129, 0.15)', 
+                                                    color: r.status === 'active' 
+                                                        ? 'var(--accent-orange)' 
+                                                        : r.status === 'transferred'
+                                                            ? 'var(--primary-color)'
+                                                            : r.status === 'rejected'
+                                                                ? 'var(--error)'
+                                                                : 'var(--success)', 
                                                     fontSize: '0.75rem', 
                                                     fontWeight: 800 
                                                 }}>
-                                                    {r.status === 'active' ? 'نشط' : 'منفذ ومستلم'}
+                                                    {r.status === 'active' ? 'نشط' : r.status === 'transferred' ? 'محول' : r.status === 'rejected' ? 'مرفوض' : 'منفذ ومستلم'}
                                                 </span>
+                                                {r.status === 'rejected' && r.rejectionReason && (
+                                                    <div style={{ fontSize: '10px', color: 'var(--error)', marginTop: '4px', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.rejectionReason}>
+                                                        السبب: {r.rejectionReason}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                                                 {new Date(r.createdAt).toLocaleString('ar-SA')}

@@ -309,9 +309,10 @@ export const addServiceRequest = async (request: Omit<ServiceRequest, 'id' | 'st
 
 export const updateServiceRequestStatus = async (
     requestId: string,
-    status: 'active' | 'completed',
+    status: 'active' | 'completed' | 'transferred' | 'rejected',
     branchId?: string,
-    branchName?: string
+    branchName?: string,
+    rejectionReason?: string
 ): Promise<void> => {
     const reqRef = doc(db, REQUESTS_COLLECTION, requestId);
     const updates: any = { status };
@@ -319,7 +320,25 @@ export const updateServiceRequestStatus = async (
         updates.completedAt = Date.now();
         if (branchId) updates.branchId = branchId;
         if (branchName) updates.branchName = branchName;
+    } else if (status === 'transferred') {
+        updates.targetBranchIds = ['all'];
+    } else if (status === 'rejected') {
+        if (rejectionReason) updates.rejectionReason = rejectionReason;
+        if (branchId) updates.branchId = branchId;
+        if (branchName) updates.branchName = branchName;
     }
     await updateDoc(reqRef, updates);
+};
+
+export const updateServiceRequestBranch = async (
+    requestId: string,
+    targetBranchIds: string[]
+): Promise<void> => {
+    const reqRef = doc(db, REQUESTS_COLLECTION, requestId);
+    await updateDoc(reqRef, { 
+        targetBranchIds, 
+        status: 'active', 
+        rejectionReason: '' 
+    });
 };
 

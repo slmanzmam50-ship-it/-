@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToBranches, subscribeToServiceRequests, updateServiceRequestStatus } from '../services/storage';
 import type { Branch, ServiceRequest } from '../types';
-import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, LogOut, Loader2 } from 'lucide-react';
+import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, LogOut, Loader2, ArrowLeftRight, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 
@@ -11,6 +11,10 @@ const BranchPanel: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+    // Rejection dialog states
+    const [showRejectDialog, setShowRejectDialog] = useState(false);
+    const [rejectionReason, setRejectionReason] = useState('');
 
     // Login and session states
     const [loggedInBranch, setLoggedInBranch] = useState<Branch | null>(null);
@@ -32,7 +36,13 @@ const BranchPanel: React.FC = () => {
                             qrbox: { width: 250, height: 250 }
                         },
                         (decodedText) => {
-                            setSearchQuery(decodedText.trim());
+                             // Extract ID from full URL or use raw string
+                            let cleanText = decodedText.trim();
+                            if (cleanText.includes('/')) {
+                                const parts = cleanText.split('/');
+                                cleanText = parts[parts.length - 1];
+                            }
+                            setSearchQuery(cleanText);
                             toast.success('تم مسح الرمز بنجاح!');
                             setIsScannerOpen(false);
                         },
@@ -72,8 +82,6 @@ const BranchPanel: React.FC = () => {
         return () => { unsubBranches(); unsubRequests(); };
     }, []);
 
-
-
     const handleLogout = () => {
         setLoggedInBranch(null);
         sessionStorage.removeItem('logged_branch_id');
@@ -85,8 +93,13 @@ const BranchPanel: React.FC = () => {
         ? requests.find(r => r.id.toLowerCase() === searchQuery.trim().toLowerCase()) 
         : null;
 
+    // Check if branch can accept this order
+    const isTargetBranch = matchedRequest && loggedInBranch 
+        ? (matchedRequest.targetBranchIds?.includes('all') || matchedRequest.targetBranchIds?.includes(loggedInBranch.id) || matchedRequest.status === 'transferred')
+        : false;
+
     const handleCompleteRequest = async () => {
-        if (!matchedRequest) return;
+        if (!matchedRequest || !isTargetBranch) return;
         if (!loggedInBranch) {
             toast.error('الرجاء تسجيل الدخول أولاً');
             return;
@@ -105,6 +118,63 @@ const BranchPanel: React.FC = () => {
         } catch (error) {
             console.error(error);
             toast.error('حدث خطأ أثناء تحديث حالة الطلب');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleTransferRequest = async () => {
+        if (!matchedRequest) return;
+        if (!loggedInBranch) {
+            toast.error('الرجاء تسجيل الدخول أولاً');
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            await updateServiceRequestStatus(
+                matchedRequest.id,
+                'transferred',
+                loggedInBranch.id,
+                loggedInBranch.name
+            );
+            toast.success(`تم تحويل الطلب ${matchedRequest.id} وتعميمه على كافة الفروع بنجاح 🔄`);
+            setSearchQuery('');
+        } catch (error) {
+            console.error(error);
+            toast.error('حدث خطأ أثناء تحويل الطلب');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleRejectRequest = async () => {
+        if (!matchedRequest) return;
+        if (!loggedInBranch) {
+            toast.error('الرجاء تسجيل الدخول أولاً');
+            return;
+        }
+        if (!rejectionReason.trim()) {
+            toast.error('الرجاء كتابة سبب الرفض');
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            await updateServiceRequestStatus(
+                matchedRequest.id,
+                'rejected',
+                loggedInBranch.id,
+                loggedInBranch.name,
+                rejectionReason.trim()
+            );
+            toast.success(`تم رفض الطلب ${matchedRequest.id} وإعادته للشركة ❌`);
+            setShowRejectDialog(false);
+            setRejectionReason('');
+            setSearchQuery('');
+        } catch (error) {
+            console.error(error);
+            toast.error('حدث خطأ أثناء رفض الطلب');
         } finally {
             setIsProcessing(false);
         }
@@ -226,8 +296,8 @@ const BranchPanel: React.FC = () => {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     <div>
-                                        <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 10px', borderRadius: '12px', background: matchedRequest.status === 'active' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: matchedRequest.status === 'active' ? 'var(--accent-orange)' : 'var(--success)' }}>
-                                            {matchedRequest.status === 'active' ? 'طلب نشط وجاهز للتنفيذ' : 'طلب مكتمل ومستلم سابقاً'}
+                                        <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 10px', borderRadius: '12px', background: matchedRequest.status === 'active' || matchedRequest.status === 'transferred' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: matchedRequest.status === 'active' || matchedRequest.status === 'transferred' ? 'var(--accent-orange)' : 'var(--success)' }}>
+                                            {matchedRequest.status === 'active' || matchedRequest.status === 'transferred' ? 'طلب نشط وجاهز للتنفيذ' : matchedRequest.status === 'rejected' ? 'طلب مرفوض' : 'طلب مكتمل ومستلم سابقاً'}
                                         </span>
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -245,29 +315,85 @@ const BranchPanel: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {matchedRequest.status === 'active' ? (
-                                        <button 
-                                            onClick={handleCompleteRequest}
-                                            disabled={isProcessing}
-                                            style={{
-                                                alignSelf: 'flex-start',
-                                                background: 'var(--success)',
-                                                color: 'white',
-                                                border: 'none',
-                                                padding: '12px 24px',
-                                                borderRadius: '10px',
-                                                fontWeight: 800,
-                                                fontSize: '14px',
-                                                cursor: 'pointer',
-                                                marginTop: '8px',
-                                                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px'
-                                            }}
-                                        >
-                                            <CheckCircle size={16} /> {isProcessing ? 'جاري استلام وتأكيد الطلب...' : 'تأكيد تنفيذ واستلام الطلب'}
-                                        </button>
+                                    {(matchedRequest.status === 'active' || matchedRequest.status === 'transferred') ? (
+                                        !isTargetBranch ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '10px', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'var(--error)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '14px' }}>
+                                                    <AlertTriangle size={18} />
+                                                    <span>تنبيه: هذا الطلب غير موجه لفرعكم الحالي!</span>
+                                                </div>
+                                                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.6' }}>
+                                                    الرجاء التواصل مع إدارة الشركة أو المشرف لإعادة توجيه الطلب إلى فرعكم (<strong>{loggedInBranch.name}</strong>) ليصبح متاحاً للتنفيذ على النظام.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                                <button 
+                                                    onClick={handleCompleteRequest}
+                                                    disabled={isProcessing}
+                                                    style={{
+                                                        background: 'var(--success)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        padding: '12px 24px',
+                                                        borderRadius: '10px',
+                                                        fontWeight: 800,
+                                                        fontSize: '14px',
+                                                        cursor: 'pointer',
+                                                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px'
+                                                    }}
+                                                >
+                                                    <CheckCircle size={16} /> {isProcessing ? 'جاري التنفيذ...' : 'تنفيذ الطلب واستلامه'}
+                                                </button>
+
+                                                <button 
+                                                    onClick={handleTransferRequest}
+                                                    disabled={isProcessing}
+                                                    style={{
+                                                        background: 'rgba(59, 130, 246, 0.1)',
+                                                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                        color: 'var(--primary-color)',
+                                                        padding: '12px 20px',
+                                                        borderRadius: '10px',
+                                                        fontWeight: 800,
+                                                        fontSize: '14px',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px'
+                                                    }}
+                                                >
+                                                    <ArrowLeftRight size={16} /> تحويل لكافة الفروع
+                                                </button>
+
+                                                <button 
+                                                    onClick={() => setShowRejectDialog(true)}
+                                                    disabled={isProcessing}
+                                                    style={{
+                                                        background: 'rgba(239, 68, 68, 0.1)',
+                                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                                        color: 'var(--error)',
+                                                        padding: '12px 20px',
+                                                        borderRadius: '10px',
+                                                        fontWeight: 800,
+                                                        fontSize: '14px',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px'
+                                                    }}
+                                                >
+                                                    <Ban size={16} /> رفض الطلب
+                                                </button>
+                                            </div>
+                                        )
+                                    ) : matchedRequest.status === 'rejected' ? (
+                                        <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'var(--error)', fontSize: '13px', fontWeight: 700 }}>
+                                            ❌ هذا الطلب تم رفضه وإعادته للشركة. لمزيد من التعديلات يرجى إبلاغ الشركة بإعادة توجيهه.
+                                        </div>
                                     ) : (
                                         <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '13px', fontWeight: 700 }}>
                                             🟢 تم تنفيذ هذا الطلب بنجاح في فرع: ({matchedRequest.branchName}) بتاريخ {matchedRequest.completedAt ? new Date(matchedRequest.completedAt).toLocaleString('ar-SA') : ''}
@@ -307,14 +433,119 @@ const BranchPanel: React.FC = () => {
                 </div>
             </div>
 
+            {/* Rejection Warning Dialog */}
+            {showRejectDialog && matchedRequest && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000,
+                    padding: '16px'
+                }}>
+                    <div className="glass animate-scale-up" style={{
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '460px',
+                        padding: '24px',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        textAlign: 'right'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--error)', marginBottom: '16px' }}>
+                            <AlertTriangle size={24} />
+                            <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>هل أنت متأكد من رفض الطلب؟</h3>
+                        </div>
+
+                        <div style={{ background: 'rgba(245, 158, 11, 0.08)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '16px', marginBottom: '20px', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-primary)' }}>
+                            ⚠️ <strong>تنبيه هام للورشة:</strong> نقترح عليك استخدام خيار <strong>"التحويل لكافة الفروع"</strong> بدلاً من الرفض التام، حيث يتيح ذلك للعميل التوجه لأي ورشة/فرع آخر دون حاجة الشركة لإرسال طلب جديد كلياً. 
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>سبب رفض الطلب:</label>
+                            <textarea
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                placeholder="اكتب سبب الرفض هنا بالتفصيل (مثال: نقص قطع الغيار، انشغال الكادر...)"
+                                style={{
+                                    padding: '12px',
+                                    borderRadius: '10px',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--bg-color)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    minHeight: '80px',
+                                    outline: 'none',
+                                    resize: 'vertical'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={handleRejectRequest}
+                                disabled={isProcessing}
+                                style={{
+                                    flex: 1,
+                                    background: 'var(--error)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {isProcessing ? 'جاري الرفض...' : 'تأكيد الرفض النهائي'}
+                            </button>
+                            <button
+                                onClick={handleTransferRequest}
+                                disabled={isProcessing}
+                                style={{
+                                    flex: 1,
+                                    background: 'var(--primary-color)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                تحويل الفروع بدلاً من الرفض
+                            </button>
+                            <button
+                                onClick={() => setShowRejectDialog(false)}
+                                style={{
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--border-color)',
+                                    color: 'var(--text-primary)',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                تراجع
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Camera QR Scanner Modal */}
             {isScannerOpen && (
                 <div style={{
                     position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
+                    top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.8)',
                     backdropFilter: 'blur(10px)',
                     display: 'flex',
