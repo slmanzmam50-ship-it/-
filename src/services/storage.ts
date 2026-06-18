@@ -322,8 +322,12 @@ export const updateServiceRequestStatus = async (
         if (branchName) updates.branchName = branchName;
     } else if (status === 'transferred') {
         updates.targetBranchIds = ['all'];
+        updates.completedAt = Date.now();
+        if (branchId) updates.branchId = branchId;
+        if (branchName) updates.branchName = branchName;
     } else if (status === 'rejected') {
         if (rejectionReason) updates.rejectionReason = rejectionReason;
+        updates.completedAt = Date.now();
         if (branchId) updates.branchId = branchId;
         if (branchName) updates.branchName = branchName;
     }

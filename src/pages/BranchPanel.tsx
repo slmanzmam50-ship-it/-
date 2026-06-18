@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToBranches, subscribeToServiceRequests, updateServiceRequestStatus } from '../services/storage';
 import type { Branch, ServiceRequest } from '../types';
-import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, LogOut, Loader2, ArrowLeftRight, Ban } from 'lucide-react';
+import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, LogOut, Loader2, ArrowLeftRight, Ban, History } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 
@@ -19,6 +19,11 @@ const BranchPanel: React.FC = () => {
     // Login and session states
     const [loggedInBranch, setLoggedInBranch] = useState<Branch | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Tabs and history logs state
+    const [activeTab, setActiveTab] = useState<'today' | 'history'>('today');
+    const [historySearchQuery, setHistorySearchQuery] = useState('');
+    const [historyStatusFilter, setHistoryStatusFilter] = useState<'all' | 'completed' | 'rejected' | 'transferred'>('all');
 
     // QR Code scanner hook
     useEffect(() => {
@@ -187,6 +192,27 @@ const BranchPanel: React.FC = () => {
         r.completedAt && 
         new Date(r.completedAt).toDateString() === new Date().toDateString()
     ) : [];
+
+    // All requests processed by this branch (completed, rejected, transferred)
+    const branchAllProcessed = loggedInBranch ? requests.filter(r => 
+        r.branchId === loggedInBranch.id &&
+        r.completedAt &&
+        (r.status === 'completed' || r.status === 'rejected' || r.status === 'transferred')
+    ).sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)) : [];
+
+    // Filtered history list based on search and status selector
+    const filteredHistory = branchAllProcessed.filter(r => {
+        const query = historySearchQuery.trim().toLowerCase();
+        const matchesSearch = !query || 
+            r.id.toLowerCase().includes(query) ||
+            r.plateNumber.toLowerCase().includes(query) ||
+            r.companyName.toLowerCase().includes(query) ||
+            (r.serviceDescription && r.serviceDescription.toLowerCase().includes(query)) ||
+            (r.rejectionReason && r.rejectionReason.toLowerCase().includes(query));
+        
+        const matchesStatus = historyStatusFilter === 'all' || r.status === historyStatusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
     if (isLoading) {
         return (
@@ -405,29 +431,207 @@ const BranchPanel: React.FC = () => {
                     )}
                 </div>
 
-                {/* Today's Log Card */}
+                {/* Unified Operations Log & History Card */}
                 <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
-                        <CheckCircle size={20} /> الطلبات المنفذة في هذا الفرع اليوم ({branchCompletedToday.length})
-                    </h3>
-                    {branchCompletedToday.length === 0 ? (
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', margin: '30px 0' }}>
-                            لم يتم تنفيذ أي طلبات في هذا الفرع اليوم بعد.
-                        </p>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {branchCompletedToday.map(r => (
-                                <div key={r.id} style={{ padding: '14px 16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div>
-                                        <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '14px' }}>رقم اللوحة: {r.plateNumber} (رقم الطلب: {r.id})</p>
-                                        <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>الخدمة: {r.serviceDescription}</p>
-                                        <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-secondary)' }}>الشركة: {r.companyName}</p>
-                                    </div>
-                                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        <Clock size={12} /> {r.completedAt ? new Date(r.completedAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : ''}
-                                    </span>
+                    {/* Tab Buttons */}
+                    <div style={{ display: 'flex', borderBottom: '2px solid var(--border-color)', marginBottom: '20px', gap: '20px' }}>
+                        <button
+                            onClick={() => setActiveTab('today')}
+                            style={{
+                                padding: '12px 8px',
+                                background: 'none',
+                                border: 'none',
+                                borderBottom: activeTab === 'today' ? '3px solid var(--primary-color)' : '3px solid transparent',
+                                color: activeTab === 'today' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                                fontWeight: activeTab === 'today' ? 800 : 600,
+                                fontSize: '15px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                transition: 'all 0.2s',
+                                marginBottom: '-2px'
+                            }}
+                        >
+                            <CheckCircle size={18} />
+                            عمليات اليوم
+                            <span style={{ fontSize: '11px', background: activeTab === 'today' ? 'var(--primary-color)' : 'var(--border-color)', color: activeTab === 'today' ? 'white' : 'var(--text-secondary)', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                                {branchCompletedToday.length}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('history')}
+                            style={{
+                                padding: '12px 8px',
+                                background: 'none',
+                                border: 'none',
+                                borderBottom: activeTab === 'history' ? '3px solid var(--primary-color)' : '3px solid transparent',
+                                color: activeTab === 'history' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                                fontWeight: activeTab === 'history' ? 800 : 600,
+                                fontSize: '15px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                transition: 'all 0.2s',
+                                marginBottom: '-2px'
+                            }}
+                        >
+                            <History size={18} />
+                            سجل العمليات الكامل
+                            <span style={{ fontSize: '11px', background: activeTab === 'history' ? 'var(--primary-color)' : 'var(--border-color)', color: activeTab === 'history' ? 'white' : 'var(--text-secondary)', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                                {branchAllProcessed.length}
+                            </span>
+                        </button>
+                    </div>
+
+                    {/* Tab 1: Today's completed requests */}
+                    {activeTab === 'today' && (
+                        <div>
+                            {branchCompletedToday.length === 0 ? (
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', margin: '30px 0' }}>
+                                    لم يتم تنفيذ أي طلبات في هذا الفرع اليوم بعد.
+                                </p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {branchCompletedToday.map(r => (
+                                        <div key={r.id} style={{ padding: '14px 16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div>
+                                                <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '14px' }}>رقم اللوحة: {r.plateNumber} (رقم الطلب: {r.id})</p>
+                                                <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>الخدمة: {r.serviceDescription}</p>
+                                                <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-secondary)' }}>الشركة: {r.companyName}</p>
+                                            </div>
+                                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <Clock size={12} /> {r.completedAt ? new Date(r.completedAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                            </span>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            )}
+                        </div>
+                    )}
+
+                    {/* Tab 2: Full history of processed requests */}
+                    {activeTab === 'history' && (
+                        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {/* Search and Filter panel */}
+                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                                    <Search style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={16} />
+                                    <input 
+                                        type="text"
+                                        placeholder="ابحث برقم اللوحة، الطلب، الشركة..."
+                                        value={historySearchQuery}
+                                        onChange={(e) => setHistorySearchQuery(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px 32px 8px 12px',
+                                            borderRadius: '8px',
+                                            border: '1px solid var(--border-color)',
+                                            background: 'var(--bg-color)',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '13px',
+                                            fontWeight: 600,
+                                            outline: 'none'
+                                        }}
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+                                    {(['all', 'completed', 'rejected', 'transferred'] as const).map((status) => (
+                                        <button
+                                            key={status}
+                                            type="button"
+                                            onClick={() => setHistoryStatusFilter(status)}
+                                            style={{
+                                                padding: '6px 12px',
+                                                borderRadius: '8px',
+                                                border: '1px solid',
+                                                borderColor: historyStatusFilter === status ? 'var(--primary-color)' : 'var(--border-color)',
+                                                background: historyStatusFilter === status ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                                                color: historyStatusFilter === status ? 'var(--primary-color)' : 'var(--text-secondary)',
+                                                fontSize: '12px',
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                whiteSpace: 'nowrap',
+                                                transition: 'all 0.15s'
+                                            }}
+                                        >
+                                            {status === 'all' && 'الكل'}
+                                            {status === 'completed' && 'منفذة 🟢'}
+                                            {status === 'rejected' && 'مرفوضة ❌'}
+                                            {status === 'transferred' && 'محولة 🔄'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* History list */}
+                            {filteredHistory.length === 0 ? (
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center', margin: '30px 0' }}>
+                                    لم يتم العثور على أي عمليات مطابقة للفلاتر.
+                                </p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {filteredHistory.map(r => (
+                                        <div 
+                                            key={r.id} 
+                                            style={{ 
+                                                padding: '14px 16px', 
+                                                background: 'var(--bg-color)', 
+                                                borderRadius: '12px', 
+                                                border: '1px solid var(--border-color)', 
+                                                display: 'flex', 
+                                                flexDirection: 'column',
+                                                gap: '8px'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                                                <div>
+                                                    <span style={{ fontWeight: 800, fontSize: '14px', marginLeft: '8px' }}>رقم اللوحة: {r.plateNumber}</span>
+                                                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>({r.id})</span>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                    {r.status === 'completed' && (
+                                                        <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.12)', color: 'var(--success)' }}>
+                                                            🟢 مكتمل
+                                                        </span>
+                                                    )}
+                                                    {r.status === 'rejected' && (
+                                                        <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.12)', color: 'var(--error)' }}>
+                                                            ❌ مرفوض
+                                                        </span>
+                                                    )}
+                                                    {r.status === 'transferred' && (
+                                                        <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--primary-color)' }}>
+                                                            🔄 محول للكل
+                                                        </span>
+                                                    )}
+                                                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <Clock size={12} /> {r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
+                                                <div>
+                                                    <span style={{ color: 'var(--text-secondary)' }}>الخدمة: </span>
+                                                    <span style={{ fontWeight: 700 }}>{r.serviceDescription}</span>
+                                                </div>
+                                                <div>
+                                                    <span style={{ color: 'var(--text-secondary)' }}>الشركة: </span>
+                                                    <span style={{ fontWeight: 700 }}>{r.companyName}</span>
+                                                </div>
+                                            </div>
+
+                                            {r.status === 'rejected' && r.rejectionReason && (
+                                                <div style={{ marginTop: '4px', padding: '8px 12px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px', fontSize: '11px', color: 'var(--error)' }}>
+                                                    <strong>سبب الرفض:</strong> {r.rejectionReason}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
