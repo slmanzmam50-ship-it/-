@@ -18,7 +18,7 @@ import {
 } from '../services/storage';
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
 
@@ -1146,21 +1146,29 @@ const AdminDashboard: React.FC = () => {
                                     يمكنك تعبئة هذا النموذج لرفع طلب مركبة لشركة مفوض عنها مباشرة.
                                 </p>
 
-                                <form onSubmit={handleAdminCreateRequest} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <form onSubmit={handleAdminCreateRequest} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                                    {/* Company Selector */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>الشركة صاحبة الطلب:</label>
+                                        <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>🏢 الشركة صاحبة الطلب:</label>
                                         <select
                                             value={adminSelectedCompanyId}
                                             onChange={(e) => setAdminSelectedCompanyId(e.target.value)}
                                             style={{
-                                                padding: '10px 12px',
-                                                borderRadius: '10px',
-                                                border: '1px solid var(--border-color)',
+                                                padding: '12px 14px',
+                                                borderRadius: '12px',
+                                                border: '2px solid var(--border-color)',
                                                 background: 'var(--bg-color)',
                                                 color: 'var(--text-primary)',
                                                 fontSize: '14px',
                                                 fontWeight: 600,
-                                                outline: 'none'
+                                                outline: 'none',
+                                                transition: 'all 0.3s ease'
+                                            }}
+                                            onFocus={(e) => {
+                                                e.target.style.borderColor = 'var(--primary-color)';
+                                            }}
+                                            onBlur={(e) => {
+                                                e.target.style.borderColor = 'var(--border-color)';
                                             }}
                                         >
                                             <option value="">-- اختر الشركة --</option>
@@ -1170,79 +1178,151 @@ const AdminDashboard: React.FC = () => {
                                         </select>
                                     </div>
 
+                                    {/* Inputs Grid */}
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        {/* Plate Number */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>رقم لوحة السيارة:</label>
+                                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <Car size={14} /> رقم لوحة السيارة:
+                                            </label>
                                             <input 
                                                 type="text" 
                                                 placeholder="أ ب ج 1 2 3"
                                                 value={adminPlateNumber}
                                                 onChange={(e) => setAdminPlateNumber(e.target.value)}
                                                 style={{
-                                                    padding: '10px 12px',
-                                                    borderRadius: '10px',
-                                                    border: '1px solid var(--border-color)',
+                                                    padding: '12px 14px',
+                                                    borderRadius: '12px',
+                                                    border: '2px solid var(--border-color)',
                                                     background: 'var(--bg-color)',
                                                     color: 'var(--text-primary)',
-                                                    fontSize: '14px',
-                                                    fontWeight: 600,
-                                                    outline: 'none'
+                                                    fontSize: '14.5px',
+                                                    fontWeight: 700,
+                                                    outline: 'none',
+                                                    transition: 'all 0.3s ease'
+                                                }}
+                                                onFocus={(e) => {
+                                                    e.target.style.borderColor = 'var(--primary-color)';
+                                                }}
+                                                onBlur={(e) => {
+                                                    e.target.style.borderColor = 'var(--border-color)';
                                                 }}
                                             />
                                         </div>
+                                        {/* Service Description */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>الخدمة المطلوبة:</label>
+                                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <Wrench size={14} /> الخدمة المطلوبة:
+                                            </label>
                                             <input 
                                                 type="text" 
                                                 placeholder="مثال: غيار زيت"
                                                 value={adminServiceDescription}
                                                 onChange={(e) => setAdminServiceDescription(e.target.value)}
                                                 style={{
-                                                    padding: '10px 12px',
-                                                    borderRadius: '10px',
-                                                    border: '1px solid var(--border-color)',
+                                                    padding: '12px 14px',
+                                                    borderRadius: '12px',
+                                                    border: '2px solid var(--border-color)',
                                                     background: 'var(--bg-color)',
                                                     color: 'var(--text-primary)',
-                                                    fontSize: '14px',
-                                                    fontWeight: 600,
-                                                    outline: 'none'
+                                                    fontSize: '14.5px',
+                                                    fontWeight: 700,
+                                                    outline: 'none',
+                                                    transition: 'all 0.3s ease'
+                                                }}
+                                                onFocus={(e) => {
+                                                    e.target.style.borderColor = 'var(--primary-color)';
+                                                }}
+                                                onBlur={(e) => {
+                                                    e.target.style.borderColor = 'var(--border-color)';
                                                 }}
                                             />
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                                            الفرع الموجه إليه الطلب (اضغط Ctrl لتحديد أكثر من فرع):
+                                    {/* Branch Selector Chip Grid */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label style={{ fontWeight: 800, fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <MapPin size={16} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:
                                         </label>
-                                        <select
-                                            multiple
-                                            value={adminTargetBranchIds}
-                                            onChange={(e) => {
-                                                const values = Array.from(e.target.selectedOptions, option => option.value);
-                                                if (values.includes('all')) {
-                                                    setAdminTargetBranchIds(['all']);
-                                                } else {
-                                                    setAdminTargetBranchIds(values);
-                                                }
-                                            }}
-                                            style={{
-                                                padding: '10px',
-                                                borderRadius: '10px',
-                                                border: '1px solid var(--border-color)',
-                                                background: 'var(--bg-color)',
-                                                color: 'var(--text-primary)',
-                                                fontSize: '14px',
-                                                fontWeight: 600,
-                                                minHeight: '120px',
-                                                outline: 'none'
-                                            }}
-                                        >
-                                            <option value="all">الكل (جميع الفروع)</option>
-                                            {branches.map(b => (
-                                                <option key={b.id} value={b.id}>{b.name}</option>
-                                            ))}
-                                        </select>
+                                        
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
+                                            {/* "All" Option Badge */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setAdminTargetBranchIds(['all'])}
+                                                style={{
+                                                    padding: '10px 16px',
+                                                    borderRadius: '12px',
+                                                    fontSize: '12.5px',
+                                                    fontWeight: 800,
+                                                    cursor: 'pointer',
+                                                    border: '2px solid ' + (adminTargetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--border-color)'),
+                                                    background: adminTargetBranchIds.includes('all') ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)' : 'var(--bg-color)',
+                                                    color: adminTargetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--text-primary)',
+                                                    boxShadow: adminTargetBranchIds.includes('all') ? '0 6px 14px -4px rgba(59, 130, 246, 0.25)' : 'none',
+                                                    transform: adminTargetBranchIds.includes('all') ? 'scale(1.02)' : 'none',
+                                                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                    userSelect: 'none',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '6px'
+                                                }}
+                                            >
+                                                <Globe size={14} />
+                                                <span>جميع الفروع (الكل)</span>
+                                                {adminTargetBranchIds.includes('all') && <Check size={14} strokeWidth={3} />}
+                                            </button>
+
+                                            {/* Individual Branch Badges */}
+                                            {branches.map(b => {
+                                                const isSelected = adminTargetBranchIds.includes(b.id);
+                                                return (
+                                                    <button
+                                                        key={b.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (adminTargetBranchIds.includes('all')) {
+                                                                setAdminTargetBranchIds([b.id]);
+                                                            } else {
+                                                                if (isSelected) {
+                                                                    const filtered = adminTargetBranchIds.filter(id => id !== b.id);
+                                                                    setAdminTargetBranchIds(filtered.length === 0 ? ['all'] : filtered);
+                                                                } else {
+                                                                    setAdminTargetBranchIds([...adminTargetBranchIds, b.id]);
+                                                                }
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            padding: '10px 16px',
+                                                            borderRadius: '12px',
+                                                            fontSize: '12.5px',
+                                                            fontWeight: 800,
+                                                            cursor: 'pointer',
+                                                            border: '2px solid ' + (isSelected ? 'var(--primary-color)' : 'var(--border-color)'),
+                                                            background: isSelected ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)' : 'var(--bg-color)',
+                                                            color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)',
+                                                            boxShadow: isSelected ? '0 6px 14px -4px rgba(59, 130, 246, 0.25)' : 'none',
+                                                            transform: isSelected ? 'scale(1.02)' : 'none',
+                                                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                            userSelect: 'none',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: '6px'
+                                                        }}
+                                                    >
+                                                        <MapPin size={14} color={isSelected ? 'var(--primary-color)' : 'var(--text-secondary)'} />
+                                                        <span>{b.name}</span>
+                                                        {isSelected && <Check size={14} strokeWidth={3} />}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '6px', display: 'block' }}>
+                                            * يمكنك توجيه الطلب لجميع الفروع بالضغط على "جميع الفروع (الكل)"، أو تحديد فروع معينة بلمسها مباشرة لتفعيلها أو إلغائها.
+                                        </span>
                                     </div>
 
                                     <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
