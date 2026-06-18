@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest, subscribeToBranches, updateServiceRequestBranch } from '../services/storage';
 import type { CompanyAccount, ServiceRequest, Branch } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, LogOut, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe } from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, LogOut, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
@@ -26,6 +26,18 @@ const CompanyDashboard: React.FC = () => {
     const [reRouteRequest, setReRouteRequest] = useState<ServiceRequest | null>(null);
     const [newTargetBranchIds, setNewTargetBranchIds] = useState<string[]>([]);
     const [isReRouting, setIsReRouting] = useState(false);
+
+    // Search and smart sorting states
+    const [branchSearch, setBranchSearch] = useState('');
+    const [reRouteBranchSearch, setReRouteBranchSearch] = useState('');
+
+    const getBranchScore = (branchId: string) => {
+        if (!loggedInCompany) return 0;
+        const companyReqs = requests.filter(r => r.companyId === loggedInCompany.id);
+        const completedCount = companyReqs.filter(r => r.branchId === branchId && r.status === 'completed').length;
+        const targetedCount = companyReqs.filter(r => r.targetBranchIds?.includes(branchId)).length;
+        return completedCount * 3 + targetedCount;
+    };
 
     // Generate QR Code data URL when selection changes
     useEffect(() => {
@@ -298,84 +310,161 @@ const CompanyDashboard: React.FC = () => {
                             <label style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <MapPin size={18} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:
                             </label>
-                            
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginTop: '6px' }}>
-                                {/* "All" Option Badge */}
-                                <button
-                                    type="button"
-                                    onClick={() => setTargetBranchIds(['all'])}
+
+                            {/* Search Filter Input */}
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', maxWidth: '350px', marginBottom: '4px' }}>
+                                <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} size={16} color="var(--text-secondary)" />
+                                <input
+                                    type="text"
+                                    placeholder="ابحث عن فرع..."
+                                    value={branchSearch}
+                                    onChange={(e) => setBranchSearch(e.target.value)}
                                     style={{
-                                        padding: '14px 18px',
-                                        borderRadius: '16px',
+                                        padding: '10px 38px 10px 38px',
+                                        borderRadius: '12px',
+                                        border: '1.5px solid var(--border-color)',
+                                        background: 'var(--bg-color)',
+                                        color: 'var(--text-primary)',
                                         fontSize: '13.5px',
-                                        fontWeight: 800,
-                                        cursor: 'pointer',
-                                        border: '2px solid ' + (targetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--border-color)'),
-                                        background: targetBranchIds.includes('all') ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%)' : 'var(--bg-color)',
-                                        color: targetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--text-primary)',
-                                        boxShadow: targetBranchIds.includes('all') ? '0 8px 20px -6px rgba(59, 130, 246, 0.35)' : 'none',
-                                        transform: targetBranchIds.includes('all') ? 'scale(1.02)' : 'none',
-                                        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                                        userSelect: 'none',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '8px'
+                                        fontWeight: 600,
+                                        width: '100%',
+                                        outline: 'none',
+                                        transition: 'all 0.3s ease'
                                     }}
-                                >
-                                    <Globe size={16} />
-                                    <span>جميع الفروع (الكل)</span>
-                                    {targetBranchIds.includes('all') && <Check size={16} strokeWidth={3} />}
-                                </button>
+                                    onFocus={(e) => {
+                                        e.target.style.borderColor = 'var(--primary-color)';
+                                        e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.borderColor = 'var(--border-color)';
+                                        e.target.style.boxShadow = 'none';
+                                    }}
+                                />
+                                {branchSearch && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setBranchSearch('')}
+                                        style={{ 
+                                            position: 'absolute', 
+                                            left: '12px', 
+                                            background: 'none', 
+                                            border: 'none', 
+                                            cursor: 'pointer', 
+                                            padding: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
+                                        <X size={16} color="var(--text-secondary)" />
+                                    </button>
+                                )}
+                            </div>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px', marginTop: '6px' }}>
+                                {/* "All" Option Badge */}
+                                {(!branchSearch || 'جميع الفروع (الكل)'.includes(branchSearch)) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setTargetBranchIds(['all'])}
+                                        style={{
+                                            padding: '14px 18px',
+                                            borderRadius: '16px',
+                                            fontSize: '13.5px',
+                                            fontWeight: 800,
+                                            cursor: 'pointer',
+                                            border: '2px solid ' + (targetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--border-color)'),
+                                            background: targetBranchIds.includes('all') ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%)' : 'var(--bg-color)',
+                                            color: targetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            boxShadow: targetBranchIds.includes('all') ? '0 8px 20px -6px rgba(59, 130, 246, 0.35)' : 'none',
+                                            transform: targetBranchIds.includes('all') ? 'scale(1.02)' : 'none',
+                                            transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                                            userSelect: 'none',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        <Globe size={16} />
+                                        <span>جميع الفروع (الكل)</span>
+                                        {targetBranchIds.includes('all') && <Check size={16} strokeWidth={3} />}
+                                    </button>
+                                )}
 
                                 {/* Individual Branch Badges */}
-                                {branches.map(b => {
-                                    const isSelected = targetBranchIds.includes(b.id);
-                                    return (
-                                        <button
-                                            key={b.id}
-                                            type="button"
-                                            onClick={() => {
-                                                if (targetBranchIds.includes('all')) {
-                                                    setTargetBranchIds([b.id]);
-                                                } else {
-                                                    if (isSelected) {
-                                                        const filtered = targetBranchIds.filter(id => id !== b.id);
-                                                        setTargetBranchIds(filtered.length === 0 ? ['all'] : filtered);
+                                {(() => {
+                                    const sorted = [...branches].sort((a, b) => getBranchScore(b.id) - getBranchScore(a.id));
+                                    const filtered = sorted.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase()));
+                                    return filtered.map(b => {
+                                        const isSelected = targetBranchIds.includes(b.id);
+                                        const score = getBranchScore(b.id);
+                                        const isTopUsed = score > 0;
+                                        return (
+                                            <button
+                                                key={b.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (targetBranchIds.includes('all')) {
+                                                        setTargetBranchIds([b.id]);
                                                     } else {
-                                                        setTargetBranchIds([...targetBranchIds, b.id]);
+                                                        if (isSelected) {
+                                                            const filteredIds = targetBranchIds.filter(id => id !== b.id);
+                                                            setTargetBranchIds(filteredIds.length === 0 ? ['all'] : filteredIds);
+                                                        } else {
+                                                            setTargetBranchIds([...targetBranchIds, b.id]);
+                                                        }
                                                     }
-                                                }
-                                            }}
-                                            style={{
-                                                padding: '14px 18px',
-                                                borderRadius: '16px',
-                                                fontSize: '13.5px',
-                                                fontWeight: 800,
-                                                cursor: 'pointer',
-                                                border: '2px solid ' + (isSelected ? 'var(--primary-color)' : 'var(--border-color)'),
-                                                background: isSelected ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%)' : 'var(--bg-color)',
-                                                color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)',
-                                                boxShadow: isSelected ? '0 8px 20px -6px rgba(59, 130, 246, 0.35)' : 'none',
-                                                transform: isSelected ? 'scale(1.02)' : 'none',
-                                                transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                                                userSelect: 'none',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: '8px'
-                                            }}
-                                        >
-                                            <MapPin size={16} color={isSelected ? 'var(--primary-color)' : 'var(--text-secondary)'} />
-                                            <span>{b.name}</span>
-                                            {isSelected && <Check size={16} strokeWidth={3} />}
-                                        </button>
-                                    );
-                                })}
+                                                }}
+                                                style={{
+                                                    padding: '14px 18px',
+                                                    borderRadius: '16px',
+                                                    fontSize: '13.5px',
+                                                    fontWeight: 800,
+                                                    cursor: 'pointer',
+                                                    border: '2px solid ' + (isSelected ? 'var(--primary-color)' : 'var(--border-color)'),
+                                                    background: isSelected ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%)' : 'var(--bg-color)',
+                                                    color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)',
+                                                    boxShadow: isSelected ? '0 8px 20px -6px rgba(59, 130, 246, 0.35)' : 'none',
+                                                    transform: isSelected ? 'scale(1.02)' : 'none',
+                                                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                    userSelect: 'none',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '6px'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'center' }}>
+                                                    <MapPin size={16} color={isSelected ? 'var(--primary-color)' : 'var(--text-secondary)'} />
+                                                    <span>{b.name}</span>
+                                                    {isSelected && <Check size={16} strokeWidth={3} style={{ marginLeft: 'auto' }} />}
+                                                </div>
+                                                {isTopUsed && (
+                                                    <span style={{ 
+                                                        fontSize: '9.5px', 
+                                                        background: isSelected ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.12)', 
+                                                        color: 'var(--accent-orange)', 
+                                                        padding: '3px 8px', 
+                                                        borderRadius: '6px', 
+                                                        display: 'inline-flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '3px', 
+                                                        fontWeight: 800,
+                                                        marginTop: '2px'
+                                                    }}>
+                                                        <Flame size={10} fill="var(--accent-orange)" /> الأكثر استخداماً
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    });
+                                })()}
                             </div>
                             
                             <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '6px', display: 'block' }}>
-                                * يمكنك توجيه الطلب لجميع الفروع بالضغط على "جميع الفروع (الكل)"، أو تحديد فروع معينة بلمسها مباشرة لتفعيلها أو إلغائها.
+                                * يتم ترتيب الفروع تلقائياً حسب الفروع الأكثر استخداماً من قبل شركتكم لتسهيل الاختيار.
                             </span>
                         </div>
 
@@ -667,6 +756,56 @@ const CompanyDashboard: React.FC = () => {
                             <label style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <MapPin size={18} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:
                             </label>
+
+                            {/* Search Filter Input */}
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', maxWidth: '100%', marginBottom: '4px' }}>
+                                <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} size={15} color="var(--text-secondary)" />
+                                <input
+                                    type="text"
+                                    placeholder="ابحث عن فرع..."
+                                    value={reRouteBranchSearch}
+                                    onChange={(e) => setReRouteBranchSearch(e.target.value)}
+                                    style={{
+                                        padding: '8px 36px 8px 36px',
+                                        borderRadius: '10px',
+                                        border: '1.5px solid var(--border-color)',
+                                        background: 'var(--bg-color)',
+                                        color: 'var(--text-primary)',
+                                        fontSize: '13px',
+                                        fontWeight: 600,
+                                        width: '100%',
+                                        outline: 'none',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.target.style.borderColor = 'var(--primary-color)';
+                                        e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.borderColor = 'var(--border-color)';
+                                        e.target.style.boxShadow = 'none';
+                                    }}
+                                />
+                                {reRouteBranchSearch && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setReRouteBranchSearch('')}
+                                        style={{ 
+                                            position: 'absolute', 
+                                            left: '12px', 
+                                            background: 'none', 
+                                            border: 'none', 
+                                            cursor: 'pointer', 
+                                            padding: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
+                                        <X size={15} color="var(--text-secondary)" />
+                                    </button>
+                                )}
+                            </div>
                             
                             <div style={{ 
                                 maxHeight: '260px', 
@@ -682,77 +821,104 @@ const CompanyDashboard: React.FC = () => {
                                 scrollbarWidth: 'thin'
                             }}>
                                 {/* "All" Option Badge */}
-                                <button
-                                    type="button"
-                                    onClick={() => setNewTargetBranchIds(['all'])}
-                                    style={{
-                                        padding: '12px 14px',
-                                        borderRadius: '12px',
-                                        fontSize: '12.5px',
-                                        fontWeight: 800,
-                                        cursor: 'pointer',
-                                        border: '2px solid ' + (newTargetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--border-color)'),
-                                        background: newTargetBranchIds.includes('all') ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)' : 'var(--bg-color)',
-                                        color: newTargetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--text-primary)',
-                                        boxShadow: newTargetBranchIds.includes('all') ? '0 6px 16px -4px rgba(59, 130, 246, 0.25)' : 'none',
-                                        transform: newTargetBranchIds.includes('all') ? 'scale(1.02)' : 'none',
-                                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                        userSelect: 'none',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '6px'
-                                    }}
-                                >
-                                    <Globe size={14} />
-                                    <span>الكل (جميع الفروع)</span>
-                                    {newTargetBranchIds.includes('all') && <Check size={14} strokeWidth={3} />}
-                                </button>
+                                {(!reRouteBranchSearch || 'الكل (جميع الفروع)'.includes(reRouteBranchSearch)) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewTargetBranchIds(['all'])}
+                                        style={{
+                                            padding: '12px 14px',
+                                            borderRadius: '12px',
+                                            fontSize: '12.5px',
+                                            fontWeight: 800,
+                                            cursor: 'pointer',
+                                            border: '2px solid ' + (newTargetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--border-color)'),
+                                            background: newTargetBranchIds.includes('all') ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)' : 'var(--bg-color)',
+                                            color: newTargetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--text-primary)',
+                                            boxShadow: newTargetBranchIds.includes('all') ? '0 6px 16px -4px rgba(59, 130, 246, 0.25)' : 'none',
+                                            transform: newTargetBranchIds.includes('all') ? 'scale(1.02)' : 'none',
+                                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                            userSelect: 'none',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '6px'
+                                        }}
+                                    >
+                                        <Globe size={14} />
+                                        <span>الكل (جميع الفروع)</span>
+                                        {newTargetBranchIds.includes('all') && <Check size={14} strokeWidth={3} />}
+                                    </button>
+                                )}
 
                                 {/* Individual Branch Badges */}
-                                {branches.map(b => {
-                                    const isSelected = newTargetBranchIds.includes(b.id);
-                                    return (
-                                        <button
-                                            key={b.id}
-                                            type="button"
-                                            onClick={() => {
-                                                if (newTargetBranchIds.includes('all')) {
-                                                    setNewTargetBranchIds([b.id]);
-                                                } else {
-                                                    if (isSelected) {
-                                                        const filtered = newTargetBranchIds.filter(id => id !== b.id);
-                                                        setNewTargetBranchIds(filtered.length === 0 ? ['all'] : filtered);
+                                {(() => {
+                                    const sorted = [...branches].sort((a, b) => getBranchScore(b.id) - getBranchScore(a.id));
+                                    const filtered = sorted.filter(b => b.name.toLowerCase().includes(reRouteBranchSearch.toLowerCase()));
+                                    return filtered.map(b => {
+                                        const isSelected = newTargetBranchIds.includes(b.id);
+                                        const score = getBranchScore(b.id);
+                                        const isTopUsed = score > 0;
+                                        return (
+                                            <button
+                                                key={b.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (newTargetBranchIds.includes('all')) {
+                                                        setNewTargetBranchIds([b.id]);
                                                     } else {
-                                                        setNewTargetBranchIds([...newTargetBranchIds, b.id]);
+                                                        if (isSelected) {
+                                                            const filteredIds = newTargetBranchIds.filter(id => id !== b.id);
+                                                            setNewTargetBranchIds(filteredIds.length === 0 ? ['all'] : filteredIds);
+                                                        } else {
+                                                            setNewTargetBranchIds([...newTargetBranchIds, b.id]);
+                                                        }
                                                     }
-                                                }
-                                            }}
-                                            style={{
-                                                padding: '12px 14px',
-                                                borderRadius: '12px',
-                                                fontSize: '12.5px',
-                                                fontWeight: 800,
-                                                cursor: 'pointer',
-                                                border: '2px solid ' + (isSelected ? 'var(--primary-color)' : 'var(--border-color)'),
-                                                background: isSelected ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)' : 'var(--bg-color)',
-                                                color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)',
-                                                boxShadow: isSelected ? '0 6px 16px -4px rgba(59, 130, 246, 0.25)' : 'none',
-                                                transform: isSelected ? 'scale(1.02)' : 'none',
-                                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                                userSelect: 'none',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: '6px'
-                                            }}
-                                        >
-                                            <MapPin size={14} color={isSelected ? 'var(--primary-color)' : 'var(--text-secondary)'} />
-                                            <span>{b.name}</span>
-                                            {isSelected && <Check size={14} strokeWidth={3} />}
-                                        </button>
-                                    );
-                                })}
+                                                }}
+                                                style={{
+                                                    padding: '12px 14px',
+                                                    borderRadius: '12px',
+                                                    fontSize: '12.5px',
+                                                    fontWeight: 800,
+                                                    cursor: 'pointer',
+                                                    border: '2px solid ' + (isSelected ? 'var(--primary-color)' : 'var(--border-color)'),
+                                                    background: isSelected ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)' : 'var(--bg-color)',
+                                                    color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)',
+                                                    boxShadow: isSelected ? '0 6px 16px -4px rgba(59, 130, 246, 0.25)' : 'none',
+                                                    transform: isSelected ? 'scale(1.02)' : 'none',
+                                                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                    userSelect: 'none',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '4px'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', justifyContent: 'center' }}>
+                                                    <MapPin size={14} color={isSelected ? 'var(--primary-color)' : 'var(--text-secondary)'} />
+                                                    <span>{b.name}</span>
+                                                    {isSelected && <Check size={14} strokeWidth={3} style={{ marginLeft: 'auto' }} />}
+                                                </div>
+                                                {isTopUsed && (
+                                                    <span style={{ 
+                                                        fontSize: '8.5px', 
+                                                        background: isSelected ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.12)', 
+                                                        color: 'var(--accent-orange)', 
+                                                        padding: '2px 6px', 
+                                                        borderRadius: '4px', 
+                                                        display: 'inline-flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '2px', 
+                                                        fontWeight: 800,
+                                                        marginTop: '1px'
+                                                    }}>
+                                                        <Flame size={8} fill="var(--accent-orange)" /> مفضل
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    });
+                                })()}
                             </div>
                         </div>
 

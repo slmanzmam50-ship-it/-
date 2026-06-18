@@ -18,7 +18,7 @@ import {
 } from '../services/storage';
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
 
@@ -63,6 +63,15 @@ const AdminDashboard: React.FC = () => {
     const [adminServiceDescription, setAdminServiceDescription] = useState('');
     const [adminTargetBranchIds, setAdminTargetBranchIds] = useState<string[]>(['all']);
     const [isAdminSubmittingRequest, setIsAdminSubmittingRequest] = useState(false);
+    const [adminBranchSearch, setAdminBranchSearch] = useState('');
+
+    const getAdminBranchScore = (branchId: string) => {
+        if (!adminSelectedCompanyId) return 0;
+        const companyReqs = requests.filter(r => r.companyId === adminSelectedCompanyId);
+        const completedCount = companyReqs.filter(r => r.branchId === branchId && r.status === 'completed').length;
+        const targetedCount = companyReqs.filter(r => r.targetBranchIds?.includes(branchId)).length;
+        return completedCount * 3 + targetedCount;
+    };
 
     useEffect(() => {
         const checkLang = setInterval(() => {
@@ -1245,6 +1254,56 @@ const AdminDashboard: React.FC = () => {
                                         <label style={{ fontWeight: 800, fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             <MapPin size={16} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:
                                         </label>
+
+                                        {/* Search Filter Input */}
+                                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', maxWidth: '100%', marginBottom: '4px' }}>
+                                            <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} size={15} color="var(--text-secondary)" />
+                                            <input
+                                                type="text"
+                                                placeholder="ابحث عن فرع..."
+                                                value={adminBranchSearch}
+                                                onChange={(e) => setAdminBranchSearch(e.target.value)}
+                                                style={{
+                                                    padding: '8px 36px 8px 36px',
+                                                    borderRadius: '10px',
+                                                    border: '1.5px solid var(--border-color)',
+                                                    background: 'var(--bg-color)',
+                                                    color: 'var(--text-primary)',
+                                                    fontSize: '13px',
+                                                    fontWeight: 600,
+                                                    width: '100%',
+                                                    outline: 'none',
+                                                    transition: 'all 0.3s ease'
+                                                }}
+                                                onFocus={(e) => {
+                                                    e.target.style.borderColor = 'var(--primary-color)';
+                                                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                                }}
+                                                onBlur={(e) => {
+                                                    e.target.style.borderColor = 'var(--border-color)';
+                                                    e.target.style.boxShadow = 'none';
+                                                }}
+                                            />
+                                            {adminBranchSearch && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAdminBranchSearch('')}
+                                                    style={{ 
+                                                        position: 'absolute', 
+                                                        left: '12px', 
+                                                        background: 'none', 
+                                                        border: 'none', 
+                                                        cursor: 'pointer', 
+                                                        padding: 0,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                >
+                                                    <CloseIcon size={15} color="var(--text-secondary)" />
+                                                </button>
+                                            )}
+                                        </div>
                                         
                                         <div style={{ 
                                              maxHeight: '260px', 
@@ -1260,78 +1319,105 @@ const AdminDashboard: React.FC = () => {
                                              scrollbarWidth: 'thin'
                                          }}>
                                             {/* "All" Option Badge */}
-                                            <button
-                                                type="button"
-                                                onClick={() => setAdminTargetBranchIds(['all'])}
-                                                style={{
-                                                    padding: '10px 16px',
-                                                    borderRadius: '12px',
-                                                    fontSize: '12.5px',
-                                                    fontWeight: 800,
-                                                    cursor: 'pointer',
-                                                    border: '2px solid ' + (adminTargetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--border-color)'),
-                                                    background: adminTargetBranchIds.includes('all') ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)' : 'var(--bg-color)',
-                                                    color: adminTargetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--text-primary)',
-                                                    boxShadow: adminTargetBranchIds.includes('all') ? '0 6px 14px -4px rgba(59, 130, 246, 0.25)' : 'none',
-                                                    transform: adminTargetBranchIds.includes('all') ? 'scale(1.02)' : 'none',
-                                                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                                    userSelect: 'none',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '6px'
-                                                }}
-                                            >
-                                                <Globe size={14} />
-                                                <span>جميع الفروع (الكل)</span>
-                                                {adminTargetBranchIds.includes('all') && <Check size={14} strokeWidth={3} />}
-                                            </button>
+                                            {(!adminBranchSearch || 'جميع الفروع (الكل)'.includes(adminBranchSearch)) && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAdminTargetBranchIds(['all'])}
+                                                    style={{
+                                                        padding: '10px 16px',
+                                                        borderRadius: '12px',
+                                                        fontSize: '12.5px',
+                                                        fontWeight: 800,
+                                                        cursor: 'pointer',
+                                                        border: '2px solid ' + (adminTargetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--border-color)'),
+                                                        background: adminTargetBranchIds.includes('all') ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)' : 'var(--bg-color)',
+                                                        color: adminTargetBranchIds.includes('all') ? 'var(--primary-color)' : 'var(--text-primary)',
+                                                        boxShadow: adminTargetBranchIds.includes('all') ? '0 6px 14px -4px rgba(59, 130, 246, 0.25)' : 'none',
+                                                        transform: adminTargetBranchIds.includes('all') ? 'scale(1.02)' : 'none',
+                                                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                        userSelect: 'none',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: '6px'
+                                                    }}
+                                                >
+                                                    <Globe size={14} />
+                                                    <span>جميع الفروع (الكل)</span>
+                                                    {adminTargetBranchIds.includes('all') && <Check size={14} strokeWidth={3} />}
+                                                </button>
+                                            )}
 
                                             {/* Individual Branch Badges */}
-                                            {branches.map(b => {
-                                                const isSelected = adminTargetBranchIds.includes(b.id);
-                                                return (
-                                                    <button
-                                                        key={b.id}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (adminTargetBranchIds.includes('all')) {
-                                                                setAdminTargetBranchIds([b.id]);
-                                                            } else {
-                                                                if (isSelected) {
-                                                                    const filtered = adminTargetBranchIds.filter(id => id !== b.id);
-                                                                    setAdminTargetBranchIds(filtered.length === 0 ? ['all'] : filtered);
+                                            {(() => {
+                                                const sorted = [...branches].sort((a, b) => getAdminBranchScore(b.id) - getAdminBranchScore(a.id));
+                                                const filtered = sorted.filter(b => b.name.toLowerCase().includes(adminBranchSearch.toLowerCase()));
+                                                return filtered.map(b => {
+                                                    const isSelected = adminTargetBranchIds.includes(b.id);
+                                                    const score = getAdminBranchScore(b.id);
+                                                    const isTopUsed = score > 0;
+                                                    return (
+                                                        <button
+                                                            key={b.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (adminTargetBranchIds.includes('all')) {
+                                                                    setAdminTargetBranchIds([b.id]);
                                                                 } else {
-                                                                    setAdminTargetBranchIds([...adminTargetBranchIds, b.id]);
+                                                                    if (isSelected) {
+                                                                        const filteredIds = adminTargetBranchIds.filter(id => id !== b.id);
+                                                                        setAdminTargetBranchIds(filteredIds.length === 0 ? ['all'] : filteredIds);
+                                                                    } else {
+                                                                        setAdminTargetBranchIds([...adminTargetBranchIds, b.id]);
+                                                                    }
                                                                 }
-                                                            }
-                                                        }}
-                                                        style={{
-                                                            padding: '10px 16px',
-                                                            borderRadius: '12px',
-                                                            fontSize: '12.5px',
-                                                            fontWeight: 800,
-                                                            cursor: 'pointer',
-                                                            border: '2px solid ' + (isSelected ? 'var(--primary-color)' : 'var(--border-color)'),
-                                                            background: isSelected ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)' : 'var(--bg-color)',
-                                                            color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)',
-                                                            boxShadow: isSelected ? '0 6px 14px -4px rgba(59, 130, 246, 0.25)' : 'none',
-                                                            transform: isSelected ? 'scale(1.02)' : 'none',
-                                                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                                            userSelect: 'none',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            gap: '6px'
-                                                        }}
+                                                            }}
+                                                            style={{
+                                                                padding: '10px 16px',
+                                                                borderRadius: '12px',
+                                                                fontSize: '12.5px',
+                                                                fontWeight: 800,
+                                                                cursor: 'pointer',
+                                                                border: '2px solid ' + (isSelected ? 'var(--primary-color)' : 'var(--border-color)'),
+                                                                background: isSelected ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)' : 'var(--bg-color)',
+                                                                color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)',
+                                                                boxShadow: isSelected ? '0 6px 14px -4px rgba(59, 130, 246, 0.25)' : 'none',
+                                                                transform: isSelected ? 'scale(1.02)' : 'none',
+                                                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                                userSelect: 'none',
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: '4px'
+                                                            }}
                                                     >
-                                                        <MapPin size={14} color={isSelected ? 'var(--primary-color)' : 'var(--text-secondary)'} />
-                                                        <span>{b.name}</span>
-                                                        {isSelected && <Check size={14} strokeWidth={3} />}
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', justifyContent: 'center' }}>
+                                                            <MapPin size={14} color={isSelected ? 'var(--primary-color)' : 'var(--text-secondary)'} />
+                                                            <span>{b.name}</span>
+                                                            {isSelected && <Check size={14} strokeWidth={3} style={{ marginLeft: 'auto' }} />}
+                                                        </div>
+                                                        {isTopUsed && (
+                                                            <span style={{ 
+                                                                fontSize: '8.5px', 
+                                                                background: isSelected ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.12)', 
+                                                                color: 'var(--accent-orange)', 
+                                                                padding: '2px 6px', 
+                                                                borderRadius: '4px', 
+                                                                display: 'inline-flex', 
+                                                                alignItems: 'center', 
+                                                                gap: '2px', 
+                                                                fontWeight: 800,
+                                                                marginTop: '1px'
+                                                            }}>
+                                                                <Flame size={8} fill="var(--accent-orange)" /> مفضل
+                                                            </span>
+                                                        )}
                                                     </button>
                                                 );
-                                            })}
-                                        </div>
+                                            });
+                                         })()}
+                                         </div>
                                         <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '6px', display: 'block' }}>
                                             * يمكنك توجيه الطلب لجميع الفروع بالضغط على "جميع الفروع (الكل)"، أو تحديد فروع معينة بلمسها مباشرة لتفعيلها أو إلغائها.
                                         </span>
