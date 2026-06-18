@@ -668,7 +668,19 @@ const CompanyDashboard: React.FC = () => {
                                 <MapPin size={18} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:
                             </label>
                             
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px', marginTop: '6px' }}>
+                            <div style={{ 
+                                maxHeight: '260px', 
+                                overflowY: 'auto', 
+                                padding: '10px', 
+                                border: '1px solid var(--border-color)', 
+                                borderRadius: '16px', 
+                                background: 'rgba(0,0,0,0.02)',
+                                display: 'grid', 
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
+                                gap: '10px', 
+                                marginTop: '6px',
+                                scrollbarWidth: 'thin'
+                            }}>
                                 {/* "All" Option Badge */}
                                 <button
                                     type="button"
