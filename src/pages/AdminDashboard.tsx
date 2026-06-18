@@ -13,7 +13,8 @@ import {
     subscribeToCompanies,
     addCompany,
     deleteCompany,
-    subscribeToServiceRequests
+    subscribeToServiceRequests,
+    addServiceRequest
 } from '../services/storage';
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
@@ -55,9 +56,13 @@ const AdminDashboard: React.FC = () => {
     const [requestSearch, setRequestSearch] = useState('');
     const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'active' | 'completed'>('all');
 
-
-
-
+    // Admin acting on behalf of corporations to create requests
+    const [isAdminCreatingRequest, setIsAdminCreatingRequest] = useState(false);
+    const [adminSelectedCompanyId, setAdminSelectedCompanyId] = useState('');
+    const [adminPlateNumber, setAdminPlateNumber] = useState('');
+    const [adminServiceDescription, setAdminServiceDescription] = useState('');
+    const [adminTargetBranchIds, setAdminTargetBranchIds] = useState<string[]>(['all']);
+    const [isAdminSubmittingRequest, setIsAdminSubmittingRequest] = useState(false);
 
     useEffect(() => {
         const checkLang = setInterval(() => {
@@ -360,6 +365,58 @@ const AdminDashboard: React.FC = () => {
 
         writeFile(workbook, `requests_report_${new Date().toISOString().split('T')[0]}.xlsx`);
         toast.success('تم تصدير سجل الطلبات بنجاح 📊');
+    };
+
+    const handleAdminCreateRequest = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const compId = adminSelectedCompanyId;
+        const pNum = adminPlateNumber.trim();
+        const sDesc = adminServiceDescription.trim();
+
+        if (!compId) {
+            toast.error('الرجاء اختيار الشركة أولاً');
+            return;
+        }
+        if (!pNum) {
+            toast.error('الرجاء إدخال رقم اللوحة');
+            return;
+        }
+        if (!sDesc) {
+            toast.error('الرجاء إدخال الخدمة المطلوبة');
+            return;
+        }
+        if (adminTargetBranchIds.length === 0) {
+            toast.error('الرجاء تحديد فرع واحد على الأقل أو اختيار "الكل"');
+            return;
+        }
+
+        const compObj = companies.find(c => c.id === compId);
+        if (!compObj) {
+            toast.error('الشركة المحددة غير موجودة');
+            return;
+        }
+
+        setIsAdminSubmittingRequest(true);
+        try {
+            const newReq = await addServiceRequest({
+                companyId: compId,
+                companyName: compObj.name,
+                plateNumber: pNum,
+                serviceDescription: sDesc,
+                targetBranchIds: adminTargetBranchIds
+            });
+            toast.success(`تم إنشاء الطلب بنجاح للشركة ${compObj.name}! رقم الطلب: ${newReq.id} 🎉`);
+            setAdminSelectedCompanyId('');
+            setAdminPlateNumber('');
+            setAdminServiceDescription('');
+            setAdminTargetBranchIds(['all']);
+            setIsAdminCreatingRequest(false);
+        } catch (error) {
+            console.error(error);
+            toast.error('حدث خطأ أثناء إنشاء الطلب بالنيابة عن الشركة');
+        } finally {
+            setIsAdminSubmittingRequest(false);
+        }
     };
 
     return (
@@ -903,6 +960,26 @@ const AdminDashboard: React.FC = () => {
                                 <option value="rejected">مرفوضة</option>
                             </select>
                             <button 
+                                onClick={() => setIsAdminCreatingRequest(true)}
+                                style={{ 
+                                    background: 'var(--primary-color)', 
+                                    color: 'white', 
+                                    padding: '10px 18px', 
+                                    borderRadius: '10px', 
+                                    border: 'none', 
+                                    fontWeight: 700, 
+                                    cursor: 'pointer', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '6px',
+                                    fontSize: '13px',
+                                    height: '40px',
+                                    boxShadow: '0 4px 10px rgba(59, 130, 246, 0.2)'
+                                }}
+                            >
+                                <span>➕ إنشاء طلب لشركة</span>
+                            </button>
+                            <button 
                                 onClick={handleExportRequestsExcel} 
                                 style={{ 
                                     background: 'var(--surface-color)', 
@@ -1015,11 +1092,207 @@ const AdminDashboard: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Admin B2B Order Creation Modal */}
+                    {isAdminCreatingRequest && (
+                        <div style={{
+                            position: 'fixed',
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(0,0,0,0.6)',
+                            backdropFilter: 'blur(10px)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 10000,
+                            padding: '16px',
+                            direction: 'rtl'
+                        }}>
+                            <div className="glass animate-scale-up" style={{
+                                background: 'var(--surface-color)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '24px',
+                                width: '100%',
+                                maxWidth: '500px',
+                                padding: '24px',
+                                position: 'relative',
+                                boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                                textAlign: 'right'
+                            }}>
+                                <button 
+                                    onClick={() => setIsAdminCreatingRequest(false)}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '16px',
+                                        right: '16px',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '50%',
+                                        width: '36px',
+                                        height: '36px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'var(--text-primary)',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <CloseIcon size={18} />
+                                </button>
+
+                                <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary-color)' }}>
+                                    ➕ إنشاء طلب صيانة بالنيابة عن شركة
+                                </h3>
+                                <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                    يمكنك تعبئة هذا النموذج لرفع طلب مركبة لشركة مفوض عنها مباشرة.
+                                </p>
+
+                                <form onSubmit={handleAdminCreateRequest} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>الشركة صاحبة الطلب:</label>
+                                        <select
+                                            value={adminSelectedCompanyId}
+                                            onChange={(e) => setAdminSelectedCompanyId(e.target.value)}
+                                            style={{
+                                                padding: '10px 12px',
+                                                borderRadius: '10px',
+                                                border: '1px solid var(--border-color)',
+                                                background: 'var(--bg-color)',
+                                                color: 'var(--text-primary)',
+                                                fontSize: '14px',
+                                                fontWeight: 600,
+                                                outline: 'none'
+                                            }}
+                                        >
+                                            <option value="">-- اختر الشركة --</option>
+                                            {companies.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>رقم لوحة السيارة:</label>
+                                            <input 
+                                                type="text" 
+                                                placeholder="أ ب ج 1 2 3"
+                                                value={adminPlateNumber}
+                                                onChange={(e) => setAdminPlateNumber(e.target.value)}
+                                                style={{
+                                                    padding: '10px 12px',
+                                                    borderRadius: '10px',
+                                                    border: '1px solid var(--border-color)',
+                                                    background: 'var(--bg-color)',
+                                                    color: 'var(--text-primary)',
+                                                    fontSize: '14px',
+                                                    fontWeight: 600,
+                                                    outline: 'none'
+                                                }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>الخدمة المطلوبة:</label>
+                                            <input 
+                                                type="text" 
+                                                placeholder="مثال: غيار زيت"
+                                                value={adminServiceDescription}
+                                                onChange={(e) => setAdminServiceDescription(e.target.value)}
+                                                style={{
+                                                    padding: '10px 12px',
+                                                    borderRadius: '10px',
+                                                    border: '1px solid var(--border-color)',
+                                                    background: 'var(--bg-color)',
+                                                    color: 'var(--text-primary)',
+                                                    fontSize: '14px',
+                                                    fontWeight: 600,
+                                                    outline: 'none'
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                            الفرع الموجه إليه الطلب (اضغط Ctrl لتحديد أكثر من فرع):
+                                        </label>
+                                        <select
+                                            multiple
+                                            value={adminTargetBranchIds}
+                                            onChange={(e) => {
+                                                const values = Array.from(e.target.selectedOptions, option => option.value);
+                                                if (values.includes('all')) {
+                                                    setAdminTargetBranchIds(['all']);
+                                                } else {
+                                                    setAdminTargetBranchIds(values);
+                                                }
+                                            }}
+                                            style={{
+                                                padding: '10px',
+                                                borderRadius: '10px',
+                                                border: '1px solid var(--border-color)',
+                                                background: 'var(--bg-color)',
+                                                color: 'var(--text-primary)',
+                                                fontSize: '14px',
+                                                fontWeight: 600,
+                                                minHeight: '120px',
+                                                outline: 'none'
+                                            }}
+                                        >
+                                            <option value="all">الكل (جميع الفروع)</option>
+                                            {branches.map(b => (
+                                                <option key={b.id} value={b.id}>{b.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                                        <button
+                                            type="submit"
+                                            disabled={isAdminSubmittingRequest}
+                                            style={{
+                                                flex: 1,
+                                                background: 'var(--primary-color)',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 16px',
+                                                borderRadius: '12px',
+                                                fontWeight: 800,
+                                                fontSize: '14px',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px',
+                                                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+                                            }}
+                                        >
+                                            {isAdminSubmittingRequest ? 'جاري الحفظ والإنشاء...' : 'إرسال وإنشاء الطلب'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsAdminCreatingRequest(false)}
+                                            style={{
+                                                flex: 1,
+                                                background: 'rgba(255,255,255,0.05)',
+                                                border: '1px solid var(--border-color)',
+                                                color: 'var(--text-primary)',
+                                                padding: '12px 16px',
+                                                borderRadius: '12px',
+                                                fontWeight: 800,
+                                                fontSize: '14px',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            إلغاء
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
             {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} />}
-
-
         </div>
     );
 };
