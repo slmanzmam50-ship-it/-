@@ -46,13 +46,14 @@ export interface ServiceRequest {
     companyName: string;
     plateNumber: string;
     serviceDescription: string;
-    status: 'active' | 'completed' | 'transferred' | 'rejected';
+    status: 'active' | 'completed' | 'transferred' | 'rejected' | 'partial';
     createdAt: number;
     completedAt?: number;
     branchId?: string;
     branchName?: string;
     targetBranchIds: string[]; // Specific branch IDs, or ['all']
     rejectionReason?: string;
+    remainingServices?: string;
 }
 
 export interface CompanyAccount {

@@ -4,9 +4,9 @@ import { useSearchParams } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Language } from '../services/translations';
-import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories } from '../services/storage';
+import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories, subscribeToServiceRequests } from '../services/storage';
 import { translations } from '../services/translations';
-import type { Branch, Category } from '../types';
+import type { Branch, Category, ServiceRequest } from '../types';
 import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LocationLoader from '../components/LocationLoader';
@@ -326,6 +326,7 @@ const normalizeArabicSimple = (str: string): string => {
 // ============================================================
 const ClientMap: React.FC = () => {
     const [branches, setBranches] = useState<Branch[]>([]);
+    const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [customLocInput, setCustomLocInput] = useState('');
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -372,8 +373,44 @@ const ClientMap: React.FC = () => {
             setIsLoading(false);
         });
         const unsubCategories = subscribeToCategories(setCategories);
-        return () => { unsubBranches(); unsubCategories(); };
+        const unsubRequests = subscribeToServiceRequests(setRequests);
+        return () => { 
+            unsubBranches(); 
+            unsubCategories(); 
+            unsubRequests(); 
+        };
     }, []);
+
+    // Get active request if provided in URL search params (?request=RQ-XXXX)
+    const requestId = searchParams.get('request') || searchParams.get('requestId');
+    const activeRequest = requestId ? requests.find(r => r.id === requestId) : null;
+
+    // Auto-locate driver for smart routing if request parameter exists
+    useEffect(() => {
+        if (activeRequest && !userLoc && navigator.geolocation && branches.length > 0) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+                    setUserLoc(loc);
+                    setSortBy('nearest'); // automatically sort by nearest
+                    
+                    // Filter targeted branches
+                    const targeted = branches.filter(b => activeRequest.targetBranchIds?.includes('all') || activeRequest.targetBranchIds?.includes(b.id));
+                    if (targeted.length > 0) {
+                        const sorted = targeted
+                            .map(b => ({ ...b, dist: calculateDistance(loc[0], loc[1], b.latitude, b.longitude) }))
+                            .sort((a, b) => a.dist - b.dist);
+                        const nearest = sorted[0];
+                        setMapCenter([nearest.latitude, nearest.longitude]);
+                        setMapZoom(13);
+                        toast.success(lang === 'ar' ? `توجيه ذكي: تم تحديد موقعك وتوجيهك لأقرب الفروع المحددة لطلبك! 📍` : `Smart Routing: Location found. Nearest targeted branch sorted first.`);
+                    }
+                },
+                () => {},
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+    }, [activeRequest, branches, userLoc, lang]);
 
     // Handle deep linking from shared links (?branch=id) -> Redirect directly to Google Maps
     useEffect(() => {
@@ -785,8 +822,13 @@ const ClientMap: React.FC = () => {
         }
     };
 
+    // Filter branches based on the active request's targeted branches if a request parameter is set
+    const targetedBranches = activeRequest
+        ? branches.filter(b => activeRequest.targetBranchIds?.includes('all') || activeRequest.targetBranchIds?.includes(b.id))
+        : branches;
+
     // #5 - Enhanced search including categories (tolerant to Arabic spelling variations like ة/ه, أ/ا, etc.)
-    const filteredBranches = branches.filter(branch => {
+    const filteredBranches = targetedBranches.filter(branch => {
         const queryText = searchQuery.trim();
         if (!queryText) {
             const matchesCategory = categoryFilter === 'all' || branch.categories?.includes(categoryFilter);
@@ -943,6 +985,16 @@ const ClientMap: React.FC = () => {
         <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
             <div className="branch-directory-header" style={{ padding: '8px 12px', gap: '8px', display: 'flex', flexDirection: 'column' }}>
+                {activeRequest && (
+                    <div className="glass" style={{ padding: '8px 12px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', gap: '8px', color: 'white', maxWidth: '600px' }}>
+                        <MapPin size={18} style={{ color: 'var(--primary-color)' }} />
+                        <div style={{ fontSize: '12px', fontWeight: 700 }}>
+                            {lang === 'ar' 
+                                ? `توجيه ذكي للطلب ${activeRequest.id}: تم عرض الفروع المحددة فقط من قبل الشركة.` 
+                                : `Smart routing for request ${activeRequest.id}: Showing only company selected branches.`}
+                        </div>
+                    </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '600px' }}>
                     <div className="search-pill-container" style={{ flex: 1, position: 'relative', margin: 0 }}>
                         <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={16} />

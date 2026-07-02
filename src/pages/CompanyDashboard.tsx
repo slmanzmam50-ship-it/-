@@ -161,6 +161,16 @@ const CompanyDashboard: React.FC = () => {
     const activeRequests = companyRequests.filter(r => r.status === 'active' || r.status === 'transferred');
     const completedRequests = companyRequests.filter(r => r.status === 'completed');
     const rejectedRequests = companyRequests.filter(r => r.status === 'rejected');
+    const partialRequests = companyRequests.filter(r => r.status === 'partial');
+
+    const handleRecreateFromPartial = (req: ServiceRequest) => {
+        if (!req.remainingServices) return;
+        setPlateNumber(req.plateNumber);
+        setServiceDescription(req.remainingServices);
+        setTargetBranchIds(['all']);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        toast.success(`تم نسخ البيانات! تفضل بمراجعة تفاصيل طلب الخدمات المتبقية في الأعلى وتأكيد إرساله كطلب جديد.`);
+    };
 
     const getBranchNamesStr = (ids: string[]) => {
         if (!ids || ids.includes('all')) return 'جميع الفروع (الكل)';
@@ -639,6 +649,65 @@ const CompanyDashboard: React.FC = () => {
                                                 }}
                                             >
                                                 <RefreshCw size={12} /> إعادة توجيه وتفعيل الطلب
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Incomplete Requests (Partial Services) */}
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginTop: '24px' }}>
+                        <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)' }}>
+                            <AlertTriangle size={20} /> طلبات بخدمات ناقصة ({partialRequests.length})
+                        </h3>
+                        {partialRequests.length === 0 ? (
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', margin: '30px 0' }}>
+                                لا توجد طلبات بخدمات ناقصة.
+                            </p>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {partialRequests.map(r => (
+                                    <div key={r.id} style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '15px' }}>رقم اللوحة: {r.plateNumber} (الطلب: {r.id})</p>
+                                                <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-secondary)' }}>الطلب الأصلي: {r.serviceDescription}</p>
+                                                <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--accent-orange)', fontWeight: 700 }}>
+                                                    ⚠️ نُفّذ جزئياً في فرع: {r.branchName || 'غير معروف'}
+                                                </p>
+                                                {r.remainingServices && (
+                                                    <p style={{ margin: '0 0 6px', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(245, 158, 11, 0.05)', padding: '6px 10px', borderRadius: '6px', borderLeft: '3px solid var(--accent-orange)' }}>
+                                                        <strong>الخدمات المتبقية:</strong> {r.remainingServices}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <span style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--accent-orange)', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '13px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                                                خدمات ناقصة
+                                            </span>
+                                        </div>
+                                        <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تحويل المتبقي لطلب جديد؟</span>
+                                            <button 
+                                                onClick={() => handleRecreateFromPartial(r)}
+                                                style={{
+                                                    background: 'var(--primary-color)',
+                                                    border: 'none',
+                                                    borderRadius: '8px',
+                                                    padding: '6px 12px',
+                                                    fontSize: '12px',
+                                                    fontWeight: 800,
+                                                    color: 'white',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    transition: 'all 0.2s',
+                                                    boxShadow: '0 2px 6px rgba(59, 130, 246, 0.2)'
+                                                }}
+                                            >
+                                                <RefreshCw size={12} /> تحويل لطلب جديد
                                             </button>
                                         </div>
                                     </div>

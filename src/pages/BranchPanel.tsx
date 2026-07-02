@@ -16,6 +16,10 @@ const BranchPanel: React.FC = () => {
     const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
 
+    // Partial completion dialog states
+    const [showPartialDialog, setShowPartialDialog] = useState(false);
+    const [partialRemainingServices, setPartialRemainingServices] = useState('');
+
     // Login and session states
     const [loggedInBranch, setLoggedInBranch] = useState<Branch | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +27,7 @@ const BranchPanel: React.FC = () => {
     // Tabs and history logs state
     const [activeTab, setActiveTab] = useState<'today' | 'history'>('today');
     const [historySearchQuery, setHistorySearchQuery] = useState('');
-    const [historyStatusFilter, setHistoryStatusFilter] = useState<'all' | 'completed' | 'rejected' | 'transferred'>('all');
+    const [historyStatusFilter, setHistoryStatusFilter] = useState<'all' | 'completed' | 'rejected' | 'transferred' | 'partial'>('all');
 
     // QR Code scanner hook
     useEffect(() => {
@@ -185,6 +189,39 @@ const BranchPanel: React.FC = () => {
         }
     };
 
+    const handlePartialRequest = async () => {
+        if (!matchedRequest) return;
+        if (!loggedInBranch) {
+            toast.error('الرجاء تسجيل الدخول أولاً');
+            return;
+        }
+        if (!partialRemainingServices.trim()) {
+            toast.error('الرجاء كتابة الخدمات المتبقية التي لم يتم تنفيذها');
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            await updateServiceRequestStatus(
+                matchedRequest.id,
+                'partial',
+                loggedInBranch.id,
+                loggedInBranch.name,
+                undefined,
+                partialRemainingServices.trim()
+            );
+            toast.success(`تم تسجيل الطلب ${matchedRequest.id} كخدمات ناقصة وإرساله للشركة ⚠️`);
+            setShowPartialDialog(false);
+            setPartialRemainingServices('');
+            setSearchQuery('');
+        } catch (error) {
+            console.error(error);
+            toast.error('حدث خطأ أثناء تحديث حالة الطلب');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     // Requests completed by this branch today
     const branchCompletedToday = loggedInBranch ? requests.filter(r => 
         r.status === 'completed' && 
@@ -193,11 +230,11 @@ const BranchPanel: React.FC = () => {
         new Date(r.completedAt).toDateString() === new Date().toDateString()
     ) : [];
 
-    // All requests processed by this branch (completed, rejected, transferred)
+    // All requests processed by this branch (completed, rejected, transferred, partial)
     const branchAllProcessed = loggedInBranch ? requests.filter(r => 
         r.branchId === loggedInBranch.id &&
         r.completedAt &&
-        (r.status === 'completed' || r.status === 'rejected' || r.status === 'transferred')
+        (r.status === 'completed' || r.status === 'rejected' || r.status === 'transferred' || r.status === 'partial')
     ).sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)) : [];
 
     // Filtered history list based on search and status selector
@@ -396,6 +433,26 @@ const BranchPanel: React.FC = () => {
                                                 </button>
 
                                                 <button 
+                                                    onClick={() => setShowPartialDialog(true)}
+                                                    disabled={isProcessing}
+                                                    style={{
+                                                        background: 'rgba(245, 158, 11, 0.1)',
+                                                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                                                        color: 'var(--accent-orange)',
+                                                        padding: '12px 20px',
+                                                        borderRadius: '10px',
+                                                        fontWeight: 800,
+                                                        fontSize: '14px',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px'
+                                                    }}
+                                                >
+                                                    <AlertTriangle size={16} /> خدمات ناقصة
+                                                </button>
+
+                                                <button 
                                                     onClick={() => setShowRejectDialog(true)}
                                                     disabled={isProcessing}
                                                     style={{
@@ -419,6 +476,10 @@ const BranchPanel: React.FC = () => {
                                     ) : matchedRequest.status === 'rejected' ? (
                                         <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'var(--error)', fontSize: '13px', fontWeight: 700 }}>
                                             ❌ هذا الطلب تم رفضه وإعادته للشركة. لمزيد من التعديلات يرجى إبلاغ الشركة بإعادة توجيهه.
+                                        </div>
+                                    ) : matchedRequest.status === 'partial' ? (
+                                        <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.2)', color: 'var(--accent-orange)', fontSize: '13px', fontWeight: 700 }}>
+                                            ⚠️ تم تنفيذ هذا الطلب مع وجود خدمات ناقصة في فرع: ({matchedRequest.branchName}) بتاريخ {matchedRequest.completedAt ? new Date(matchedRequest.completedAt).toLocaleString('ar-SA') : ''}. الخدمات المتبقية: ({matchedRequest.remainingServices})
                                         </div>
                                     ) : (
                                         <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '13px', fontWeight: 700 }}>
@@ -537,7 +598,7 @@ const BranchPanel: React.FC = () => {
                                     />
                                 </div>
                                 <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
-                                    {(['all', 'completed', 'rejected', 'transferred'] as const).map((status) => (
+                                    {(['all', 'completed', 'rejected', 'transferred', 'partial'] as const).map((status) => (
                                         <button
                                             key={status}
                                             type="button"
@@ -560,6 +621,7 @@ const BranchPanel: React.FC = () => {
                                             {status === 'completed' && 'منفذة 🟢'}
                                             {status === 'rejected' && 'مرفوضة ❌'}
                                             {status === 'transferred' && 'محولة 🔄'}
+                                            {status === 'partial' && 'ناقصة ⚠️'}
                                         </button>
                                     ))}
                                 </div>
@@ -604,6 +666,11 @@ const BranchPanel: React.FC = () => {
                                                     {r.status === 'transferred' && (
                                                         <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--primary-color)' }}>
                                                             🔄 محول للكل
+                                                        </span>
+                                                    )}
+                                                    {r.status === 'partial' && (
+                                                        <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.12)', color: 'var(--accent-orange)' }}>
+                                                            ⚠️ خدمات ناقصة
                                                         </span>
                                                     )}
                                                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -727,6 +794,97 @@ const BranchPanel: React.FC = () => {
                             </button>
                             <button
                                 onClick={() => setShowRejectDialog(false)}
+                                style={{
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--border-color)',
+                                    color: 'var(--text-primary)',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                تراجع
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Partial Completion Warning Dialog */}
+            {showPartialDialog && matchedRequest && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000,
+                    padding: '16px'
+                }}>
+                    <div className="glass animate-scale-up" style={{
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '460px',
+                        padding: '24px',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        textAlign: 'right'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)', marginBottom: '16px' }}>
+                            <AlertTriangle size={24} />
+                            <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>تسجيل خدمات ناقصة</h3>
+                        </div>
+
+                        <div style={{ background: 'rgba(245, 158, 11, 0.08)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '16px', marginBottom: '20px', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-primary)' }}>
+                            ⚠️ <strong>تنبيه:</strong> سيتم تسجيل هذا الطلب كمنفذ جزئياً. سيظهر للشركة الخدمات المتبقية التي لم يتمكن الفرع من إكمالها ليتم إعادة توجيهها أو إنشاؤها كطلب جديد.
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>الخدمات المتبقية (التي لم يتم تنفيذها):</label>
+                            <textarea
+                                value={partialRemainingServices}
+                                onChange={(e) => setPartialRemainingServices(e.target.value)}
+                                placeholder="اكتب الخدمات المتبقية هنا بالتفصيل (مثال: ترصيص الإطارات الخلفية، تبديل فلتر الهواء...)"
+                                style={{
+                                    padding: '12px',
+                                    borderRadius: '10px',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--bg-color)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    minHeight: '80px',
+                                    outline: 'none',
+                                    resize: 'vertical'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={handlePartialRequest}
+                                disabled={isProcessing}
+                                style={{
+                                    flex: 1,
+                                    background: 'var(--accent-orange)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {isProcessing ? 'جاري التسجيل...' : 'تأكيد الإرسال جزئياً'}
+                            </button>
+                            <button
+                                onClick={() => setShowPartialDialog(false)}
                                 style={{
                                     background: 'rgba(255,255,255,0.05)',
                                     border: '1px solid var(--border-color)',
