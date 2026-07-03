@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToBranches, subscribeToServiceRequests, updateServiceRequestStatus } from '../services/storage';
 import type { Branch, ServiceRequest } from '../types';
-import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, LogOut, Loader2, ArrowLeftRight, Ban, History } from 'lucide-react';
+import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, Loader2, ArrowLeftRight, Ban, History } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 
@@ -91,11 +91,6 @@ const BranchPanel: React.FC = () => {
         return () => { unsubBranches(); unsubRequests(); };
     }, []);
 
-    const handleLogout = () => {
-        setLoggedInBranch(null);
-        sessionStorage.removeItem('logged_branch_id');
-        toast.success('تم تسجيل الخروج بنجاح');
-    };
 
     // Search query matches
     const matchedRequest = searchQuery.trim() 
@@ -269,45 +264,32 @@ const BranchPanel: React.FC = () => {
     return (
         <div style={{ maxWidth: '800px', margin: '24px auto', padding: '0 16px', direction: 'rtl' }}>
             {/* Top Info Card */}
-            <div className="glass animate-fade-in" style={{ padding: '20px 24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="glass animate-fade-in" style={{ padding: '24px 32px', borderRadius: '20px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h2 style={{ margin: '0 0 4px', fontSize: '1.4rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h2 style={{ margin: '0 0 6px', fontSize: '1.5rem', fontWeight: 850, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         🏪 بوابة موظفي الفروع
                     </h2>
-                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                        الفرع الحالي: <strong style={{ color: 'var(--primary-color)' }}>{loggedInBranch.name}</strong>
+                    <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>
+                        الفرع الحالي: <strong style={{ color: 'var(--primary-color)', fontWeight: 800 }}>{loggedInBranch.name}</strong>
                     </p>
                 </div>
-                <button 
-                    onClick={handleLogout}
-                    style={{
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        borderRadius: '10px',
-                        padding: '10px 18px',
-                        color: 'var(--error)',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.2s'
-                    }}
-                >
-                    <LogOut size={16} /> تسجيل الخروج
-                </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* Search Order Card */}
-                <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: '1.25rem', fontWeight: 800 }}>
+                <div className="glass animate-slide-up" style={{ 
+                    padding: '32px', 
+                    borderRadius: '24px', 
+                    background: 'var(--surface-color)', 
+                    border: '1px solid var(--border-color)',
+                    boxShadow: '0 10px 30px -10px rgba(59, 130, 246, 0.15)'
+                }}>
+                    <h3 style={{ margin: '0 0 20px', fontSize: '1.35rem', fontWeight: 850, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
                         🔍 البحث عن طلب خدمة واستلامه
                     </h3>
-                    <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '600px', marginBottom: '24px', flexWrap: 'wrap' }}>
-                        <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
-                            <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={18} />
+                    <div style={{ display: 'flex', gap: '16px', width: '100%', marginBottom: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', flex: 2, minWidth: '280px' }}>
+                            <Search style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={20} />
                             <input 
                                 type="text"
                                 placeholder="ادخل رقم الطلب هنا... (مثال: RQ-1234)"
@@ -315,33 +297,46 @@ const BranchPanel: React.FC = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
                                     width: '100%',
-                                    padding: '12px 40px 12px 14px',
-                                    borderRadius: '10px',
-                                    border: '1px solid var(--border-color)',
+                                    padding: '14px 46px 14px 16px',
+                                    borderRadius: '12px',
+                                    border: '2px solid var(--border-color)',
                                     background: 'var(--bg-color)',
                                     color: 'var(--text-primary)',
-                                    fontSize: '14px',
-                                    fontWeight: 600,
-                                    outline: 'none'
+                                    fontSize: '14.5px',
+                                    fontWeight: 700,
+                                    outline: 'none',
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'var(--primary-color)';
+                                    e.target.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.15), inset 0 2px 4px rgba(0,0,0,0.01)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = 'var(--border-color)';
+                                    e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.02)';
                                 }}
                             />
                         </div>
                         <button
                             onClick={() => setIsScannerOpen(true)}
+                            className="hover-scale tap-effect"
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
-                                background: 'var(--primary-color)',
+                                background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
                                 color: 'white',
                                 border: 'none',
-                                padding: '12px 20px',
-                                borderRadius: '10px',
+                                padding: '14px 24px',
+                                borderRadius: '12px',
                                 fontWeight: 800,
-                                fontSize: '14px',
+                                fontSize: '14.5px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
-                                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)'
+                                boxShadow: '0 8px 20px -4px rgba(59, 130, 246, 0.35)',
+                                height: '51px',
+                                boxSizing: 'border-box'
                             }}
                         >
                             <QrCode size={18} /> مسح الرمز (QR) بالكاميرا
