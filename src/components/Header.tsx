@@ -42,6 +42,8 @@ const Header: React.FC = () => {
 
     const handleLogout = () => {
         sessionStorage.removeItem('isAuthenticated');
+        sessionStorage.removeItem('logged_company_id');
+        sessionStorage.removeItem('logged_branch_id');
         navigate('/login');
     };
 
@@ -68,7 +70,7 @@ const Header: React.FC = () => {
 
     const handleLogoClick = (e: React.MouseEvent) => {
         e.preventDefault();
-        setShowOptionsModal(true);
+        navigate('/');
     };
 
     return (
@@ -111,15 +113,17 @@ const Header: React.FC = () => {
                         <Share2 size={20} />
                     </button>
 
-                    {location.pathname === '/admin' && (
-                        <>
-                            <Link to="/" className="header-link">
-                                <Map size={18} /> {isAr ? 'الخريطة' : 'Map'}
-                            </Link>
-                            <button onClick={handleLogout} className="logout-btn">
-                                <LogOut size={18} /> {isAr ? 'خروج' : 'Logout'}
-                            </button>
-                        </>
+                    {location.pathname !== '/map' && (
+                        <Link to="/map" className="header-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700 }}>
+                            <Map size={18} /> {isAr ? 'الخريطة' : 'Map'}
+                        </Link>
+                    )}
+                    {(sessionStorage.getItem('isAuthenticated') === 'true' || 
+                      sessionStorage.getItem('logged_company_id') || 
+                      sessionStorage.getItem('logged_branch_id')) && (
+                        <button onClick={handleLogout} className="logout-btn" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer', fontWeight: 700 }}>
+                            <LogOut size={18} /> {isAr ? 'خروج' : 'Logout'}
+                        </button>
                     )}
                 </nav>
             </header>

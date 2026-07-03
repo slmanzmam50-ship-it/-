@@ -325,9 +325,32 @@ const CompanyDashboard: React.FC = () => {
 
                         {/* Branch Selector Chip Grid */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <label style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <MapPin size={18} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:
-                            </label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
+                                <label style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                                    <MapPin size={18} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:
+                                </label>
+                                <a 
+                                    href="/map" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        color: 'var(--primary-color)',
+                                        fontSize: '13px',
+                                        fontWeight: 800,
+                                        textDecoration: 'none',
+                                        background: 'rgba(59, 130, 246, 0.1)',
+                                        padding: '6px 12px',
+                                        borderRadius: '8px',
+                                        border: '1px solid rgba(59, 130, 246, 0.2)',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    🗺️ عرض الفروع على الخريطة التفاعلية
+                                </a>
+                            </div>
 
                             {/* Search Filter Input */}
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', maxWidth: '350px', marginBottom: '4px' }}>
