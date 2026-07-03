@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest, subscribeToBranches, updateServiceRequestBranch } from '../services/storage';
 import type { CompanyAccount, ServiceRequest, Branch } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, LogOut, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame } from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
@@ -81,11 +81,6 @@ const CompanyDashboard: React.FC = () => {
         return () => { unsubBranches(); unsubCompanies(); unsubRequests(); };
     }, []);
 
-    const handleLogout = () => {
-        setLoggedInCompany(null);
-        sessionStorage.removeItem('logged_company_id');
-        toast.success('تم تسجيل الخروج بنجاح');
-    };
 
     const handleCreateRequest = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -203,34 +198,15 @@ const CompanyDashboard: React.FC = () => {
     return (
         <div style={{ maxWidth: '1000px', margin: '24px auto', padding: '0 16px', direction: 'rtl' }}>
             {/* Top Selector Card */}
-            <div className="glass animate-fade-in" style={{ padding: '20px 24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div className="glass animate-fade-in" style={{ padding: '24px 32px', borderRadius: '20px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h2 style={{ margin: '0 0 4px', fontSize: '1.4rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h2 style={{ margin: '0 0 6px', fontSize: '1.5rem', fontWeight: 850, color: 'var(--text-primary)' }}>
                         🏢 لوحة تحكم الشركات B2B
                     </h2>
-                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                        مرحباً بك، أنت مسجل الدخول باسم: <strong style={{ color: 'var(--primary-color)' }}>{loggedInCompany.name}</strong>
+                    <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>
+                        مرحباً بك، أنت مسجل الدخول باسم: <strong style={{ color: 'var(--primary-color)', fontWeight: 800 }}>{loggedInCompany.name}</strong>
                     </p>
                 </div>
-                <button 
-                    onClick={handleLogout}
-                    style={{
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        borderRadius: '10px',
-                        padding: '10px 18px',
-                        color: 'var(--error)',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.2s'
-                    }}
-                >
-                    <LogOut size={16} /> تسجيل الخروج
-                </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -325,10 +301,64 @@ const CompanyDashboard: React.FC = () => {
 
                         {/* Branch Selector Chip Grid */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
-                                <label style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+                                <label style={{ fontWeight: 800, fontSize: '14.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                                     <MapPin size={18} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:
                                 </label>
+                            </div>
+
+                            {/* Search Filter Input & Map Button Row */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: '240px' }}>
+                                    <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} size={16} color="var(--text-secondary)" />
+                                    <input
+                                        type="text"
+                                        placeholder="ابحث عن فرع..."
+                                        value={branchSearch}
+                                        onChange={(e) => setBranchSearch(e.target.value)}
+                                        style={{
+                                            padding: '10px 38px',
+                                            borderRadius: '12px',
+                                            border: '1.5px solid var(--border-color)',
+                                            background: 'var(--bg-color)',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '13.5px',
+                                            fontWeight: 600,
+                                            width: '100%',
+                                            outline: 'none',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onFocus={(e) => {
+                                            e.target.style.borderColor = 'var(--primary-color)';
+                                            e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                        }}
+                                        onBlur={(e) => {
+                                            e.target.style.borderColor = 'var(--border-color)';
+                                            e.target.style.boxShadow = 'none';
+                                        }}
+                                    />
+                                    {branchSearch && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setBranchSearch('')}
+                                            style={{ 
+                                                position: 'absolute', 
+                                                left: '12px', 
+                                                top: '50%', 
+                                                transform: 'translateY(-50%)',
+                                                background: 'none', 
+                                                border: 'none', 
+                                                cursor: 'pointer', 
+                                                padding: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            <X size={16} color="var(--text-secondary)" />
+                                        </button>
+                                    )}
+                                </div>
                                 <a 
                                     href="/map" 
                                     target="_blank" 
@@ -337,69 +367,21 @@ const CompanyDashboard: React.FC = () => {
                                         display: 'inline-flex',
                                         alignItems: 'center',
                                         gap: '6px',
-                                        color: 'var(--primary-color)',
-                                        fontSize: '13px',
+                                        color: 'white',
+                                        fontSize: '13.5px',
                                         fontWeight: 800,
                                         textDecoration: 'none',
-                                        background: 'rgba(59, 130, 246, 0.1)',
-                                        padding: '6px 12px',
-                                        borderRadius: '8px',
-                                        border: '1px solid rgba(59, 130, 246, 0.2)',
-                                        transition: 'all 0.2s'
+                                        background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
+                                        padding: '10px 18px',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
+                                        transition: 'all 0.2s',
+                                        height: '42px',
+                                        boxSizing: 'border-box'
                                     }}
                                 >
                                     🗺️ عرض الفروع على الخريطة التفاعلية
                                 </a>
-                            </div>
-
-                            {/* Search Filter Input */}
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', maxWidth: '350px', marginBottom: '4px' }}>
-                                <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} size={16} color="var(--text-secondary)" />
-                                <input
-                                    type="text"
-                                    placeholder="ابحث عن فرع..."
-                                    value={branchSearch}
-                                    onChange={(e) => setBranchSearch(e.target.value)}
-                                    style={{
-                                        padding: '10px 38px 10px 38px',
-                                        borderRadius: '12px',
-                                        border: '1.5px solid var(--border-color)',
-                                        background: 'var(--bg-color)',
-                                        color: 'var(--text-primary)',
-                                        fontSize: '13.5px',
-                                        fontWeight: 600,
-                                        width: '100%',
-                                        outline: 'none',
-                                        transition: 'all 0.3s ease'
-                                    }}
-                                    onFocus={(e) => {
-                                        e.target.style.borderColor = 'var(--primary-color)';
-                                        e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.target.style.borderColor = 'var(--border-color)';
-                                        e.target.style.boxShadow = 'none';
-                                    }}
-                                />
-                                {branchSearch && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setBranchSearch('')}
-                                        style={{ 
-                                            position: 'absolute', 
-                                            left: '12px', 
-                                            background: 'none', 
-                                            border: 'none', 
-                                            cursor: 'pointer', 
-                                            padding: 0,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <X size={16} color="var(--text-secondary)" />
-                                    </button>
-                                )}
                             </div>
                             
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px', marginTop: '6px' }}>
