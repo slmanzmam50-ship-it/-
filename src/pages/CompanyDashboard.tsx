@@ -13,8 +13,9 @@ const normalizeArabicSimple = (str: string): string => {
         .replace(/[أإآ]/g, 'ا')
         .replace(/ة/g, 'ه')
         .replace(/ى/g, 'ي')
-        .replace(/[\u064B-\u0652]/g, '')
-        .replace(/\s+/g, ' ')
+        .replace(/[\u064B-\u0652]/g, '') // remove diacritics
+        .replace(/(^|\s)ال/g, '$1') // remove 'ال' definition prefix
+        .replace(/\s+/g, ' ') // normalize spaces
         .trim();
 };
 
