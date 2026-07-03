@@ -14,7 +14,9 @@ import { Toaster } from 'react-hot-toast';
 import InstallPWA from './components/InstallPWA';
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    return !window.location.pathname.includes('/map');
+  });
 
   // Subdomain detection logic
   const hostname = window.location.hostname;

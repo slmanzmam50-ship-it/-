@@ -6,6 +6,18 @@ import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, Loa
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
+const normalizeArabicSimple = (str: string): string => {
+    if (!str) return '';
+    return str
+        .toLowerCase()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/[\u064B-\u0652]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
 const CompanyDashboard: React.FC = () => {
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [branches, setBranches] = useState<Branch[]>([]);
@@ -555,7 +567,7 @@ const CompanyDashboard: React.FC = () => {
                             
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px', marginTop: '6px' }}>
                                 {/* "All" Option Badge */}
-                                {(!branchSearch || 'جميع الفروع (الكل)'.includes(branchSearch)) && (
+                                {(!branchSearch || normalizeArabicSimple('جميع الفروع (الكل)').includes(normalizeArabicSimple(branchSearch))) && (
                                     <button
                                         type="button"
                                         onClick={() => setTargetBranchIds(['all'])}
@@ -587,7 +599,11 @@ const CompanyDashboard: React.FC = () => {
                                 {/* Individual Branch Badges */}
                                 {(() => {
                                     const sorted = [...branches].sort((a, b) => getBranchScore(b.id) - getBranchScore(a.id));
-                                    const filtered = sorted.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase()));
+                                    const cleanQuery = normalizeArabicSimple(branchSearch);
+                                    const filtered = sorted.filter(b => 
+                                        normalizeArabicSimple(b.name).includes(cleanQuery) || 
+                                        (b.address && normalizeArabicSimple(b.address).includes(cleanQuery))
+                                    );
                                     return filtered.map(b => {
                                         const isSelected = targetBranchIds.includes(b.id);
                                         const score = getBranchScore(b.id);
@@ -1078,7 +1094,7 @@ const CompanyDashboard: React.FC = () => {
                                 scrollbarWidth: 'thin'
                             }}>
                                 {/* "All" Option Badge */}
-                                {(!reRouteBranchSearch || 'الكل (جميع الفروع)'.includes(reRouteBranchSearch)) && (
+                                {(!reRouteBranchSearch || normalizeArabicSimple('الكل (جميع الفروع)').includes(normalizeArabicSimple(reRouteBranchSearch))) && (
                                     <button
                                         type="button"
                                         onClick={() => setNewTargetBranchIds(['all'])}
@@ -1110,7 +1126,11 @@ const CompanyDashboard: React.FC = () => {
                                 {/* Individual Branch Badges */}
                                 {(() => {
                                     const sorted = [...branches].sort((a, b) => getBranchScore(b.id) - getBranchScore(a.id));
-                                    const filtered = sorted.filter(b => b.name.toLowerCase().includes(reRouteBranchSearch.toLowerCase()));
+                                    const cleanQuery = normalizeArabicSimple(reRouteBranchSearch);
+                                    const filtered = sorted.filter(b => 
+                                        normalizeArabicSimple(b.name).includes(cleanQuery) || 
+                                        (b.address && normalizeArabicSimple(b.address).includes(cleanQuery))
+                                    );
                                     return filtered.map(b => {
                                         const isSelected = newTargetBranchIds.includes(b.id);
                                         const score = getBranchScore(b.id);
