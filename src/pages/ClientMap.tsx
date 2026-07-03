@@ -35,26 +35,38 @@ const createUserIcon = () => L.divIcon({
 });
 
 // Branch status circular marker with branch image and pointer pin
-const createBranchIcon = (branch: Branch, isOpen: boolean) => {
+const createBranchIcon = (branch: Branch, isOpen: boolean, activeRequest?: ServiceRequest | null) => {
     const statusColor = branch.status === 'تحت الصيانة' ? '#f97316' : (isOpen ? '#10b981' : '#ef4444');
+    
+    // Check if this branch is targeted by activeRequest
+    let isTargeted = true;
+    let hasRequest = false;
+    if (activeRequest) {
+        hasRequest = true;
+        isTargeted = activeRequest.targetBranchIds?.includes('all') || activeRequest.targetBranchIds?.includes(branch.id);
+    }
+
+    const shadowStyle = hasRequest 
+        ? (isTargeted ? 'box-shadow: 0 0 15px #f59e0b, 0 0 0 3px #f59e0b; animation: userPulse 2s infinite;' : 'filter: grayscale(85%) opacity(0.45);')
+        : '';
     
     // SVG store icon placeholder if no image is present
     const placeholderSvg = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${statusColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; color: ${statusColor}; display: block;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${hasRequest && !isTargeted ? '#64748b' : statusColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; display: block;">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
     `;
 
     const htmlContent = `
-        <div class="custom-branch-marker-container">
-            <div class="marker-circle" style="border-color: ${statusColor};">
+        <div class="custom-branch-marker-container" style="${shadowStyle}">
+            <div class="marker-circle" style="border-color: ${hasRequest && !isTargeted ? '#64748b' : statusColor};">
                 ${branch.imageUrl 
                     ? `<img src="${branch.imageUrl}" alt="${branch.name}" class="marker-img" />`
                     : `<div class="marker-placeholder">${placeholderSvg}</div>`
                 }
             </div>
-            <div class="marker-pin" style="background-color: ${statusColor};"></div>
+            <div class="marker-pin" style="background-color: ${hasRequest && !isTargeted ? '#64748b' : statusColor};"></div>
         </div>
     `;
 
@@ -381,9 +393,10 @@ const ClientMap: React.FC = () => {
         };
     }, []);
 
-    // Get active request if provided in URL search params (?request=RQ-XXXX)
-    const requestId = searchParams.get('request') || searchParams.get('requestId');
-    const activeRequest = requestId ? requests.find(r => r.id === requestId) : null;
+    // Get active request if provided in URL search params or entered manually
+    const [driverRequestId, setDriverRequestId] = useState(searchParams.get('request') || searchParams.get('requestId') || '');
+    const [showOnlyTargeted, setShowOnlyTargeted] = useState(false);
+    const activeRequest = driverRequestId ? requests.find(r => r.id.trim().toLowerCase() === driverRequestId.trim().toLowerCase()) : null;
 
     // Auto-locate driver for smart routing if request parameter exists
     useEffect(() => {
@@ -822,8 +835,8 @@ const ClientMap: React.FC = () => {
         }
     };
 
-    // Filter branches based on the active request's targeted branches if a request parameter is set
-    const targetedBranches = activeRequest
+    // Filter branches based on the active request's targeted branches if selected
+    const targetedBranches = activeRequest && showOnlyTargeted
         ? branches.filter(b => activeRequest.targetBranchIds?.includes('all') || activeRequest.targetBranchIds?.includes(b.id))
         : branches;
 
@@ -986,17 +999,104 @@ const ClientMap: React.FC = () => {
             {/* Header */}
             <div className="branch-directory-header" style={{ padding: '8px 12px', gap: '8px', display: 'flex', flexDirection: 'column' }}>
                 {activeRequest && (
-                    <div className="glass" style={{ padding: '8px 12px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', gap: '8px', color: 'white', maxWidth: '600px' }}>
-                        <MapPin size={18} style={{ color: 'var(--primary-color)' }} />
-                        <div style={{ fontSize: '12px', fontWeight: 700 }}>
-                            {lang === 'ar' 
-                                ? `توجيه ذكي للطلب ${activeRequest.id}: تم عرض الفروع المحددة فقط من قبل الشركة.` 
-                                : `Smart routing for request ${activeRequest.id}: Showing only company selected branches.`}
+                    <div className="glass" style={{ 
+                        padding: '12px 16px', 
+                        borderRadius: '14px', 
+                        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.85) 100%)', 
+                        border: '1.5px solid rgba(245, 158, 11, 0.4)', 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        gap: '10px',
+                        color: 'white', 
+                        maxWidth: '600px',
+                        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ background: 'var(--accent-orange)', color: 'white', padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
+                                    {lang === 'ar' ? 'طلب نشط' : 'Active Request'}
+                                </span>
+                                <span style={{ fontWeight: 800, fontSize: '13px' }}>{activeRequest.id}</span>
+                            </div>
+                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                {lang === 'ar' ? `اللوحة: ${activeRequest.plateNumber}` : `Plate: ${activeRequest.plateNumber}`}
+                            </div>
+                        </div>
+
+                        <div style={{ fontSize: '12.5px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div>
+                                <span style={{ color: 'var(--text-secondary)' }}>{lang === 'ar' ? 'الخدمة المطلوبة: ' : 'Service: '}</span>
+                                <strong style={{ color: 'var(--accent-orange)' }}>{activeRequest.serviceDescription}</strong>
+                            </div>
+                            <div style={{ fontSize: '11.5px', color: '#94a3b8' }}>
+                                💡 {lang === 'ar' ? 'تم تمييز الفروع الموجه إليها الطلب باللون الذهبي البارق على الخريطة.' : 'Branches designated for this request are highlighted in gold on the map.'}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+                            <button
+                                onClick={() => setShowOnlyTargeted(!showOnlyTargeted)}
+                                style={{
+                                    flex: 1,
+                                    background: showOnlyTargeted ? 'var(--accent-orange)' : 'rgba(255,255,255,0.08)',
+                                    border: '1px solid rgba(255,255,255,0.15)',
+                                    color: 'white',
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    fontSize: '11.5px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px'
+                                }}
+                            >
+                                <Layers size={14} />
+                                {showOnlyTargeted 
+                                    ? (lang === 'ar' ? 'عرض جميع الفروع' : 'Show All Branches')
+                                    : (lang === 'ar' ? 'تصفية الفروع الموجهة فقط' : 'Filter Designated Only')}
+                            </button>
                         </div>
                     </div>
                 )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '600px' }}>
-                    <div className="search-pill-container" style={{ flex: 1, position: 'relative', margin: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '600px', flexWrap: 'wrap' }}>
+                    {/* Request ID Input for Drivers */}
+                    <div style={{ position: 'relative', flex: 1, minWidth: '160px' }}>
+                        <Car style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary-color)' }} size={16} />
+                        <input
+                            type="text"
+                            placeholder={lang === 'ar' ? 'ادخل رقم الطلب (RQ)...' : 'Enter Request ID (RQ)...'}
+                            value={driverRequestId}
+                            onChange={(e) => setDriverRequestId(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '8px 36px 8px 12px',
+                                fontSize: '13px',
+                                height: '38px',
+                                borderRadius: '10px',
+                                border: '1.5px solid rgba(59, 130, 246, 0.3)',
+                                background: 'rgba(15, 23, 42, 0.65)',
+                                color: 'white',
+                                fontWeight: 700,
+                                outline: 'none',
+                                transition: 'all 0.2s',
+                                boxSizing: 'border-box'
+                            }}
+                        />
+                        {driverRequestId && (
+                            <button
+                                onClick={() => setDriverRequestId('')}
+                                style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Branch Search Input */}
+                    <div className="search-pill-container" style={{ flex: 1.2, position: 'relative', margin: 0, minWidth: '200px' }}>
                         <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={16} />
                         <input
                             className="search-pill"
@@ -1146,7 +1246,7 @@ const ClientMap: React.FC = () => {
                                     <Marker
                                         key={b.id}
                                         position={[lat, lng]}
-                                        icon={createBranchIcon(b, open)}
+                                        icon={createBranchIcon(b, open, activeRequest)}
                                         zIndexOffset={b.imageUrl ? 1000 : 0}
                                         eventHandlers={{
                                             click: () => {
