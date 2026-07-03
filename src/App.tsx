@@ -48,6 +48,7 @@ function App() {
                 <Route path="admin/company-invoices/:companyId" element={<CompanyInvoices />} />
               </Route>
               <Route path="login" element={<Login />} />
+              <Route path="map" element={<ClientMap />} />
               {/* Fallback redirects for admin portal */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
@@ -61,6 +62,7 @@ function App() {
               <Route index element={<CompanyDashboard />} />
               <Route path="login" element={<Login />} />
               <Route path="company" element={<Navigate to="/" replace />} />
+              <Route path="map" element={<ClientMap />} />
               {/* Fallback redirects for B2B portal */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
@@ -74,6 +76,7 @@ function App() {
               <Route index element={<BranchPanel />} />
               <Route path="login" element={<Login />} />
               <Route path="branch" element={<Navigate to="/" replace />} />
+              <Route path="map" element={<ClientMap />} />
               {/* Fallback redirects for branch portal */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
