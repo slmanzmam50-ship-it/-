@@ -20,11 +20,11 @@ function App() {
   const hostname = window.location.hostname;
   let appMode: 'admin' | 'company' | 'branch' | 'public' = 'public';
 
-  if (hostname.startsWith('admin.')) {
+  if (hostname.startsWith('admin.') || hostname.includes('admin')) {
     appMode = 'admin';
-  } else if (hostname.startsWith('b2b.') || hostname.startsWith('company.')) {
+  } else if (hostname.startsWith('b2b.') || hostname.startsWith('company.') || hostname.includes('company') || hostname.includes('b2b')) {
     appMode = 'company';
-  } else if (hostname.startsWith('branch.') || hostname.startsWith('workshop.')) {
+  } else if (hostname.startsWith('branch.') || hostname.startsWith('workshop.') || hostname.includes('branch') || hostname.includes('workshop')) {
     appMode = 'branch';
   } else {
     // Local development fallback via query parameter (?appMode=admin|company|branch)

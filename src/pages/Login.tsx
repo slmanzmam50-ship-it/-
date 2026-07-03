@@ -13,11 +13,11 @@ const Login: React.FC = () => {
     const hostname = window.location.hostname;
     let mode: 'admin' | 'company' | 'branch' | 'public' = 'public';
 
-    if (hostname.startsWith('admin.')) {
+    if (hostname.startsWith('admin.') || hostname.includes('admin')) {
         mode = 'admin';
-    } else if (hostname.startsWith('b2b.') || hostname.startsWith('company.')) {
+    } else if (hostname.startsWith('b2b.') || hostname.startsWith('company.') || hostname.includes('company') || hostname.includes('b2b')) {
         mode = 'company';
-    } else if (hostname.startsWith('branch.') || hostname.startsWith('workshop.')) {
+    } else if (hostname.startsWith('branch.') || hostname.startsWith('workshop.') || hostname.includes('branch') || hostname.includes('workshop')) {
         mode = 'branch';
     } else {
         // Fallback for localhost testing
