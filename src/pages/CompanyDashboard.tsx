@@ -13,6 +13,7 @@ const CompanyDashboard: React.FC = () => {
     const [serviceDescription, setServiceDescription] = useState('');
     const [targetBranchIds, setTargetBranchIds] = useState<string[]>(['all']);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [activeTab, setActiveTab] = useState<'create' | 'active' | 'issues' | 'completed'>('create');
     
     // Login and session states
     const [loggedInCompany, setLoggedInCompany] = useState<CompanyAccount | null>(null);
@@ -210,13 +211,146 @@ const CompanyDashboard: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Quick Actions / Categories Navigation Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '8px' }} className="animate-fade-in">
+                    {/* 1. Create Request */}
+                    <div 
+                        onClick={() => setActiveTab('create')}
+                        className="glass hover-scale tap-effect"
+                        style={{
+                            padding: '20px',
+                            borderRadius: '16px',
+                            background: activeTab === 'create' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%)' : 'var(--surface-color)',
+                            border: activeTab === 'create' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '12px',
+                            textAlign: 'center',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: activeTab === 'create' ? '0 10px 20px -5px rgba(59, 130, 246, 0.2)' : 'none'
+                        }}
+                    >
+                        <div style={{ background: activeTab === 'create' ? 'var(--primary-color)' : 'rgba(59, 130, 246, 0.1)', color: activeTab === 'create' ? 'white' : 'var(--primary-color)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <PlusCircle size={24} />
+                        </div>
+                        <div>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>إنشاء طلب جديد</h4>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تعبئة وتوجيه سيارة جديدة</span>
+                        </div>
+                    </div>
+
+                    {/* 2. Active Requests */}
+                    <div 
+                        onClick={() => setActiveTab('active')}
+                        className="glass hover-scale tap-effect"
+                        style={{
+                            padding: '20px',
+                            borderRadius: '16px',
+                            background: activeTab === 'active' ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%)' : 'var(--surface-color)',
+                            border: activeTab === 'active' ? '2px solid var(--accent-orange)' : '1px solid var(--border-color)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '12px',
+                            textAlign: 'center',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: activeTab === 'active' ? '0 10px 20px -5px rgba(245, 158, 11, 0.2)' : 'none'
+                        }}
+                    >
+                        <div style={{ background: activeTab === 'active' ? 'var(--accent-orange)' : 'rgba(245, 158, 11, 0.1)', color: activeTab === 'active' ? 'white' : 'var(--accent-orange)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <ClipboardList size={24} />
+                        </div>
+                        <div>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>
+                                الطلبات النشطة
+                                <span style={{ background: 'var(--accent-orange)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
+                                    {activeRequests.length}
+                                </span>
+                            </h4>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تتبع وتعديل توجيه المركبات</span>
+                        </div>
+                    </div>
+
+                    {/* 3. Incomplete & Rejected */}
+                    <div 
+                        onClick={() => setActiveTab('issues')}
+                        className="glass hover-scale tap-effect"
+                        style={{
+                            padding: '20px',
+                            borderRadius: '16px',
+                            background: activeTab === 'issues' ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%)' : 'var(--surface-color)',
+                            border: activeTab === 'issues' ? '2px solid var(--error)' : '1px solid var(--border-color)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '12px',
+                            textAlign: 'center',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: activeTab === 'issues' ? '0 10px 20px -5px rgba(239, 68, 68, 0.2)' : 'none'
+                        }}
+                    >
+                        <div style={{ background: activeTab === 'issues' ? 'var(--error)' : 'rgba(239, 68, 68, 0.1)', color: activeTab === 'issues' ? 'white' : 'var(--error)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <AlertTriangle size={24} />
+                        </div>
+                        <div>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>
+                                طلبات معلقة ومرفوضة
+                                {(partialRequests.length + rejectedRequests.length) > 0 && (
+                                    <span style={{ background: 'var(--error)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
+                                        {partialRequests.length + rejectedRequests.length}
+                                    </span>
+                                )}
+                            </h4>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>خدمات ناقصة وطلبات مرفوضة</span>
+                        </div>
+                    </div>
+
+                    {/* 4. Completed Requests */}
+                    <div 
+                        onClick={() => setActiveTab('completed')}
+                        className="glass hover-scale tap-effect"
+                        style={{
+                            padding: '20px',
+                            borderRadius: '16px',
+                            background: activeTab === 'completed' ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%)' : 'var(--surface-color)',
+                            border: activeTab === 'completed' ? '2px solid var(--success)' : '1px solid var(--border-color)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '12px',
+                            textAlign: 'center',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: activeTab === 'completed' ? '0 10px 20px -5px rgba(16, 185, 129, 0.2)' : 'none'
+                        }}
+                    >
+                        <div style={{ background: activeTab === 'completed' ? 'var(--success)' : 'rgba(16, 185, 129, 0.1)', color: activeTab === 'completed' ? 'white' : 'var(--success)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <CheckCircle size={24} />
+                        </div>
+                        <div>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>
+                                الطلبات المنفذة
+                                <span style={{ background: 'var(--success)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
+                                    {completedRequests.length}
+                                </span>
+                            </h4>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>سجل الخدمات المنفذة والمستلمة</span>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Create Request Section */}
                 <div className="glass animate-slide-up" style={{ 
                     padding: '28px', 
                     borderRadius: '24px', 
                     background: 'var(--surface-color)', 
                     border: '1px solid var(--border-color)',
-                    boxShadow: '0 10px 30px -10px rgba(59, 130, 246, 0.15)'
+                    boxShadow: '0 10px 30px -10px rgba(59, 130, 246, 0.15)',
+                    display: activeTab === 'create' ? 'block' : 'none'
                 }}>
                     <h3 style={{ margin: '0 0 24px', fontSize: '1.35rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary-color)' }}>
                         <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(59, 130, 246, 0.1)', padding: '8px', borderRadius: '12px' }}>
@@ -526,9 +660,9 @@ const CompanyDashboard: React.FC = () => {
                 </div>
 
                 {/* Lists Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <div style={{ display: (activeTab === 'active' || activeTab === 'issues') ? 'grid' : 'none', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                     {/* Active Requests */}
-                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: activeTab === 'active' ? 'block' : 'none', gridColumn: 'span 2' }}>
                         <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)' }}>
                             <ClipboardList size={20} /> الطلبات النشطة والمحولة ({activeRequests.length})
                         </h3>
@@ -630,7 +764,7 @@ const CompanyDashboard: React.FC = () => {
                     </div>
 
                     {/* Rejected Requests */}
-                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: activeTab === 'issues' ? 'block' : 'none' }}>
                         <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--error)' }}>
                             <AlertTriangle size={20} /> الطلبات المرفوضة ({rejectedRequests.length})
                         </h3>
@@ -689,7 +823,7 @@ const CompanyDashboard: React.FC = () => {
                     </div>
 
                     {/* Incomplete Requests (Partial Services) */}
-                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginTop: '24px' }}>
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginTop: '0px', display: activeTab === 'issues' ? 'block' : 'none' }}>
                         <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)' }}>
                             <AlertTriangle size={20} /> طلبات بخدمات ناقصة ({partialRequests.length})
                         </h3>
@@ -749,7 +883,7 @@ const CompanyDashboard: React.FC = () => {
                 </div>
 
                 {/* Completed Requests */}
-                <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: activeTab === 'completed' ? 'block' : 'none' }}>
                     <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success)' }}>
                         <CheckCircle size={20} /> الطلبات المنفذة والمستلمة ({completedRequests.length})
                     </h3>
