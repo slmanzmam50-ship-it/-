@@ -172,6 +172,14 @@ const CompanyDashboard: React.FC = () => {
         toast.success(`تم نسخ البيانات! تفضل بمراجعة تفاصيل طلب الخدمات المتبقية في الأعلى وتأكيد إرساله كطلب جديد.`);
     };
 
+    const handleRepeatRequest = (req: ServiceRequest) => {
+        setPlateNumber(req.plateNumber);
+        setServiceDescription(req.serviceDescription);
+        setTargetBranchIds(req.targetBranchIds || ['all']);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        toast.success(`تم نسخ بيانات السيارة والخدمة المطلوبة! تفضل بمراجعة التفاصيل وتأكيد إرسال الطلب في الأعلى.`);
+    };
+
     const getBranchNamesStr = (ids: string[]) => {
         if (!ids || ids.includes('all')) return 'جميع الفروع (الكل)';
         return ids.map(id => branches.find(b => b.id === id)?.name || id).join('، ');
@@ -545,6 +553,24 @@ const CompanyDashboard: React.FC = () => {
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                 <button 
+                                                    onClick={() => handleRepeatRequest(r)}
+                                                    title="تكرار الطلب كطلب جديد"
+                                                    style={{
+                                                        background: 'rgba(59, 130, 246, 0.1)',
+                                                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                        borderRadius: '8px',
+                                                        padding: '8px',
+                                                        color: 'var(--primary-color)',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <RefreshCw size={18} />
+                                                </button>
+                                                <button 
                                                     onClick={() => setSelectedQrRequest(r)}
                                                     title="عرض رمز الـ QR"
                                                     style={{
@@ -741,6 +767,24 @@ const CompanyDashboard: React.FC = () => {
                                         </span>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <button 
+                                            onClick={() => handleRepeatRequest(r)}
+                                            title="تكرار الطلب كطلب جديد"
+                                            style={{
+                                                background: 'rgba(59, 130, 246, 0.1)',
+                                                border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                borderRadius: '8px',
+                                                padding: '8px',
+                                                color: 'var(--primary-color)',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <RefreshCw size={18} />
+                                        </button>
                                         <button 
                                             onClick={() => setSelectedQrRequest(r)}
                                             title="عرض رمز الـ QR"

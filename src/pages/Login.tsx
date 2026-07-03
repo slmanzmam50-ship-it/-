@@ -9,11 +9,31 @@ const Login: React.FC = () => {
     const [searchParams] = useSearchParams();
     const typeParam = searchParams.get('type') as 'admin' | 'company' | 'branch';
     
-    const [loginType, setLoginType] = useState<'admin' | 'company' | 'branch'>(
-        typeParam === 'company' || typeParam === 'branch' || typeParam === 'admin' 
+    // Subdomain / App Mode detection
+    const hostname = window.location.hostname;
+    let mode: 'admin' | 'company' | 'branch' | 'public' = 'public';
+
+    if (hostname.startsWith('admin.')) {
+        mode = 'admin';
+    } else if (hostname.startsWith('b2b.') || hostname.startsWith('company.')) {
+        mode = 'company';
+    } else if (hostname.startsWith('branch.') || hostname.startsWith('workshop.')) {
+        mode = 'branch';
+    } else {
+        // Fallback for localhost testing
+        const urlParams = new URLSearchParams(window.location.search);
+        const modeParam = urlParams.get('appMode');
+        if (modeParam === 'admin') mode = 'admin';
+        else if (modeParam === 'company') mode = 'company';
+        else if (modeParam === 'branch') mode = 'branch';
+    }
+    
+    const [loginType, setLoginType] = useState<'admin' | 'company' | 'branch'>(() => {
+        if (mode !== 'public') return mode;
+        return typeParam === 'company' || typeParam === 'branch' || typeParam === 'admin' 
             ? typeParam 
-            : 'admin'
-    );
+            : 'admin';
+    });
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -35,10 +55,10 @@ const Login: React.FC = () => {
 
     // Sync tab from query param if it changes
     useEffect(() => {
-        if (typeParam === 'company' || typeParam === 'branch' || typeParam === 'admin') {
+        if (mode === 'public' && (typeParam === 'company' || typeParam === 'branch' || typeParam === 'admin')) {
             setLoginType(typeParam);
         }
-    }, [typeParam]);
+    }, [typeParam, mode]);
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -105,44 +125,46 @@ const Login: React.FC = () => {
                 <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>بوابة تسجيل الدخول</h2>
 
                 {/* Tabs */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '20px', background: 'var(--bg-color)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                    <button
-                        type="button"
-                        onClick={() => { setLoginType('admin'); setError(''); setUsername(''); setPassword(''); }}
-                        style={{
-                            padding: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, border: 'none',
-                            background: loginType === 'admin' ? 'var(--primary-color)' : 'transparent',
-                            color: loginType === 'admin' ? 'white' : 'var(--text-secondary)',
-                            transition: 'all 0.2s', width: '100%'
-                        }}
-                    >
-                        <Sliders size={14} style={{ display: 'inline', marginInlineEnd: '4px' }} /> إدارة
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => { setLoginType('company'); setError(''); setUsername(''); setPassword(''); }}
-                        style={{
-                            padding: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, border: 'none',
-                            background: loginType === 'company' ? 'var(--primary-color)' : 'transparent',
-                            color: loginType === 'company' ? 'white' : 'var(--text-secondary)',
-                            transition: 'all 0.2s', width: '100%'
-                        }}
-                    >
-                        <Building2 size={14} style={{ display: 'inline', marginInlineEnd: '4px' }} /> شركات
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => { setLoginType('branch'); setError(''); setUsername(''); setPassword(''); }}
-                        style={{
-                            padding: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, border: 'none',
-                            background: loginType === 'branch' ? 'var(--primary-color)' : 'transparent',
-                            color: loginType === 'branch' ? 'white' : 'var(--text-secondary)',
-                            transition: 'all 0.2s', width: '100%'
-                        }}
-                    >
-                        <Store size={14} style={{ display: 'inline', marginInlineEnd: '4px' }} /> فروع
-                    </button>
-                </div>
+                {mode === 'public' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '20px', background: 'var(--bg-color)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <button
+                            type="button"
+                            onClick={() => { setLoginType('admin'); setError(''); setUsername(''); setPassword(''); }}
+                            style={{
+                                padding: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, border: 'none',
+                                background: loginType === 'admin' ? 'var(--primary-color)' : 'transparent',
+                                color: loginType === 'admin' ? 'white' : 'var(--text-secondary)',
+                                transition: 'all 0.2s', width: '100%'
+                            }}
+                        >
+                            <Sliders size={14} style={{ display: 'inline', marginInlineEnd: '4px' }} /> إدارة
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setLoginType('company'); setError(''); setUsername(''); setPassword(''); }}
+                            style={{
+                                padding: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, border: 'none',
+                                background: loginType === 'company' ? 'var(--primary-color)' : 'transparent',
+                                color: loginType === 'company' ? 'white' : 'var(--text-secondary)',
+                                transition: 'all 0.2s', width: '100%'
+                            }}
+                        >
+                            <Building2 size={14} style={{ display: 'inline', marginInlineEnd: '4px' }} /> شركات
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setLoginType('branch'); setError(''); setUsername(''); setPassword(''); }}
+                            style={{
+                                padding: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, border: 'none',
+                                background: loginType === 'branch' ? 'var(--primary-color)' : 'transparent',
+                                color: loginType === 'branch' ? 'white' : 'var(--text-secondary)',
+                                transition: 'all 0.2s', width: '100%'
+                            }}
+                        >
+                            <Store size={14} style={{ display: 'inline', marginInlineEnd: '4px' }} /> فروع
+                        </button>
+                    </div>
+                )}
 
                 {error && (
                     <div style={{

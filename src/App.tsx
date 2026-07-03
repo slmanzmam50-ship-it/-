@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Splash from './components/Splash';
 import ClientMap from './pages/ClientMap';
@@ -16,6 +16,91 @@ import InstallPWA from './components/InstallPWA';
 function App() {
   const [showSplash, setShowSplash] = useState(true);
 
+  // Subdomain detection logic
+  const hostname = window.location.hostname;
+  let appMode: 'admin' | 'company' | 'branch' | 'public' = 'public';
+
+  if (hostname.startsWith('admin.')) {
+    appMode = 'admin';
+  } else if (hostname.startsWith('b2b.') || hostname.startsWith('company.')) {
+    appMode = 'company';
+  } else if (hostname.startsWith('branch.') || hostname.startsWith('workshop.')) {
+    appMode = 'branch';
+  } else {
+    // Local development fallback via query parameter (?appMode=admin|company|branch)
+    const urlParams = new URLSearchParams(window.location.search);
+    const modeParam = urlParams.get('appMode');
+    if (modeParam === 'admin') appMode = 'admin';
+    else if (modeParam === 'company') appMode = 'company';
+    else if (modeParam === 'branch') appMode = 'branch';
+  }
+
+  // Render routes depending on the subdomain appMode
+  const renderRoutes = () => {
+    switch (appMode) {
+      case 'admin':
+        return (
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route element={<ProtectedRoute />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="admin" element={<Navigate to="/" replace />} />
+                <Route path="admin/company-invoices/:companyId" element={<CompanyInvoices />} />
+              </Route>
+              <Route path="login" element={<Login />} />
+              {/* Fallback redirects for admin portal */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        );
+      
+      case 'company':
+        return (
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<CompanyDashboard />} />
+              <Route path="login" element={<Login />} />
+              <Route path="company" element={<Navigate to="/" replace />} />
+              {/* Fallback redirects for B2B portal */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        );
+
+      case 'branch':
+        return (
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<BranchPanel />} />
+              <Route path="login" element={<Login />} />
+              <Route path="branch" element={<Navigate to="/" replace />} />
+              {/* Fallback redirects for branch portal */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        );
+
+      case 'public':
+      default:
+        return (
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<ClientMap />} />
+              <Route path="login" element={<Login />} />
+              <Route path="company" element={<CompanyDashboard />} />
+              <Route path="branch" element={<BranchPanel />} />
+              <Route element={<ProtectedRoute />}>
+                <Route path="admin" element={<AdminDashboard />} />
+                <Route path="admin/company-invoices/:companyId" element={<CompanyInvoices />} />
+              </Route>
+              {/* General fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        );
+    }
+  };
+
   return (
     <BrowserRouter>
       <Toaster position="top-center" reverseOrder={false} />
@@ -23,18 +108,7 @@ function App() {
       {showSplash ? (
         <Splash onComplete={() => setShowSplash(false)} />
       ) : (
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<ClientMap />} />
-            <Route path="login" element={<Login />} />
-            <Route path="company" element={<CompanyDashboard />} />
-            <Route path="branch" element={<BranchPanel />} />
-            <Route element={<ProtectedRoute />}>
-              <Route path="admin" element={<AdminDashboard />} />
-              <Route path="admin/company-invoices/:companyId" element={<CompanyInvoices />} />
-            </Route>
-          </Route>
-        </Routes>
+        renderRoutes()
       )}
     </BrowserRouter>
   );
