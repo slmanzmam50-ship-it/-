@@ -25,7 +25,7 @@ const BranchPanel: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     // Tabs and history logs state
-    const [activeTab, setActiveTab] = useState<'today' | 'history'>('today');
+    const [activeTab, setActiveTab] = useState<'scan' | 'search' | 'today' | 'history'>('scan');
     const [historySearchQuery, setHistorySearchQuery] = useState('');
     const [historyStatusFilter, setHistoryStatusFilter] = useState<'all' | 'completed' | 'rejected' | 'transferred' | 'partial'>('all');
 
@@ -276,13 +276,185 @@ const BranchPanel: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Quick Action Category Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', marginBottom: '8px' }}>
+                    {/* 1. Scan QR Card */}
+                    <div 
+                        onClick={() => setActiveTab('scan')}
+                        className="glass hover-scale tap-effect"
+                        style={{
+                            padding: '20px',
+                            borderRadius: '16px',
+                            background: activeTab === 'scan' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%)' : 'var(--surface-color)',
+                            border: activeTab === 'scan' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '12px',
+                            textAlign: 'center',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: activeTab === 'scan' ? '0 10px 20px -5px rgba(59, 130, 246, 0.2)' : 'none'
+                        }}
+                    >
+                        <div style={{ background: activeTab === 'scan' ? 'var(--primary-color)' : 'rgba(59, 130, 246, 0.1)', color: activeTab === 'scan' ? 'white' : 'var(--primary-color)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <QrCode size={24} />
+                        </div>
+                        <div>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>مسح الرمز (QR)</h4>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>مسح سريع للطلب</span>
+                        </div>
+                    </div>
+
+                    {/* 2. Manual Search Card */}
+                    <div 
+                        onClick={() => setActiveTab('search')}
+                        className="glass hover-scale tap-effect"
+                        style={{
+                            padding: '20px',
+                            borderRadius: '16px',
+                            background: activeTab === 'search' ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%)' : 'var(--surface-color)',
+                            border: activeTab === 'search' ? '2px solid var(--accent-orange)' : '1px solid var(--border-color)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '12px',
+                            textAlign: 'center',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: activeTab === 'search' ? '0 10px 20px -5px rgba(245, 158, 11, 0.2)' : 'none'
+                        }}
+                    >
+                        <div style={{ background: activeTab === 'search' ? 'var(--accent-orange)' : 'rgba(245, 158, 11, 0.1)', color: activeTab === 'search' ? 'white' : 'var(--accent-orange)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <Search size={24} />
+                        </div>
+                        <div>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>البحث اليدوي</h4>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>رقم الطلب أو اللوحة</span>
+                        </div>
+                    </div>
+
+                    {/* 3. Today's Operations Card */}
+                    <div 
+                        onClick={() => setActiveTab('today')}
+                        className="glass hover-scale tap-effect"
+                        style={{
+                            padding: '20px',
+                            borderRadius: '16px',
+                            background: activeTab === 'today' ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%)' : 'var(--surface-color)',
+                            border: activeTab === 'today' ? '2px solid #8b5cf6' : '1px solid var(--border-color)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '12px',
+                            textAlign: 'center',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: activeTab === 'today' ? '0 10px 20px -5px rgba(139, 92, 246, 0.2)' : 'none'
+                        }}
+                    >
+                        <div style={{ background: activeTab === 'today' ? '#8b5cf6' : 'rgba(139, 92, 246, 0.1)', color: activeTab === 'today' ? 'white' : '#8b5cf6', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <CheckCircle size={24} />
+                        </div>
+                        <div>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>
+                                عمليات اليوم
+                                <span style={{ background: '#8b5cf6', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
+                                    {branchCompletedToday.length}
+                                </span>
+                            </h4>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>المركبات المنجزة اليوم</span>
+                        </div>
+                    </div>
+
+                    {/* 4. Operations History Card */}
+                    <div 
+                        onClick={() => setActiveTab('history')}
+                        className="glass hover-scale tap-effect"
+                        style={{
+                            padding: '20px',
+                            borderRadius: '16px',
+                            background: activeTab === 'history' ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%)' : 'var(--surface-color)',
+                            border: activeTab === 'history' ? '2px solid var(--success)' : '1px solid var(--border-color)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '12px',
+                            textAlign: 'center',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: activeTab === 'history' ? '0 10px 20px -5px rgba(16, 185, 129, 0.2)' : 'none'
+                        }}
+                    >
+                        <div style={{ background: activeTab === 'history' ? 'var(--success)' : 'rgba(16, 185, 129, 0.1)', color: activeTab === 'history' ? 'white' : 'var(--success)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <History size={24} />
+                        </div>
+                        <div>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>
+                                سجل العمليات
+                                <span style={{ background: 'var(--success)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
+                                    {branchAllProcessed.length}
+                                </span>
+                            </h4>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>الأرشيف الكامل للفروع</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Scan Tab Panel */}
+                <div className="glass animate-slide-up" style={{ 
+                    padding: '40px 32px', 
+                    borderRadius: '24px', 
+                    background: 'var(--surface-color)', 
+                    border: '1px solid var(--border-color)',
+                    textAlign: 'center',
+                    boxShadow: '0 10px 30px -10px rgba(59, 130, 246, 0.15)',
+                    display: activeTab === 'scan' ? 'flex' : 'none',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '20px'
+                }}>
+                    <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary-color)', width: '72px', height: '72px', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
+                        <QrCode size={36} />
+                    </div>
+                    <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 850, color: 'var(--text-primary)' }}>
+                        مسح رمز استلام الخدمة (QR Code)
+                    </h3>
+                    <p style={{ margin: '0 max(16px, 10%)', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                        قم بمسح رمز الاستجابة السريعة (QR Code) المعروض على هاتف السائق لاستلام الطلب والبدء في تقديم الخدمة فوراً.
+                    </p>
+                    <button
+                        onClick={() => setIsScannerOpen(true)}
+                        className="hover-scale tap-effect"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '16px 36px',
+                            borderRadius: '16px',
+                            fontWeight: 850,
+                            fontSize: '15.5px',
+                            cursor: 'pointer',
+                            transition: 'all 0.25s',
+                            boxShadow: '0 10px 24px rgba(59, 130, 246, 0.35)',
+                            marginTop: '12px'
+                        }}
+                    >
+                        <QrCode size={20} /> فتح الكاميرا للمسح التلقائي
+                    </button>
+                </div>
+
                 {/* Search Order Card */}
                 <div className="glass animate-slide-up" style={{ 
                     padding: '32px', 
                     borderRadius: '24px', 
                     background: 'var(--surface-color)', 
                     border: '1px solid var(--border-color)',
-                    boxShadow: '0 10px 30px -10px rgba(59, 130, 246, 0.15)'
+                    boxShadow: '0 10px 30px -10px rgba(59, 130, 246, 0.15)',
+                    display: activeTab === 'search' ? 'block' : 'none'
                 }}>
                     <h3 style={{ margin: '0 0 20px', fontSize: '1.35rem', fontWeight: 850, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
                         🔍 البحث عن طلب خدمة واستلامه
@@ -488,9 +660,9 @@ const BranchPanel: React.FC = () => {
                 </div>
 
                 {/* Unified Operations Log & History Card */}
-                <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: (activeTab === 'today' || activeTab === 'history') ? 'block' : 'none' }}>
                     {/* Tab Buttons */}
-                    <div style={{ display: 'flex', borderBottom: '2px solid var(--border-color)', marginBottom: '20px', gap: '20px' }}>
+                    <div style={{ display: 'none', borderBottom: '2px solid var(--border-color)', marginBottom: '20px', gap: '20px' }}>
                         <button
                             onClick={() => setActiveTab('today')}
                             style={{
