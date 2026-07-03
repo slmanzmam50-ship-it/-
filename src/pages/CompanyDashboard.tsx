@@ -433,6 +433,41 @@ const CompanyDashboard: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Submit Button (At the Top for easy access) */}
+                        <button 
+                            type="submit" 
+                            disabled={isSubmitting}
+                            style={{
+                                alignSelf: 'flex-start',
+                                background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '14px 28px',
+                                borderRadius: '14px',
+                                fontWeight: 800,
+                                fontSize: '14.5px',
+                                cursor: 'pointer',
+                                boxShadow: '0 8px 20px -4px rgba(59, 130, 246, 0.35)',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                width: '100%',
+                                justifyContent: 'center'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 12px 24px -4px rgba(59, 130, 246, 0.45)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 8px 20px -4px rgba(59, 130, 246, 0.35)';
+                            }}
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
+                            {isSubmitting ? 'جاري إنشاء الطلب...' : 'إرسال الطلب وإنشاء الرقم'}
+                        </button>
+
                         {/* Branch Selector Chip Grid */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
@@ -625,37 +660,7 @@ const CompanyDashboard: React.FC = () => {
                             </span>
                         </div>
 
-                        <button 
-                            type="submit" 
-                            disabled={isSubmitting}
-                            style={{
-                                alignSelf: 'flex-start',
-                                background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
-                                color: 'white',
-                                border: 'none',
-                                padding: '14px 28px',
-                                borderRadius: '14px',
-                                fontWeight: 800,
-                                fontSize: '14.5px',
-                                cursor: 'pointer',
-                                boxShadow: '0 8px 20px -4px rgba(59, 130, 246, 0.35)',
-                                transition: 'all 0.2s',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 12px 24px -4px rgba(59, 130, 246, 0.45)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 8px 20px -4px rgba(59, 130, 246, 0.35)';
-                            }}
-                        >
-                            {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
-                            {isSubmitting ? 'جاري إنشاء الطلب...' : 'إرسال الطلب وإنشاء الرقم'}
-                        </button>
+
                     </form>
                 </div>
 
