@@ -125,7 +125,7 @@ const Login: React.FC = () => {
                 <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>بوابة تسجيل الدخول</h2>
 
                 {/* Tabs */}
-                {mode === 'public' && (
+                {mode === 'public' && !typeParam && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '20px', background: 'var(--bg-color)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                         <button
                             type="button"
