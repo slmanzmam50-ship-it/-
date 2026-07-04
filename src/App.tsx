@@ -13,6 +13,19 @@ import { Toaster } from 'react-hot-toast';
 
 import InstallPWA from './components/InstallPWA';
 
+const PublicIndex = () => {
+  if (sessionStorage.getItem('isAuthenticated') === 'true') {
+    return <Navigate to="/admin" replace />;
+  }
+  if (sessionStorage.getItem('logged_company_id')) {
+    return <Navigate to="/company" replace />;
+  }
+  if (sessionStorage.getItem('logged_branch_id')) {
+    return <Navigate to="/branch" replace />;
+  }
+  return <ClientMap />;
+};
+
 function App() {
   const [showSplash, setShowSplash] = useState(() => {
     return !window.location.pathname.includes('/map');
@@ -121,7 +134,7 @@ function App() {
         return (
           <Routes>
             <Route path="/" element={<Layout />}>
-              <Route index element={<ClientMap />} />
+              <Route index element={<PublicIndex />} />
               <Route path="login" element={<Login />} />
               <Route path="company" element={<CompanyDashboard />} />
               <Route path="branch" element={<BranchPanel />} />

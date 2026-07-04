@@ -70,7 +70,15 @@ const Header: React.FC = () => {
 
     const handleLogoClick = (e: React.MouseEvent) => {
         e.preventDefault();
-        navigate('/');
+        if (sessionStorage.getItem('isAuthenticated') === 'true') {
+            navigate('/admin');
+        } else if (sessionStorage.getItem('logged_company_id')) {
+            navigate('/company');
+        } else if (sessionStorage.getItem('logged_branch_id')) {
+            navigate('/branch');
+        } else {
+            navigate('/');
+        }
     };
 
     const getMapLink = () => {
