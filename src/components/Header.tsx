@@ -73,6 +73,16 @@ const Header: React.FC = () => {
         navigate('/');
     };
 
+    const getMapLink = () => {
+        if (sessionStorage.getItem('isAuthenticated') === 'true') {
+            return '/map?type=admin';
+        }
+        if (sessionStorage.getItem('logged_company_id')) {
+            return '/map?type=company';
+        }
+        return '/map';
+    };
+
     return (
         <>
             <header className="glass app-header">
@@ -114,7 +124,7 @@ const Header: React.FC = () => {
                     </button>
 
                     {location.pathname !== '/map' && (
-                        <Link to="/map" className="header-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700 }}>
+                        <Link to={getMapLink()} className="header-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700 }}>
                             <Map size={18} /> {isAr ? 'الخريطة' : 'Map'}
                         </Link>
                     )}

@@ -399,11 +399,7 @@ const ClientMap: React.FC = () => {
     const activeRequest = driverRequestId ? requests.find(r => r.id.trim().toLowerCase() === driverRequestId.trim().toLowerCase()) : null;
 
     const typeParam = searchParams.get('type');
-    const isCompanyOrAdmin = 
-        typeParam === 'company' || 
-        typeParam === 'admin' ||
-        sessionStorage.getItem('logged_company_id') !== null || 
-        sessionStorage.getItem('isAuthenticated') === 'true';
+    const isCompanyOrAdmin = typeParam === 'company' || typeParam === 'admin';
 
     // Auto-locate driver for smart routing if request parameter exists
     useEffect(() => {

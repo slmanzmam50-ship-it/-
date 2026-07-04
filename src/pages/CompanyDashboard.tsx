@@ -542,7 +542,7 @@ const CompanyDashboard: React.FC = () => {
                                     )}
                                 </div>
                                 <a 
-                                    href="/map" 
+                                    href="/map?type=company" 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     style={{
