@@ -231,7 +231,7 @@ const CompanyDashboard: React.FC = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* Quick Actions / Categories Navigation Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '8px' }} className="animate-fade-in">
+                <div className="company-actions-grid animate-fade-in">
                     {/* 1. Create Request */}
                     <div 
                         onClick={() => setActiveTab('create')}

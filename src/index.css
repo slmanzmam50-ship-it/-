@@ -822,3 +822,43 @@ button {
 @media (min-width: 641px) {
   .desktop-hide { display: none !important; }
 }
+
+/* B2B Dashboard Icons Grid Mobile Improvements */
+.company-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 600px) {
+  .company-actions-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .company-actions-grid > div {
+    padding: 14px 10px !important;
+    gap: 8px !important;
+  }
+  .company-actions-grid h4 {
+    font-size: 13px !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .company-actions-grid span {
+    display: none !important; /* Hide description on mobile to keep it like icon grids */
+  }
+  .company-actions-grid svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .company-actions-grid div[style*="width: 48px"] {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+  }
+}
