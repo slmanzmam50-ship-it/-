@@ -123,12 +123,12 @@ const Header: React.FC = () => {
                         <Share2 size={20} />
                     </button>
 
-                    {location.pathname !== '/map' && (
+                    {location.pathname !== '/map' && location.pathname !== '/' && (
                         <Link to={getMapLink()} className="header-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700 }}>
                             <Map size={18} /> {isAr ? 'الخريطة' : 'Map'}
                         </Link>
                     )}
-                    {location.pathname === '/map' && (
+                    {(location.pathname === '/map' || location.pathname === '/') && (
                         (() => {
                             const searchParams = new URLSearchParams(location.search);
                             const typeParam = searchParams.get('type');
