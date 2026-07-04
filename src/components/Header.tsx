@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Map, Sun, Moon, Share2, Building2, Store, Sliders, X } from 'lucide-react';
+import { LogOut, Map, Sun, Moon, Share2, Building2, Store, Sliders, X, ArrowLeft, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Header: React.FC = () => {
@@ -127,6 +127,30 @@ const Header: React.FC = () => {
                         <Link to={getMapLink()} className="header-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--text-primary)', fontWeight: 700 }}>
                             <Map size={18} /> {isAr ? 'الخريطة' : 'Map'}
                         </Link>
+                    )}
+                    {location.pathname === '/map' && (
+                        (() => {
+                            let backUrl = '';
+                            let label = '';
+                            if (sessionStorage.getItem('isAuthenticated') === 'true') {
+                                backUrl = '/admin';
+                                label = isAr ? 'لوحة الإدارة' : 'Admin Panel';
+                            } else if (sessionStorage.getItem('logged_company_id')) {
+                                backUrl = '/company';
+                                label = isAr ? 'لوحة التحكم' : 'Dashboard';
+                            } else if (sessionStorage.getItem('logged_branch_id')) {
+                                backUrl = '/branch';
+                                label = isAr ? 'بوابة الفروع' : 'Branch Panel';
+                            }
+
+                            if (!backUrl) return null;
+
+                            return (
+                                <Link to={backUrl} className="header-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--primary-color)', fontWeight: 800 }}>
+                                    {isAr ? <ArrowRight size={18} /> : <ArrowLeft size={18} />} {label}
+                                </Link>
+                            );
+                        })()
                     )}
                     {(sessionStorage.getItem('isAuthenticated') === 'true' || 
                       sessionStorage.getItem('logged_company_id') || 
