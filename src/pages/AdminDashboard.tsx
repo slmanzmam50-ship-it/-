@@ -1858,6 +1858,106 @@ const AdminDashboard: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Card 3: Link sharing dashboard */}
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
+                            🔗 روابط البوابات والأقسام الرسمية للمشاركة
+                        </h3>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '0 0 20px' }}>
+                            انسخ وشارك روابط تسجيل الدخول المباشرة لأي قسم مع المدراء، الشركات، الفروع، أو السائقين بنقرة واحدة:
+                        </p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                            {/* B2B Companies */}
+                            <div style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    💼 بوابة الشركات والمؤسسات (B2B)
+                                </h4>
+                                <input 
+                                    type="text" 
+                                    readOnly 
+                                    value={`${window.location.origin}/login?type=company`} 
+                                    style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-secondary)', fontSize: '12px', fontFamily: 'monospace', width: '100%', outline: 'none' }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}/login?type=company`);
+                                        toast.success("تم نسخ رابط بوابة الشركات! 💼");
+                                    }}
+                                    style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                    نسخ الرابط
+                                </button>
+                            </div>
+
+                            {/* Branches */}
+                            <div style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    🛠️ بوابة مسؤولي الفروع والورش
+                                </h4>
+                                <input 
+                                    type="text" 
+                                    readOnly 
+                                    value={`${window.location.origin}/login?type=branch`} 
+                                    style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-secondary)', fontSize: '12px', fontFamily: 'monospace', width: '100%', outline: 'none' }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}/login?type=branch`);
+                                        toast.success("تم نسخ رابط بوابة الفروع! 🛠️");
+                                    }}
+                                    style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                    نسخ الرابط
+                                </button>
+                            </div>
+
+                            {/* Drivers / Workers */}
+                            <div style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    📍 رابط السائقين والعمال (الخريطة)
+                                </h4>
+                                <input 
+                                    type="text" 
+                                    readOnly 
+                                    value={`${window.location.origin}/`} 
+                                    style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-secondary)', fontSize: '12px', fontFamily: 'monospace', width: '100%', outline: 'none' }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}/`);
+                                        toast.success("تم نسخ رابط الخريطة العامة! 📍");
+                                    }}
+                                    style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                    نسخ الرابط
+                                </button>
+                            </div>
+
+                            {/* Admin */}
+                            <div style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    ⚙️ رابط لوحة الإدارة والتحكم (Admin)
+                                </h4>
+                                <input 
+                                    type="text" 
+                                    readOnly 
+                                    value={`${window.location.origin}/login?type=admin`} 
+                                    style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-secondary)', fontSize: '12px', fontFamily: 'monospace', width: '100%', outline: 'none' }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}/login?type=admin`);
+                                        toast.success("تم نسخ رابط لوحة الإدارة! ⚙️");
+                                    }}
+                                    style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                    نسخ الرابط
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
             {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} />}
