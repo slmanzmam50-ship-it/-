@@ -296,7 +296,7 @@ export const subscribeToServiceRequests = (callback: (requests: ServiceRequest[]
 };
 
 export const addServiceRequest = async (request: Omit<ServiceRequest, 'id' | 'status' | 'createdAt'>): Promise<ServiceRequest> => {
-    const id = 'RQ-' + Math.floor(1000 + Math.random() * 9000);
+    const id = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit numeric-only code (e.g., 582491)
     const newRequest: ServiceRequest = {
         ...request,
         id,
