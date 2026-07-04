@@ -365,3 +365,20 @@ export const addServiceRequestRating = async (
     });
 };
 
+export const clearServiceRequestRatings = async (requestIds: string[]): Promise<void> => {
+    const batchPromises = requestIds.map(async (id) => {
+        const docRef = doc(db, REQUESTS_COLLECTION, id);
+        await updateDoc(docRef, {
+            rating: null,
+            ratingComment: null,
+            ratedAt: null
+        });
+    });
+    await Promise.all(batchPromises);
+};
+
+export const deleteServiceRequestsByIds = async (ids: string[]): Promise<void> => {
+    const batchPromises = ids.map(id => deleteDoc(doc(db, REQUESTS_COLLECTION, id)));
+    await Promise.all(batchPromises);
+};
+

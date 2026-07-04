@@ -14,11 +14,13 @@ import {
     addCompany,
     deleteCompany,
     subscribeToServiceRequests,
-    addServiceRequest
+    addServiceRequest,
+    clearServiceRequestRatings,
+    deleteServiceRequestsByIds
 } from '../services/storage';
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
 
@@ -33,7 +35,7 @@ const AdminDashboard: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
-    const [activeTab, setActiveTab] = useState<'branches' | 'categories' | 'companies' | 'requests'>('branches');
+    const [activeTab, setActiveTab] = useState<'branches' | 'categories' | 'companies' | 'requests' | 'settings'>('branches');
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [categoryEditName, setCategoryEditName] = useState('');
     const [newCategoryImageUrl, setNewCategoryImageUrl] = useState('');
@@ -42,6 +44,12 @@ const AdminDashboard: React.FC = () => {
     const [categoryEditFile, setCategoryEditFile] = useState<File | null>(null);
     const [lang, setLang] = useState<'ar' | 'en'>(() => (localStorage.getItem('lang') as 'ar' | 'en') || 'ar');
     const [isBatchFetching, setIsBatchFetching] = useState(false);
+
+    // Settings tab states for data deletion and MS Word exports
+    const [ratingsDownloaded, setRatingsDownloaded] = useState(false);
+    const [requestsDownloaded, setRequestsDownloaded] = useState(false);
+    const [isClearingRatings, setIsClearingRatings] = useState(false);
+    const [isClearingRequests, setIsClearingRequests] = useState(false);
 
     // New corporate/request states
     const [companies, setCompanies] = useState<CompanyAccount[]>([]);
@@ -428,6 +436,211 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
+    const handleExportRatingsDoc = () => {
+        const ratedReqs = requests.filter(r => r.rating);
+        if (ratedReqs.length === 0) {
+            toast.error("لا توجد تقييمات لتصديرها حالياً.");
+            return;
+        }
+        
+        let htmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>تقرير التقييمات الشهري</title>
+        <style>
+            body { font-family: 'Arial', sans-serif; direction: rtl; text-align: right; }
+            h1 { text-align: center; color: #1e293b; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: right; }
+            th { background-color: #0f172a; color: white; }
+        </style>
+        </head>
+        <body>
+        <h1>مراكز خدمة سلمان زمام الخالدي</h1>
+        <h2>تقرير تقييمات العملاء والسائقين الشهري - تاريخ التصدير: ${new Date().toLocaleDateString('ar-SA')}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>رقم الطلب</th>
+                    <th>الشركة</th>
+                    <th>رقم اللوحة</th>
+                    <th>الفرع المنفذ</th>
+                    <th>التقييم</th>
+                    <th>تعليق السائق</th>
+                    <th>تاريخ التقييم</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        ratedReqs.forEach(r => {
+            htmlContent += `
+                <tr>
+                    <td>${r.id}</td>
+                    <td>${r.companyName}</td>
+                    <td>${r.plateNumber}</td>
+                    <td>${r.branchName || '-'}</td>
+                    <td>${'★'.repeat(r.rating || 0)}${'☆'.repeat(5 - (r.rating || 0))}</td>
+                    <td>${r.ratingComment || '-'}</td>
+                    <td>${r.ratedAt ? new Date(r.ratedAt).toLocaleDateString('ar-SA') : '-'}</td>
+                </tr>
+            `;
+        });
+        
+        htmlContent += `
+            </tbody>
+        </table>
+        </body>
+        </html>
+        `;
+        
+        const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `تقييمات_العملاء_${new Date().getMonth() + 1}_${new Date().getFullYear()}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setRatingsDownloaded(true);
+        toast.success("✅ تم تصدير ملف الوورد بنجاح! تم تفعيل زر الحذف الآن.");
+    };
+
+    const handleClearRatingsDb = async () => {
+        if (!ratingsDownloaded) {
+            toast.error("⚠️ يرجى تنزيل ملف الوورد وحفظ نسخة احتياطية أولاً قبل تأكيد الحذف!");
+            return;
+        }
+        const ratedReqs = requests.filter(r => r.rating);
+        if (ratedReqs.length === 0) {
+            toast.error("لا توجد تقييمات لحذفها.");
+            return;
+        }
+        
+        if (!window.confirm(`هل أنت متأكد من حذف وإفراغ جميع التقييمات الحالية (${ratedReqs.length} تقييم)؟ لن تتمكن من التراجع عن هذه الخطوة!`)) {
+            return;
+        }
+        
+        setIsClearingRatings(true);
+        try {
+            await clearServiceRequestRatings(ratedReqs.map(r => r.id));
+            toast.success("✅ تم حذف وإفراغ جميع التقييمات في قاعدة البيانات بنجاح!");
+            setRatingsDownloaded(false);
+        } catch (error) {
+            console.error(error);
+            toast.error("حدث خطأ أثناء حذف التقييمات.");
+        } finally {
+            setIsClearingRatings(false);
+        }
+    };
+
+    const getOldRequestsCount = () => {
+        const sixMonthsAgo = Date.now() - (6 * 30 * 24 * 60 * 60 * 1000);
+        return requests.filter(r => r.createdAt < sixMonthsAgo).length;
+    };
+
+    const handleExportOldRequestsDoc = () => {
+        const sixMonthsAgo = Date.now() - (6 * 30 * 24 * 60 * 60 * 1000);
+        const oldReqs = requests.filter(r => r.createdAt < sixMonthsAgo);
+        
+        if (oldReqs.length === 0) {
+            toast.error("لا توجد طلبات قديمة (أكبر من 6 أشهر) لتصديرها.");
+            return;
+        }
+        
+        let htmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>أرشيف الطلبات الدوري</title>
+        <style>
+            body { font-family: 'Arial', sans-serif; direction: rtl; text-align: right; }
+            h1 { text-align: center; color: #1e293b; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: right; font-size: 12px; }
+            th { background-color: #0f172a; color: white; }
+        </style>
+        </head>
+        <body>
+        <h1>مراكز خدمة سلمان زمام الخالدي</h1>
+        <h2>أرشيف طلبات صيانة الشركات (كل 6 أشهر) - تاريخ الأرشفة: ${new Date().toLocaleDateString('ar-SA')}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>رقم الطلب</th>
+                    <th>الشركة</th>
+                    <th>رقم اللوحة</th>
+                    <th>الخدمة المطلوبة</th>
+                    <th>الفرع المنفذ</th>
+                    <th>الحالة</th>
+                    <th>تاريخ الإنشاء</th>
+                    <th>تاريخ التنفيذ</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        oldReqs.forEach(r => {
+            htmlContent += `
+                <tr>
+                    <td>${r.id}</td>
+                    <td>${r.companyName}</td>
+                    <td>${r.plateNumber}</td>
+                    <td>${r.serviceDescription}</td>
+                    <td>${r.branchName || '-'}</td>
+                    <td>${r.status === 'completed' ? 'منفذ' : r.status === 'rejected' ? 'مرفوض' : r.status}</td>
+                    <td>${new Date(r.createdAt).toLocaleDateString('ar-SA')}</td>
+                    <td>${r.completedAt ? new Date(r.completedAt).toLocaleDateString('ar-SA') : '-'}</td>
+                </tr>
+            `;
+        });
+        
+        htmlContent += `
+            </tbody>
+        </table>
+        </body>
+        </html>
+        `;
+        
+        const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `أرشيف_طلبات_الشركات_${new Date().toLocaleDateString('ar-SA')}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setRequestsDownloaded(true);
+        toast.success("✅ تم تصدير أرشيف الطلبات الدوري بنجاح! تم تفعيل زر الحذف الآن.");
+    };
+
+    const handleClearOldRequestsDb = async () => {
+        if (!requestsDownloaded) {
+            toast.error("⚠️ يرجى تنزيل ملف الوورد وحفظ نسخة احتياطية أولاً قبل تأكيد الحذف!");
+            return;
+        }
+        const sixMonthsAgo = Date.now() - (6 * 30 * 24 * 60 * 60 * 1000);
+        const oldReqs = requests.filter(r => r.createdAt < sixMonthsAgo);
+        
+        if (oldReqs.length === 0) {
+            toast.error("لا توجد طلبات قديمة لحذفها.");
+            return;
+        }
+        
+        if (!window.confirm(`هل أنت متأكد من حذف وإفراغ جميع الطلبات القديمة (${oldReqs.length} طلب) بشكل نهائي؟ لن تتمكن من استرجاعها!`)) {
+            return;
+        }
+        
+        setIsClearingRequests(true);
+        try {
+            await deleteServiceRequestsByIds(oldReqs.map(r => r.id));
+            toast.success("✅ تم حذف جميع الطلبات التاريخية القديمة بنجاح من قاعدة البيانات!");
+            setRequestsDownloaded(false);
+        } catch (error) {
+            console.error(error);
+            toast.error("حدث خطأ أثناء تصفية الطلبات القديمة.");
+        } finally {
+            setIsClearingRequests(false);
+        }
+    };
+
     return (
         <div className="admin-container">
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
@@ -498,6 +711,23 @@ const AdminDashboard: React.FC = () => {
                     }}
                 >
                     سجل الطلبات
+                </button>
+                <button 
+                    onClick={() => setActiveTab('settings')} 
+                    className="tab-button"
+                    style={{ 
+                        padding: '0.75rem 1.5rem', 
+                        borderRadius: '12px', 
+                        border: 'none', 
+                        background: activeTab === 'settings' ? 'var(--primary-color)' : 'var(--bg-color)', 
+                        color: activeTab === 'settings' ? 'white' : 'var(--text-secondary)', 
+                        cursor: 'pointer', 
+                        fontWeight: 700,
+                        flex: activeTab === 'settings' ? 1.2 : 1,
+                        transition: 'all 0.3s ease'
+                    }}
+                >
+                    الإعدادات
                 </button>
             </div>
 
@@ -1489,6 +1719,145 @@ const AdminDashboard: React.FC = () => {
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {activeTab === 'settings' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
+                            <Settings size={22} /> إعدادات صيانة وتصفية البيانات
+                        </h2>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '0 0 24px' }}>
+                            أدوات مخصصة لتنظيف قاعدة البيانات بشكل دوري والحفاظ عليها من التراكم، مع نظام تأمين صارم يفرض حفظ نسخة احتياطية أولاً قبل تصفية أي سجلات.
+                        </p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', flexWrap: 'wrap' }}>
+                            {/* Card 1: Ratings cleanup (Monthly) */}
+                            <div style={{ padding: '20px', background: 'var(--bg-color)', borderRadius: '14px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)' }}>
+                                    ⭐ تصفية تقييمات العملاء الدورية (شهري)
+                                </h3>
+                                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.5' }}>
+                                    تقوم هذه العملية بحذف كافة النجوم والتعليقات الخاصة بالسائقين من السجل، لتقليل حجم البيانات وحماية الخصوصية. يتطلب النظام حفظها في ملف Word مسبقاً.
+                                </p>
+                                <div style={{ background: 'rgba(245, 158, 11, 0.05)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.15)', fontSize: '13px' }}>
+                                    📊 عدد التقييمات المخزنة حالياً: <strong>{requests.filter(r => r.rating).length} تقييم</strong>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
+                                    <button
+                                        onClick={handleExportRatingsDoc}
+                                        style={{
+                                            flex: 1,
+                                            background: 'var(--primary-color)',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '10px',
+                                            borderRadius: '8px',
+                                            fontWeight: 700,
+                                            fontSize: '12.5px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '6px'
+                                        }}
+                                    >
+                                        <FileDown size={15} /> 1. تصدير ملف Word
+                                    </button>
+                                    <button
+                                        onClick={handleClearRatingsDb}
+                                        disabled={!ratingsDownloaded || isClearingRatings}
+                                        style={{
+                                            flex: 1,
+                                            background: ratingsDownloaded ? 'var(--error)' : 'rgba(239, 68, 68, 0.15)',
+                                            color: ratingsDownloaded ? 'white' : 'var(--error)',
+                                            border: '1px solid ' + (ratingsDownloaded ? 'transparent' : 'rgba(239, 68, 68, 0.25)'),
+                                            padding: '10px',
+                                            borderRadius: '8px',
+                                            fontWeight: 700,
+                                            fontSize: '12.5px',
+                                            cursor: ratingsDownloaded ? 'pointer' : 'not-allowed',
+                                            opacity: isClearingRatings ? 0.7 : 1,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '6px'
+                                        }}
+                                    >
+                                        {isClearingRatings ? <Loader2 className="animate-spin" size={15} /> : <Trash2 size={15} />} 2. حذف نهائي
+                                    </button>
+                                </div>
+                                {!ratingsDownloaded && (
+                                    <span style={{ fontSize: '11px', color: 'var(--accent-orange)', fontWeight: 700 }}>
+                                        * يجب تصدير التقييمات وحفظها بملف Word لتفعيل زر الحذف النهائي.
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Card 2: Service requests cleanup (6 Months) */}
+                            <div style={{ padding: '20px', background: 'var(--bg-color)', borderRadius: '14px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)' }}>
+                                    📅 تصفية وحذف الطلبات القديمة (كل 6 أشهر)
+                                </h3>
+                                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.5' }}>
+                                    حذف وتصفية كافة طلبات صيانة السيارات القديمة الصادرة من الشركات المتعاقدة والتي تجاوز عمرها 6 أشهر بالكامل. يتطلب تنزيل وحفظ نسخة إكسل/وورد أولاً.
+                                </p>
+                                <div style={{ background: 'rgba(245, 158, 11, 0.05)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.15)', fontSize: '13px' }}>
+                                    📊 عدد الطلبات التاريخية (الأقدم من 6 أشهر): <strong>{getOldRequestsCount()} طلب</strong>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
+                                    <button
+                                        onClick={handleExportOldRequestsDoc}
+                                        style={{
+                                            flex: 1,
+                                            background: 'var(--primary-color)',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '10px',
+                                            borderRadius: '8px',
+                                            fontWeight: 700,
+                                            fontSize: '12.5px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '6px'
+                                        }}
+                                    >
+                                        <FileDown size={15} /> 1. تصدير الأرشيف (.doc)
+                                    </button>
+                                    <button
+                                        onClick={handleClearOldRequestsDb}
+                                        disabled={!requestsDownloaded || isClearingRequests}
+                                        style={{
+                                            flex: 1,
+                                            background: requestsDownloaded ? 'var(--error)' : 'rgba(239, 68, 68, 0.15)',
+                                            color: requestsDownloaded ? 'white' : 'var(--error)',
+                                            border: '1px solid ' + (requestsDownloaded ? 'transparent' : 'rgba(239, 68, 68, 0.25)'),
+                                            padding: '10px',
+                                            borderRadius: '8px',
+                                            fontWeight: 700,
+                                            fontSize: '12.5px',
+                                            cursor: requestsDownloaded ? 'pointer' : 'not-allowed',
+                                            opacity: isClearingRequests ? 0.7 : 1,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '6px'
+                                        }}
+                                    >
+                                        {isClearingRequests ? <Loader2 className="animate-spin" size={15} /> : <Trash2 size={15} />} 2. حذف نهائي
+                                    </button>
+                                </div>
+                                {!requestsDownloaded && (
+                                    <span style={{ fontSize: '11px', color: 'var(--accent-orange)', fontWeight: 700 }}>
+                                        * يجب تصدير الطلبات التاريخية وتنزيلها أولاً لتفعيل خيار الحذف الآمن.
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
             {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} />}
