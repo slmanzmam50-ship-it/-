@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest, subscribeToBranches, updateServiceRequestBranch } from '../services/storage';
 import type { CompanyAccount, ServiceRequest, Branch } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame } from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
@@ -35,6 +35,12 @@ const CompanyDashboard: React.FC = () => {
     // QR Code modal state
     const [selectedQrRequest, setSelectedQrRequest] = useState<ServiceRequest | null>(null);
     const [modalQrUrl, setModalQrUrl] = useState<string>('');
+
+    const handleCopyShareLink = (request: ServiceRequest) => {
+        const shareUrl = `${window.location.origin}/map?request=${request.id}`;
+        navigator.clipboard.writeText(shareUrl);
+        toast.success(`تم نسخ رابط التوجيه للطلب ${request.id}! 🔗`);
+    };
 
     // Re-route Modal state
     const [reRouteRequest, setReRouteRequest] = useState<ServiceRequest | null>(null);
@@ -730,6 +736,24 @@ const CompanyDashboard: React.FC = () => {
                                                     }}
                                                 >
                                                     <RefreshCw size={18} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleCopyShareLink(r)}
+                                                    title="نسخ رابط التوجيه الخرائطي للسائق"
+                                                    style={{
+                                                        background: 'rgba(245, 158, 11, 0.1)',
+                                                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                                                        borderRadius: '8px',
+                                                        padding: '8px',
+                                                        color: 'var(--accent-orange)',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <Link2 size={18} />
                                                 </button>
                                                 <button 
                                                     onClick={() => setSelectedQrRequest(r)}

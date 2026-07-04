@@ -54,6 +54,9 @@ export interface ServiceRequest {
     targetBranchIds: string[]; // Specific branch IDs, or ['all']
     rejectionReason?: string;
     remainingServices?: string;
+    rating?: number;
+    ratingComment?: string;
+    ratedAt?: number;
 }
 
 export interface CompanyAccount {

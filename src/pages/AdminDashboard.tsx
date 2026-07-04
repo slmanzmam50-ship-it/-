@@ -1025,6 +1025,7 @@ const AdminDashboard: React.FC = () => {
                                     <th>تاريخ الإنشاء</th>
                                     <th>تاريخ التنفيذ</th>
                                     <th>الفرع المنفذ</th>
+                                    <th>التقييم</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1095,6 +1096,26 @@ const AdminDashboard: React.FC = () => {
                                                 {r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : '-'}
                                             </td>
                                             <td style={{ fontWeight: 700, fontSize: '13px' }}>{r.branchName || '-'}</td>
+                                            <td>
+                                                {r.rating ? (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                                        <div style={{ display: 'flex', gap: '2px', color: '#eab308' }}>
+                                                            {[1, 2, 3, 4, 5].map(star => (
+                                                                <span key={star} style={{ fontSize: '14px' }}>
+                                                                    {star <= r.rating! ? '★' : '☆'}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        {r.ratingComment && (
+                                                            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.ratingComment}>
+                                                                {r.ratingComment}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>-</span>
+                                                )}
+                                            </td>
                                         </tr>
                                     ));
                                 })()}

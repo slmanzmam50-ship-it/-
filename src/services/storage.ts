@@ -352,3 +352,16 @@ export const updateServiceRequestBranch = async (
     });
 };
 
+export const addServiceRequestRating = async (
+    requestId: string,
+    rating: number,
+    ratingComment: string
+): Promise<void> => {
+    const reqRef = doc(db, REQUESTS_COLLECTION, requestId);
+    await updateDoc(reqRef, {
+        rating,
+        ratingComment,
+        ratedAt: Date.now()
+    });
+};
+

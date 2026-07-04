@@ -4,10 +4,10 @@ import { useSearchParams } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Language } from '../services/translations';
-import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories, subscribeToServiceRequests } from '../services/storage';
+import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories, subscribeToServiceRequests, addServiceRequestRating } from '../services/storage';
 import { translations } from '../services/translations';
 import type { Branch, Category, ServiceRequest } from '../types';
-import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc } from 'lucide-react';
+import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc, Star, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LocationLoader from '../components/LocationLoader';
 
@@ -364,6 +364,13 @@ const ClientMap: React.FC = () => {
     const prevMapZoomRef = useRef<number>(5);
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+    const [showRatingModal, setShowRatingModal] = useState(false);
+    const [ratingValue, setRatingValue] = useState(5);
+    const [ratingComment, setRatingComment] = useState('');
+    const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+
+
+
     const t = translations[lang];
 
     // #3 - CustomEvent-based language switching (replaces setInterval)
@@ -400,6 +407,35 @@ const ClientMap: React.FC = () => {
 
     const typeParam = searchParams.get('type');
     const isCompanyOrAdmin = typeParam === 'company' || typeParam === 'admin';
+
+    // Watch for completed requests to prompt for feedback/rating
+    useEffect(() => {
+        if (activeRequest && (activeRequest.status === 'completed' || activeRequest.status === 'partial')) {
+            const alreadyRated = localStorage.getItem(`rated_${activeRequest.id}`);
+            if (!alreadyRated && !activeRequest.rating) {
+                setShowRatingModal(true);
+            }
+        }
+    }, [activeRequest?.status, activeRequest?.id]);
+
+    const handleSubmitRating = async () => {
+        if (!activeRequest) return;
+        setIsSubmittingRating(true);
+        try {
+            await addServiceRequestRating(activeRequest.id, ratingValue, ratingComment);
+            localStorage.setItem(`rated_${activeRequest.id}`, 'true');
+            toast.success(lang === 'ar' ? 'شكراً لتقييمك! آرائكم تساعدنا على تقديم الأفضل دائماً. ✅' : 'Thank you for your rating! Your feedback helps us improve. ✅');
+            setShowRatingModal(false);
+            setRatingComment('');
+            setRatingValue(5);
+            setDriverRequestId(''); // Clear active request ID to return to clean map
+        } catch (error) {
+            console.error("Error submitting rating:", error);
+            toast.error(lang === 'ar' ? 'حدث خطأ أثناء إرسال التقييم. حاول مرة أخرى.' : 'Error submitting rating. Try again.');
+        } finally {
+            setIsSubmittingRating(false);
+        }
+    };
 
     // Auto-locate driver for smart routing if request parameter exists
     useEffect(() => {
@@ -1530,6 +1566,155 @@ const ClientMap: React.FC = () => {
             )}
 
             <LocationLoader isActive={isLocatingLoc} lang={lang} />
+
+            {/* Driver Feedback Rating Modal */}
+            {showRatingModal && activeRequest && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 99999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px',
+                    boxSizing: 'border-box'
+                }}>
+                    <div className="glass" style={{
+                        width: '100%',
+                        maxWidth: '440px',
+                        background: 'linear-gradient(135deg, var(--navy-surface) 0%, #1e293b 100%)',
+                        border: '1.5px solid rgba(245, 158, 11, 0.4)',
+                        borderRadius: '20px',
+                        padding: '28px 24px',
+                        color: 'white',
+                        textAlign: 'center',
+                        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+                        animation: 'fadeIn 0.3s ease',
+                        position: 'relative'
+                    }}>
+                        <button 
+                            onClick={() => {
+                                localStorage.setItem(`rated_${activeRequest.id}`, 'skip');
+                                setShowRatingModal(false);
+                            }}
+                            style={{
+                                position: 'absolute',
+                                top: '16px',
+                                left: '16px',
+                                background: 'rgba(255,255,255,0.06)',
+                                border: 'none',
+                                color: '#94a3b8',
+                                borderRadius: '50%',
+                                width: '28px',
+                                height: '28px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <X size={14} />
+                        </button>
+
+                        <div style={{ background: 'rgba(245, 158, 11, 0.1)', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                            <Star size={32} color="var(--accent-orange)" fill="var(--accent-orange)" />
+                        </div>
+
+                        <h3 style={{ margin: '0 0 8px', fontSize: '1.3rem', fontWeight: 800 }}>
+                            {lang === 'ar' ? 'تم إنجاز طلبك بنجاح! 🎉' : 'Request Completed! 🎉'}
+                        </h3>
+                        <p style={{ fontSize: '13.5px', color: '#94a3b8', margin: '0 0 20px', lineHeight: '1.5' }}>
+                            {lang === 'ar' 
+                                ? `تم تقديم الخدمة لسيارتك (اللوحة: ${activeRequest.plateNumber}) بنجاح. يرجى تقييم مستوى رضاك عن الخدمة في الفروع:`
+                                : `Service completed successfully for plate ${activeRequest.plateNumber}. Please rate your experience:`}
+                        </p>
+
+                        {/* Interactive Stars */}
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
+                            {[1, 2, 3, 4, 5].map((val) => (
+                                <button
+                                    key={val}
+                                    onClick={() => setRatingValue(val)}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        padding: '4px',
+                                        transition: 'transform 0.15s ease'
+                                    }}
+                                    className="hover-scale"
+                                >
+                                    <Star 
+                                        size={36} 
+                                        color={val <= ratingValue ? '#eab308' : '#475569'} 
+                                        fill={val <= ratingValue ? '#eab308' : 'transparent'} 
+                                        style={{ transition: 'all 0.15s' }}
+                                    />
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Additional Feedback Textarea */}
+                        <textarea
+                            placeholder={lang === 'ar' ? 'ملاحظاتك الإضافية أو مقترحاتك للتحسين (اختياري)...' : 'Write any additional feedback (optional)...'}
+                            value={ratingComment}
+                            onChange={(e) => setRatingComment(e.target.value)}
+                            style={{
+                                width: '100%',
+                                height: '80px',
+                                background: 'rgba(15, 23, 42, 0.6)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '10px',
+                                padding: '10px 12px',
+                                color: 'white',
+                                fontSize: '13px',
+                                outline: 'none',
+                                resize: 'none',
+                                boxSizing: 'border-box',
+                                marginBottom: '20px',
+                                fontFamily: 'inherit'
+                            }}
+                        />
+
+                        {/* Submit Button */}
+                        <button
+                            onClick={handleSubmitRating}
+                            disabled={isSubmittingRating}
+                            style={{
+                                width: '100%',
+                                background: 'var(--accent-orange)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '10px',
+                                padding: '12px',
+                                fontSize: '14px',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                transition: 'all 0.2s',
+                                opacity: isSubmittingRating ? 0.7 : 1
+                            }}
+                        >
+                            {isSubmittingRating ? (
+                                <>
+                                    <Loader2 className="animate-spin" size={16} />
+                                    {lang === 'ar' ? 'جاري الإرسال...' : 'Submitting...'}
+                                </>
+                            ) : (
+                                lang === 'ar' ? 'إرسال التقييم' : 'Submit Feedback'
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
