@@ -398,6 +398,13 @@ const ClientMap: React.FC = () => {
     const [showOnlyTargeted, setShowOnlyTargeted] = useState(false);
     const activeRequest = driverRequestId ? requests.find(r => r.id.trim().toLowerCase() === driverRequestId.trim().toLowerCase()) : null;
 
+    const typeParam = searchParams.get('type');
+    const isCompanyOrAdmin = 
+        typeParam === 'company' || 
+        typeParam === 'admin' ||
+        sessionStorage.getItem('logged_company_id') !== null || 
+        sessionStorage.getItem('isAuthenticated') === 'true';
+
     // Auto-locate driver for smart routing if request parameter exists
     useEffect(() => {
         if (activeRequest && !userLoc && navigator.geolocation && branches.length > 0) {
@@ -1147,62 +1154,64 @@ const ClientMap: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Set Custom Location (ضع الموقع) */}
-                <div style={{ display: 'flex', gap: '6px', width: '100%', maxWidth: '600px', margin: 0 }}>
-                    <input
-                        type="text"
-                        placeholder={lang === 'ar' ? 'ضع رابط موقع العميل أو الإحداثيات هنا...' : 'Paste client location link or coordinates...'}
-                        value={customLocInput}
-                        onChange={(e) => setCustomLocInput(e.target.value)}
-                        style={{
-                            flex: 1,
-                            padding: '8px 12px',
-                            borderRadius: '10px',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            background: 'rgba(255,255,255,0.08)',
-                            color: 'white',
-                            fontSize: '12px',
-                            outline: 'none',
-                            height: '36px'
-                        }}
-                    />
-                    <button
-                        onClick={handleParseCustomLoc}
-                        style={{
-                            background: 'var(--accent-orange)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '0 12px',
-                            borderRadius: '10px',
-                            fontWeight: 700,
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            height: '36px'
-                        }}
-                    >
-                        {lang === 'ar' ? 'تحديد' : 'Locate'}
-                    </button>
-                    {userLoc && (
-                        <button
-                            onClick={handleClearCustomLoc}
+                {/* Set Custom Location (ضع الموقع) - Only visible to logged in Admin or Company Accounts */}
+                {isCompanyOrAdmin && (
+                    <div style={{ display: 'flex', gap: '6px', width: '100%', maxWidth: '600px', margin: 0 }}>
+                        <input
+                            type="text"
+                            placeholder={lang === 'ar' ? 'ضع رابط موقع العميل أو الإحداثيات هنا...' : 'Paste client location link or coordinates...'}
+                            value={customLocInput}
+                            onChange={(e) => setCustomLocInput(e.target.value)}
                             style={{
-                                background: 'rgba(239, 68, 68, 0.2)',
-                                color: '#ef4444',
-                                border: '1px solid rgba(239, 68, 68, 0.4)',
-                                padding: '0 10px',
+                                flex: 1,
+                                padding: '8px 12px',
+                                borderRadius: '10px',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                background: 'rgba(255,255,255,0.08)',
+                                color: 'white',
+                                fontSize: '12px',
+                                outline: 'none',
+                                height: '36px'
+                            }}
+                        />
+                        <button
+                            onClick={handleParseCustomLoc}
+                            style={{
+                                background: 'var(--accent-orange)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '0 12px',
                                 borderRadius: '10px',
                                 fontWeight: 700,
-                                fontSize: '11px',
+                                fontSize: '12px',
                                 cursor: 'pointer',
-                                height: '36px',
-                                whiteSpace: 'nowrap'
+                                whiteSpace: 'nowrap',
+                                height: '36px'
                             }}
                         >
-                            {lang === 'ar' ? 'إعادة تعيين' : 'Reset'}
+                            {lang === 'ar' ? 'تحديد' : 'Locate'}
                         </button>
-                    )}
-                </div>
+                        {userLoc && (
+                            <button
+                                onClick={handleClearCustomLoc}
+                                style={{
+                                    background: 'rgba(239, 68, 68, 0.2)',
+                                    color: '#ef4444',
+                                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                                    padding: '0 10px',
+                                    borderRadius: '10px',
+                                    fontWeight: 700,
+                                    fontSize: '11px',
+                                    cursor: 'pointer',
+                                    height: '36px',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                {lang === 'ar' ? 'إعادة تعيين' : 'Reset'}
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
