@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Splash from './components/Splash';
@@ -17,6 +17,37 @@ function App() {
   const [showSplash, setShowSplash] = useState(() => {
     return !window.location.pathname.includes('/map');
   });
+
+  // Dynamic PWA Manifest Switching
+  useEffect(() => {
+    let manifestFile = '/manifest-driver.json';
+    
+    // Check search param first
+    const urlParams = new URLSearchParams(window.location.search);
+    const typeParam = urlParams.get('type') || urlParams.get('appMode');
+    const hostname = window.location.hostname;
+    
+    if (typeParam === 'company' || hostname.startsWith('b2b.') || hostname.startsWith('company.') || hostname.includes('company') || hostname.includes('b2b')) {
+      manifestFile = '/manifest-company.json';
+      document.title = "سلمان الخالدي - الشركات B2B";
+    } else if (typeParam === 'branch' || hostname.startsWith('branch.') || hostname.startsWith('workshop.') || hostname.includes('branch') || hostname.includes('workshop')) {
+      manifestFile = '/manifest-branch.json';
+      document.title = "سلمان الخالدي - بوابة الفروع";
+    } else {
+      document.title = "سلمان الخالدي - خريطة الفروع";
+    }
+    
+    // Find or create manifest link element
+    let linkElement = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
+    if (linkElement) {
+      linkElement.href = manifestFile;
+    } else {
+      linkElement = document.createElement('link');
+      linkElement.rel = 'manifest';
+      linkElement.href = manifestFile;
+      document.head.appendChild(linkElement);
+    }
+  }, []);
 
   // Subdomain detection logic
   const hostname = window.location.hostname;
