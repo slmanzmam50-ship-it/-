@@ -14,13 +14,13 @@ import { Toaster } from 'react-hot-toast';
 import InstallPWA from './components/InstallPWA';
 
 const PublicIndex = () => {
-  if (sessionStorage.getItem('isAuthenticated') === 'true') {
+  if (localStorage.getItem('isAuthenticated') === 'true') {
     return <Navigate to="/admin" replace />;
   }
-  if (sessionStorage.getItem('logged_company_id')) {
+  if (localStorage.getItem('logged_company_id')) {
     return <Navigate to="/company" replace />;
   }
-  if (sessionStorage.getItem('logged_branch_id')) {
+  if (localStorage.getItem('logged_branch_id')) {
     return <Navigate to="/branch" replace />;
   }
   return <ClientMap />;

@@ -41,9 +41,9 @@ const Header: React.FC = () => {
     const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
     const handleLogout = () => {
-        sessionStorage.removeItem('isAuthenticated');
-        sessionStorage.removeItem('logged_company_id');
-        sessionStorage.removeItem('logged_branch_id');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('logged_company_id');
+        localStorage.removeItem('logged_branch_id');
         navigate('/login');
     };
 
@@ -70,11 +70,11 @@ const Header: React.FC = () => {
 
     const handleLogoClick = (e: React.MouseEvent) => {
         e.preventDefault();
-        if (sessionStorage.getItem('isAuthenticated') === 'true') {
+        if (localStorage.getItem('isAuthenticated') === 'true') {
             navigate('/admin');
-        } else if (sessionStorage.getItem('logged_company_id')) {
+        } else if (localStorage.getItem('logged_company_id')) {
             navigate('/company');
-        } else if (sessionStorage.getItem('logged_branch_id')) {
+        } else if (localStorage.getItem('logged_branch_id')) {
             navigate('/branch');
         } else {
             navigate('/');
@@ -82,10 +82,10 @@ const Header: React.FC = () => {
     };
 
     const getMapLink = () => {
-        if (sessionStorage.getItem('isAuthenticated') === 'true') {
+        if (localStorage.getItem('isAuthenticated') === 'true') {
             return '/map?type=admin';
         }
-        if (sessionStorage.getItem('logged_company_id')) {
+        if (localStorage.getItem('logged_company_id')) {
             return '/map?type=company';
         }
         return '/map';
@@ -143,13 +143,13 @@ const Header: React.FC = () => {
                             
                             let backUrl = '';
                             let label = '';
-                            if (typeParam === 'admin' || sessionStorage.getItem('isAuthenticated') === 'true') {
+                            if (typeParam === 'admin' || localStorage.getItem('isAuthenticated') === 'true') {
                                 backUrl = '/admin';
                                 label = isAr ? 'لوحة الإدارة' : 'Admin Panel';
-                            } else if (typeParam === 'company' || sessionStorage.getItem('logged_company_id')) {
+                            } else if (typeParam === 'company' || localStorage.getItem('logged_company_id')) {
                                 backUrl = '/company';
                                 label = isAr ? 'لوحة التحكم' : 'Dashboard';
-                            } else if (typeParam === 'branch' || sessionStorage.getItem('logged_branch_id')) {
+                            } else if (typeParam === 'branch' || localStorage.getItem('logged_branch_id')) {
                                 backUrl = '/branch';
                                 label = isAr ? 'بوابة الفروع' : 'Branch Panel';
                             }
@@ -163,9 +163,9 @@ const Header: React.FC = () => {
                             );
                         })()
                     )}
-                    {(sessionStorage.getItem('isAuthenticated') === 'true' || 
-                      sessionStorage.getItem('logged_company_id') || 
-                      sessionStorage.getItem('logged_branch_id')) && (
+                    {(localStorage.getItem('isAuthenticated') === 'true' || 
+                      localStorage.getItem('logged_company_id') || 
+                      localStorage.getItem('logged_branch_id')) && (
                         <button onClick={handleLogout} className="logout-btn" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer', fontWeight: 700 }}>
                             <LogOut size={18} /> {isAr ? 'خروج' : 'Logout'}
                         </button>

@@ -88,7 +88,7 @@ const CompanyDashboard: React.FC = () => {
     useEffect(() => {
         const unsubBranches = subscribeToBranches(setBranches);
         const unsubCompanies = subscribeToCompanies((data) => {
-            const storedCompanyId = sessionStorage.getItem('logged_company_id');
+            const storedCompanyId = localStorage.getItem('logged_company_id');
             if (storedCompanyId) {
                 const found = data.find(c => c.id === storedCompanyId);
                 if (found) {

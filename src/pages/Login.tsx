@@ -69,7 +69,7 @@ const Login: React.FC = () => {
 
         if (loginType === 'admin') {
             if (p === '0539893200') {
-                sessionStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('isAuthenticated', 'true');
                 toast.success('مرحباً بك! تم تسجيل الدخول للإدارة 👋');
                 navigate('/admin');
             } else {
@@ -83,7 +83,7 @@ const Login: React.FC = () => {
             }
             const found = companies.find(c => c.username === u && c.password === p);
             if (found) {
-                sessionStorage.setItem('logged_company_id', found.id);
+                localStorage.setItem('logged_company_id', found.id);
                 toast.success(`مرحباً بك! تم تسجيل الدخول لـ ${found.name} 👋`);
                 navigate('/company');
             } else {
@@ -97,7 +97,7 @@ const Login: React.FC = () => {
             }
             const found = branches.find(b => b.username === u && b.password === p);
             if (found) {
-                sessionStorage.setItem('logged_branch_id', found.id);
+                localStorage.setItem('logged_branch_id', found.id);
                 toast.success(`مرحباً بك! تم تسجيل الدخول لـ ${found.name} 👋`);
                 navigate('/branch');
             } else {

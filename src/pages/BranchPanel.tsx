@@ -78,7 +78,7 @@ const BranchPanel: React.FC = () => {
     // Subscribe to branches and requests
     useEffect(() => {
         const unsubBranches = subscribeToBranches((data) => {
-            const storedBranchId = sessionStorage.getItem('logged_branch_id');
+            const storedBranchId = localStorage.getItem('logged_branch_id');
             if (storedBranchId) {
                 const found = data.find(b => b.id === storedBranchId);
                 if (found) {
