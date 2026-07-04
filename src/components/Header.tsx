@@ -130,15 +130,18 @@ const Header: React.FC = () => {
                     )}
                     {location.pathname === '/map' && (
                         (() => {
+                            const searchParams = new URLSearchParams(location.search);
+                            const typeParam = searchParams.get('type');
+                            
                             let backUrl = '';
                             let label = '';
-                            if (sessionStorage.getItem('isAuthenticated') === 'true') {
+                            if (typeParam === 'admin' || sessionStorage.getItem('isAuthenticated') === 'true') {
                                 backUrl = '/admin';
                                 label = isAr ? 'لوحة الإدارة' : 'Admin Panel';
-                            } else if (sessionStorage.getItem('logged_company_id')) {
+                            } else if (typeParam === 'company' || sessionStorage.getItem('logged_company_id')) {
                                 backUrl = '/company';
                                 label = isAr ? 'لوحة التحكم' : 'Dashboard';
-                            } else if (sessionStorage.getItem('logged_branch_id')) {
+                            } else if (typeParam === 'branch' || sessionStorage.getItem('logged_branch_id')) {
                                 backUrl = '/branch';
                                 label = isAr ? 'بوابة الفروع' : 'Branch Panel';
                             }
@@ -146,7 +149,7 @@ const Header: React.FC = () => {
                             if (!backUrl) return null;
 
                             return (
-                                <Link to={backUrl} className="header-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--primary-color)', fontWeight: 800 }}>
+                                <Link to={backUrl + (typeParam ? `?type=${typeParam}` : '')} className="header-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--primary-color)', fontWeight: 800 }}>
                                     {isAr ? <ArrowRight size={18} /> : <ArrowLeft size={18} />} {label}
                                 </Link>
                             );
