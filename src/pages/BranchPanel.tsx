@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToBranches, subscribeToServiceRequests, updateServiceRequestStatus } from '../services/storage';
 import type { Branch, ServiceRequest } from '../types';
-import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, Loader2, ArrowLeftRight, Ban, History } from 'lucide-react';
+import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, Loader2, ArrowLeftRight, Ban, History, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 
@@ -25,7 +25,7 @@ const BranchPanel: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     // Tabs and history logs state
-    const [activeTab, setActiveTab] = useState<'scan' | 'search' | 'today' | 'history'>('scan');
+    const [activeTab, setActiveTab] = useState<'scan' | 'search' | 'today' | 'history' | null>(null);
     const [historySearchQuery, setHistorySearchQuery] = useState('');
     const [historyStatusFilter, setHistoryStatusFilter] = useState<'all' | 'completed' | 'rejected' | 'transferred' | 'partial'>('all');
 
@@ -276,8 +276,9 @@ const BranchPanel: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {/* Quick Action Category Cards */}
-                <div className="branch-actions-grid animate-fade-in">
+                {activeTab === null ? (
+                    /* Quick Action Category Cards */
+                    <div className="branch-actions-grid animate-fade-in">
                     {/* 1. Scan QR Card */}
                     <div 
                         onClick={() => setActiveTab('scan')}
@@ -400,6 +401,31 @@ const BranchPanel: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade-in">
+                    <button
+                        onClick={() => setActiveTab(null)}
+                        className="hover-scale tap-effect"
+                        style={{
+                            alignSelf: 'flex-start',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: 'var(--surface-color)',
+                            border: '1px solid var(--border-color)',
+                            padding: '10px 18px',
+                            borderRadius: '12px',
+                            color: 'var(--primary-color)',
+                            fontSize: '14px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.25s',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                            marginBottom: '4px'
+                        }}
+                    >
+                        <ArrowRight size={16} /> رجوع للوحة التحكم الرئيسية
+                    </button>
 
                 {/* Scan Tab Panel */}
                 <div className="glass animate-slide-up" style={{ 
@@ -893,6 +919,8 @@ const BranchPanel: React.FC = () => {
                         </div>
                     )}
                 </div>
+                </div>
+            )}
             </div>
 
             {/* Rejection Warning Dialog */}

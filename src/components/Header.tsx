@@ -163,11 +163,11 @@ const Header: React.FC = () => {
                             );
                         })()
                     )}
-                    {(localStorage.getItem('isAuthenticated') === 'true' || 
-                      localStorage.getItem('logged_company_id') || 
-                      localStorage.getItem('logged_branch_id')) && (
-                        <button onClick={handleLogout} className="logout-btn" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer', fontWeight: 700 }}>
-                            <LogOut size={18} /> {isAr ? 'خروج' : 'Logout'}
+                     {(localStorage.getItem('isAuthenticated') === 'true' || 
+                       localStorage.getItem('logged_company_id') || 
+                       localStorage.getItem('logged_branch_id')) && (
+                        <button onClick={handleLogout} className="logout-btn" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer', fontWeight: 700 }} title={isAr ? 'تسجيل الخروج' : 'Logout'}>
+                            <LogOut size={18} /> <span className="mobile-hide">{isAr ? 'خروج' : 'Logout'}</span>
                         </button>
                     )}
                 </nav>

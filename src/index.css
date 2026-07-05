@@ -91,6 +91,7 @@ body {
   background-color: var(--bg-color);
   color: var(--text-primary);
   direction: rtl;
+  overscroll-behavior: none;
 }
 
 .glass {
