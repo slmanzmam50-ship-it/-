@@ -371,6 +371,26 @@ const ClientMap: React.FC = () => {
 
 
 
+    const [showLocationBanner, setShowLocationBanner] = useState(() => {
+        return localStorage.getItem('gps_banner_dismissed') !== 'true';
+    });
+
+    const requestLocationPermission = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    locateAndCenter([pos.coords.latitude, pos.coords.longitude]);
+                    toast.success(lang === 'ar' ? 'تم تنشيط وتأكيد صلاحية الموقع الجغرافي بنجاح! 📍' : 'Location permissions successfully activated! 📍');
+                    setShowLocationBanner(false);
+                    localStorage.setItem('gps_banner_dismissed', 'true');
+                },
+                () => {
+                    toast.error(lang === 'ar' ? 'فشل تحديد الموقع. يرجى تفعيل الـ GPS وإعطاء الإذن.' : 'Geolocation failed. Please enable GPS.');
+                }
+            );
+        }
+    };
+
     const t = translations[lang];
 
     // #3 - CustomEvent-based language switching (replaces setInterval)
@@ -1037,6 +1057,55 @@ const ClientMap: React.FC = () => {
         <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
             <div className="branch-directory-header" style={{ padding: '8px 12px', gap: '8px', display: 'flex', flexDirection: 'column' }}>
+                {showLocationBanner && (
+                    <div className="glass animate-slide-up" style={{ 
+                        padding: '12px 16px', 
+                        borderRadius: '14px', 
+                        background: 'rgba(245, 158, 11, 0.1)', 
+                        border: '1.5px solid rgba(245, 158, 11, 0.3)', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '10px', 
+                        color: 'var(--text-primary)', 
+                        maxWidth: '600px' 
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                            <div style={{ flex: 1 }}>
+                                <h4 style={{ margin: '0 0 4px', fontSize: '13.5px', fontWeight: 800, color: 'var(--accent-orange)' }}>
+                                    {lang === 'ar' ? '📍 تفعيل صلاحية تحديد الموقع (GPS)' : '📍 Enable GPS Location'}
+                                </h4>
+                                <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                                    {lang === 'ar' 
+                                        ? 'لتحديد أقرب فروع صيانة السيارات وتوجيه مسارك بشكل فوري وصحيح، يرجى تفعيل إذن الموقع.' 
+                                        : 'To find the nearest branches and get real-time routing, please activate location services.'}
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => { setShowLocationBanner(false); localStorage.setItem('gps_banner_dismissed', 'true'); }} 
+                                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 0 }}
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+                            <button 
+                                onClick={requestLocationPermission} 
+                                style={{ 
+                                    background: 'var(--primary-color)', 
+                                    color: 'white', 
+                                    border: 'none', 
+                                    padding: '6px 14px', 
+                                    borderRadius: '8px', 
+                                    fontSize: '12px', 
+                                    fontWeight: 700, 
+                                    cursor: 'pointer' 
+                                }}
+                            >
+                                {lang === 'ar' ? 'تنشيط الموقع الآن ⚡' : 'Activate Now ⚡'}
+                            </button>
+                        </div>
+                    </div>
+                )}
                 {activeRequest && (
                     <div className="glass" style={{ 
                         padding: '12px 16px', 

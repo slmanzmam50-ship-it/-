@@ -100,8 +100,9 @@ const Header: React.FC = () => {
                         alt="Logo" 
                         className="app-logo-img"
                     />
-                    <h2 className="app-logo-text">
-                        {isAr ? 'سلمان زمام الخالدي' : 'Salman Al-Khalidi'}
+                    <h2 className="app-logo-text" style={{ fontSize: '15px', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                        <span className="mobile-hide">{isAr ? 'سلمان زمام الخالدي' : 'Salman Al-Khalidi'}</span>
+                        <span className="desktop-hide">{isAr ? 'سلمان الخالدي' : 'Al-Khalidi'}</span>
                     </h2>
                 </div>
 
@@ -119,7 +120,8 @@ const Header: React.FC = () => {
                         onClick={toggleLang}
                         className="lang-toggle-btn"
                     >
-                        {isAr ? 'English' : 'عربي'}
+                        <span className="mobile-hide">{isAr ? 'English' : 'عربي'}</span>
+                        <span className="desktop-hide">{isAr ? 'EN' : 'AR'}</span>
                     </button>
 
                     <button 
