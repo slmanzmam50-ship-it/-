@@ -29,8 +29,35 @@ const BranchPanel: React.FC = () => {
     const [historySearchQuery, setHistorySearchQuery] = useState('');
     const [historyStatusFilter, setHistoryStatusFilter] = useState<'all' | 'completed' | 'rejected' | 'transferred' | 'partial'>('all');
     const [showPermissionsBanner, setShowPermissionsBanner] = useState(() => {
-        return localStorage.getItem('permissions_banner_dismissed') !== 'true';
+        return sessionStorage.getItem('permissions_banner_dismissed') !== 'true';
     });
+
+    useEffect(() => {
+        const checkPermissions = async () => {
+            if (!navigator.permissions || !navigator.permissions.query) return;
+            try {
+                const geoStatus = await navigator.permissions.query({ name: 'geolocation' });
+                let camStatusState = 'prompt';
+                try {
+                    const camStatus = await navigator.permissions.query({ name: 'camera' as any });
+                    camStatusState = camStatus.state;
+                } catch {
+                    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                        const devices = await navigator.mediaDevices.enumerateDevices();
+                        const hasCam = devices.some(d => d.kind === 'videoinput');
+                        if (!hasCam) camStatusState = 'granted';
+                    }
+                }
+                
+                if (geoStatus.state === 'granted' && camStatusState === 'granted') {
+                    setShowPermissionsBanner(false);
+                }
+            } catch (e) {
+                console.error('Error checking permissions', e);
+            }
+        };
+        checkPermissions();
+    }, []);
 
     // QR Code scanner hook
     useEffect(() => {
@@ -261,7 +288,7 @@ const BranchPanel: React.FC = () => {
             stream.getTracks().forEach(track => track.stop());
             toast.success('تم تنشيط وتأكيد صلاحية الكاميرا بنجاح! 📷');
             setShowPermissionsBanner(false);
-            localStorage.setItem('permissions_banner_dismissed', 'true');
+            sessionStorage.setItem('permissions_banner_dismissed', 'true');
         } catch {
             toast.error('فشل تشغيل الكاميرا. يرجى التأكد من إعطاء صلاحية الكاميرا للموقع.');
         }
@@ -304,7 +331,7 @@ const BranchPanel: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={requestAllPermissions} className="hover-scale tap-effect" style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>تفعيل الآن ⚡</button>
-                        <button onClick={() => { setShowPermissionsBanner(false); localStorage.setItem('permissions_banner_dismissed', 'true'); }} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>إغلاق</button>
+                        <button onClick={() => { setShowPermissionsBanner(false); sessionStorage.setItem('permissions_banner_dismissed', 'true'); }} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>إغلاق</button>
                     </div>
                 </div>
             )}

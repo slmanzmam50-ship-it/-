@@ -372,8 +372,26 @@ const ClientMap: React.FC = () => {
 
 
     const [showLocationBanner, setShowLocationBanner] = useState(() => {
-        return localStorage.getItem('gps_banner_dismissed') !== 'true';
+        return sessionStorage.getItem('gps_banner_dismissed') !== 'true';
     });
+
+    useEffect(() => {
+        const checkGeoPermission = async () => {
+            if (!navigator.permissions || !navigator.permissions.query) return;
+            try {
+                const status = await navigator.permissions.query({ name: 'geolocation' });
+                if (status.state === 'granted') {
+                    setShowLocationBanner(false);
+                }
+                status.onchange = () => {
+                    if (status.state === 'granted') {
+                        setShowLocationBanner(false);
+                    }
+                };
+            } catch {}
+        };
+        checkGeoPermission();
+    }, []);
 
     const requestLocationPermission = () => {
         if (navigator.geolocation) {
@@ -382,7 +400,7 @@ const ClientMap: React.FC = () => {
                     locateAndCenter([pos.coords.latitude, pos.coords.longitude]);
                     toast.success(lang === 'ar' ? 'تم تنشيط وتأكيد صلاحية الموقع الجغرافي بنجاح! 📍' : 'Location permissions successfully activated! 📍');
                     setShowLocationBanner(false);
-                    localStorage.setItem('gps_banner_dismissed', 'true');
+                    sessionStorage.setItem('gps_banner_dismissed', 'true');
                 },
                 () => {
                     toast.error(lang === 'ar' ? 'فشل تحديد الموقع. يرجى تفعيل الـ GPS وإعطاء الإذن.' : 'Geolocation failed. Please enable GPS.');
@@ -1081,7 +1099,7 @@ const ClientMap: React.FC = () => {
                                 </p>
                             </div>
                             <button 
-                                onClick={() => { setShowLocationBanner(false); localStorage.setItem('gps_banner_dismissed', 'true'); }} 
+                                onClick={() => { setShowLocationBanner(false); sessionStorage.setItem('gps_banner_dismissed', 'true'); }} 
                                 style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 0 }}
                             >
                                 <X size={14} />
