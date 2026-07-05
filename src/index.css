@@ -862,3 +862,43 @@ button {
     border-radius: 8px !important;
   }
 }
+
+/* Branch Panel Actions Grid mobile responsiveness */
+.branch-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 600px) {
+  .branch-actions-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .branch-actions-grid > div {
+    padding: 14px 10px !important;
+    gap: 8px !important;
+  }
+  .branch-actions-grid h4 {
+    font-size: 13.5px !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .branch-actions-grid span {
+    display: none !important; /* Hide secondary desc text on mobile to avoid overcrowding */
+  }
+  .branch-actions-grid svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .branch-actions-grid div[style*="width: 48px"] {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+  }
+}

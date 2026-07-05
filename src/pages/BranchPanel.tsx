@@ -60,7 +60,7 @@ const BranchPanel: React.FC = () => {
                         }
                     ).catch(err => {
                         console.error('Error starting scanner', err);
-                        toast.error('لم نتمكن من تشغيل الكاميرا. الرجاء تفعيل صلاحية الكاميرا.');
+                        toast.error('لم نتمكن من تشغيل الكاميرا. يرجى تفعيل صلاحية الكاميرا للموقع من إعدادات الهاتف/المتصفح.');
                         setIsScannerOpen(false);
                     });
                 }
@@ -277,7 +277,7 @@ const BranchPanel: React.FC = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* Quick Action Category Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', marginBottom: '8px' }}>
+                <div className="branch-actions-grid animate-fade-in">
                     {/* 1. Scan QR Card */}
                     <div 
                         onClick={() => setActiveTab('scan')}
@@ -445,6 +445,30 @@ const BranchPanel: React.FC = () => {
                     >
                         <QrCode size={20} /> فتح الكاميرا للمسح التلقائي
                     </button>
+
+                    {/* Camera Permissions Guidance Banner */}
+                    <div style={{
+                        marginTop: '12px',
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        background: 'rgba(245, 158, 11, 0.08)',
+                        border: '1.5px solid rgba(245, 158, 11, 0.25)',
+                        color: 'var(--text-primary)',
+                        fontSize: '13px',
+                        textAlign: 'right',
+                        lineHeight: '1.5',
+                        maxWidth: '460px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                    }}>
+                        <strong style={{ color: 'var(--accent-orange)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px' }}>
+                            ⚠️ تنبيه هام لتصوير الباركود:
+                        </strong>
+                        <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                            في حال لم يفتح الماسح الضوئي، يرجى النقر على قفل الأمان بجانب رابط الموقع في شريط العنوان بالأعلى، ثم تغيير صلاحية <strong>الكاميرا (Camera)</strong> إلى <strong>"السماح" (Allow)</strong> لتتمكن من مسح الرموز تلقائياً.
+                        </span>
+                    </div>
                 </div>
 
                 {/* Search Order Card */}

@@ -766,9 +766,9 @@ const ClientMap: React.FC = () => {
             setIsLocatingLoc(false);
             toast.error(
                 lang === 'ar'
-                    ? 'تعذّر تحديد الموقع. تأكد من منح الإذن في إعدادات المتصفح.'
-                    : 'Location unavailable. Please allow location in browser settings.',
-                { id: 'locate-toast', duration: 5000 }
+                    ? '⚠️ تعذّر تحديد الموقع الجغرافي. يرجى التأكد من تشغيل الـ GPS بالهاتف، والنقر على رمز قفل الأمان بجانب رابط الموقع في الأعلى لتغيير صلاحية الموقع (Location) إلى "السماح" (Allow).'
+                    : '⚠️ Geolocation failed. Please ensure GPS is enabled, and click the security lock icon next to the browser URL to set Location permission to "Allow".',
+                { id: 'locate-toast', duration: 8000 }
             );
         }
     };
