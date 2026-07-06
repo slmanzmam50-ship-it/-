@@ -7,7 +7,7 @@ import type { Language } from '../services/translations';
 import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories, subscribeToServiceRequests, addServiceRequestRating } from '../services/storage';
 import { translations } from '../services/translations';
 import type { Branch, Category, ServiceRequest } from '../types';
-import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc, Star, Loader2, QrCode } from 'lucide-react';
+import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc, Star, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LocationLoader from '../components/LocationLoader';
 import QRCode from 'qrcode';
@@ -415,7 +415,7 @@ const ClientMap: React.FC = () => {
 
     // Get active request if provided in URL search params or entered manually
     const [driverRequestId, setDriverRequestId] = useState(searchParams.get('request') || searchParams.get('requestId') || '');
-    const [showOnlyTargeted, setShowOnlyTargeted] = useState(false);
+    const [showOnlyTargeted] = useState(false);
     const activeRequest = driverRequestId ? requests.find(r => r.id.trim().toLowerCase() === driverRequestId.trim().toLowerCase()) : null;
 
     useEffect(() => {
@@ -1081,91 +1081,7 @@ const ClientMap: React.FC = () => {
             {/* Header */}
             <div className="branch-directory-header" style={{ padding: '8px 12px', gap: '8px', display: 'flex', flexDirection: 'column' }}>
 
-                {activeRequest && (
-                    <div className="glass" style={{ 
-                        padding: '12px 16px', 
-                        borderRadius: '14px', 
-                        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.85) 100%)', 
-                        border: '1.5px solid rgba(245, 158, 11, 0.4)', 
-                        display: 'flex', 
-                        flexDirection: 'column',
-                        gap: '10px',
-                        color: 'white', 
-                        maxWidth: '600px',
-                        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)'
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ background: 'var(--accent-orange)', color: 'white', padding: '3px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
-                                    {lang === 'ar' ? 'طلب نشط' : 'Active Request'}
-                                </span>
-                                <span style={{ fontWeight: 800, fontSize: '13px' }}>{activeRequest.id}</span>
-                            </div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                                {lang === 'ar' ? `اللوحة: ${activeRequest.plateNumber}` : `Plate: ${activeRequest.plateNumber}`}
-                            </div>
-                        </div>
 
-                        <div style={{ fontSize: '12.5px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div>
-                                <span style={{ color: 'var(--text-secondary)' }}>{lang === 'ar' ? 'الخدمة المطلوبة: ' : 'Service: '}</span>
-                                <strong style={{ color: 'var(--accent-orange)' }}>{activeRequest.serviceDescription}</strong>
-                            </div>
-                            <div style={{ fontSize: '11.5px', color: '#94a3b8' }}>
-                                💡 {lang === 'ar' ? 'تم تمييز الفروع الموجه إليها الطلب باللون الذهبي البارق على الخريطة.' : 'Branches designated for this request are highlighted in gold on the map.'}
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
-                            <button
-                                onClick={() => setShowOnlyTargeted(!showOnlyTargeted)}
-                                style={{
-                                    flex: 1,
-                                    background: showOnlyTargeted ? 'var(--accent-orange)' : 'rgba(255,255,255,0.08)',
-                                    border: '1px solid rgba(255,255,255,0.15)',
-                                    color: 'white',
-                                    padding: '6px 12px',
-                                    borderRadius: '8px',
-                                    fontSize: '11.5px',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '6px'
-                                }}
-                            >
-                                <Layers size={14} />
-                                {showOnlyTargeted 
-                                    ? (lang === 'ar' ? 'عرض جميع الفروع' : 'Show All Branches')
-                                    : (lang === 'ar' ? 'تصفية الفروع الموجهة فقط' : 'Filter Designated Only')}
-                            </button>
-                            <button
-                                onClick={() => setShowMapQrModal(true)}
-                                style={{
-                                    flex: 1,
-                                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                                    border: 'none',
-                                    color: 'white',
-                                    padding: '6px 12px',
-                                    borderRadius: '8px',
-                                    fontSize: '11.5px',
-                                    fontWeight: 800,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '6px'
-                                }}
-                            >
-                                <QrCode size={14} />
-                                {lang === 'ar' ? 'عرض باركود الطلب (QR)' : 'Show QR Barcode'}
-                            </button>
-                        </div>
-                    </div>
-                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '600px', flexWrap: 'wrap' }}>
                     {/* Request ID Input for Drivers */}
                     <div style={{ position: 'relative', flex: 1, minWidth: '160px' }}>
