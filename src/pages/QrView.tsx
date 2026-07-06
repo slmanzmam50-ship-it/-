@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { subscribeToServiceRequests } from '../services/storage';
-import type { ServiceRequest } from '../types';
+import { subscribeToServiceRequests, subscribeToBranches } from '../services/storage';
+import type { ServiceRequest, Branch } from '../types';
 import { ShieldCheck, Globe } from 'lucide-react';
 
 const translations = {
     ar: {
         title: 'رمز الاستجابة السريع للطلب (QR)',
         subtitle: 'قدم هذا الرمز للموظف في الفرع لمسحه وتأكيد الخدمة فوراً',
-        loading: 'جاري تحميل الرمز...',
+        loading: 'جاري تحميل الرمز والبيانات...',
         notFound: 'عذراً، لم يتم العثور على طلب',
         checkLink: 'تأكد من صحة الرابط المرسل',
         requestId: 'رقم الطلب:',
         plateNumber: 'رقم اللوحة:',
         company: 'الشركة:',
+        serviceDescription: 'الخدمة المطلوبة:',
+        targetBranches: 'الفروع الموجه إليها:',
         systemText: 'نظام سلمان زمام الخالدي المعتمد لطلب الخدمات',
         close: 'إغلاق',
         langBtn: 'English'
@@ -22,12 +24,14 @@ const translations = {
     en: {
         title: 'Request QR Code',
         subtitle: 'Show this code to the branch employee to scan and confirm service immediately',
-        loading: 'Loading barcode...',
+        loading: 'Loading barcode and details...',
         notFound: 'Sorry, request not found',
         checkLink: 'Please verify the shared link',
         requestId: 'Request ID:',
         plateNumber: 'Plate Number:',
         company: 'Company:',
+        serviceDescription: 'Service Description:',
+        targetBranches: 'Designated Branches:',
         systemText: 'Authorized Salman Zmam Al-Khaldi Service Request System',
         close: 'Close',
         langBtn: 'العربية'
@@ -39,10 +43,14 @@ const QrView: React.FC = () => {
     const requestId = searchParams.get('id') || '';
     const [qrUrl, setQrUrl] = useState('');
     const [request, setRequest] = useState<ServiceRequest | null>(null);
+    const [branches, setBranches] = useState<Branch[]>([]);
     const [loading, setLoading] = useState(true);
     const [lang, setLang] = useState<'ar' | 'en'>('ar');
 
     useEffect(() => {
+        // Subscribe to branches
+        const unsubBranches = subscribeToBranches(setBranches);
+
         if (requestId) {
             // Generate QR code url
             QRCode.toDataURL(requestId, { width: 600, margin: 2 })
@@ -50,18 +58,30 @@ const QrView: React.FC = () => {
                 .catch(err => console.error(err));
 
             // Fetch request details
-            const unsub = subscribeToServiceRequests((reqs) => {
+            const unsubReqs = subscribeToServiceRequests((reqs) => {
                 const found = reqs.find(r => r.id === requestId);
                 if (found) {
                     setRequest(found);
                 }
                 setLoading(false);
             });
-            return () => unsub();
+            
+            return () => {
+                unsubBranches();
+                unsubReqs();
+            };
         } else {
             setLoading(false);
+            return () => unsubBranches();
         }
     }, [requestId]);
+
+    const getBranchNamesStr = (branchIds: string[]) => {
+        if (!branchIds) return '';
+        return branchIds
+            .map(id => branches.find(b => b.id === id)?.name || id)
+            .join(' - ');
+    };
 
     const t = translations[lang];
 
@@ -105,18 +125,19 @@ const QrView: React.FC = () => {
                     background: 'var(--surface-color)',
                     border: '1.5px solid var(--border-color)',
                     color: 'var(--text-primary)',
-                    padding: '8px 18px',
+                    padding: '10px 24px',
                     borderRadius: '50px',
                     fontWeight: 800,
-                    fontSize: '14px',
+                    fontSize: '15px',
                     cursor: 'pointer',
                     marginBottom: '20px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    transition: 'all 0.2s'
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
+                    transition: 'all 0.2s',
+                    borderWidth: '2px'
                 }}
                 className="hover-scale tap-effect"
             >
-                <Globe size={16} color="var(--primary-color)" />
+                <Globe size={18} color="var(--primary-color)" />
                 {t.langBtn}
             </button>
 
@@ -125,7 +146,7 @@ const QrView: React.FC = () => {
                 border: '1px solid var(--border-color)',
                 borderRadius: '24px',
                 width: '100%',
-                maxWidth: '400px',
+                maxWidth: '420px',
                 padding: '28px',
                 boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
                 textAlign: 'center'
@@ -169,9 +190,17 @@ const QrView: React.FC = () => {
                                 <span style={{ color: 'var(--text-secondary)', fontSize: '13.5px' }}>{t.plateNumber}</span>
                                 <span style={{ fontWeight: 800 }}>{request.plateNumber}</span>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
                                 <span style={{ color: 'var(--text-secondary)', fontSize: '13.5px' }}>{t.company}</span>
                                 <span style={{ fontWeight: 700 }}>{request.companyName}</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13.5px' }}>{t.serviceDescription}</span>
+                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{request.serviceDescription}</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13.5px' }}>{t.targetBranches}</span>
+                                <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{getBranchNamesStr(request.targetBranchIds)}</span>
                             </div>
                         </>
                     )}
