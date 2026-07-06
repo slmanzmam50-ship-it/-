@@ -439,12 +439,17 @@ const AdminDashboard: React.FC = () => {
 
         setIsAdminSubmittingRequest(true);
         try {
+            const visibleBranches = branches.filter(b => !compObj.hiddenBranchIds?.includes(b.id));
+            const finalBranchIds = adminTargetBranchIds.includes('all')
+                ? visibleBranches.map(b => b.id)
+                : adminTargetBranchIds;
+
             const newReq = await addServiceRequest({
                 companyId: compId,
                 companyName: compObj.name,
                 plateNumber: pNum,
                 serviceDescription: sDesc,
-                targetBranchIds: adminTargetBranchIds,
+                targetBranchIds: finalBranchIds,
                 companyHiddenBranchIds: compObj.hiddenBranchIds || []
             });
             toast.success(`تم إنشاء الطلب بنجاح للشركة ${compObj.name}! رقم الطلب: ${newReq.id} 🎉`);

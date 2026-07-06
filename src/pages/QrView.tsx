@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { subscribeToServiceRequests, subscribeToBranches } from '../services/storage';
 import type { ServiceRequest, Branch } from '../types';
-import { ShieldCheck, Globe } from 'lucide-react';
+import { ShieldCheck, Globe, MapPin } from 'lucide-react';
 
 const translations = {
     ar: {
@@ -205,6 +205,35 @@ const QrView: React.FC = () => {
                         </>
                     )}
                 </div>
+
+                <a
+                    href={`/map?request=${requestId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '14px 18px',
+                        borderRadius: '16px',
+                        fontWeight: 850,
+                        fontSize: '15px',
+                        cursor: 'pointer',
+                        textDecoration: 'none',
+                        boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)',
+                        marginBottom: '20px',
+                        boxSizing: 'border-box'
+                    }}
+                    className="hover-scale tap-effect"
+                >
+                    <MapPin size={18} />
+                    {lang === 'ar' ? '📍 الذهاب إلى الخريطة لتوجيه الفروع' : '📍 Go to Map & View Directions'}
+                </a>
 
                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
                     <ShieldCheck size={14} color="var(--success)" />

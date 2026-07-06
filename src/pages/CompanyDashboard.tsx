@@ -172,12 +172,17 @@ Please click the link below to view your maintenance request details and barcode
 
         setIsSubmitting(true);
         try {
+            const visibleBranches = branches.filter(b => !loggedInCompany.hiddenBranchIds?.includes(b.id));
+            const finalBranchIds = targetBranchIds.includes('all')
+                ? visibleBranches.map(b => b.id)
+                : targetBranchIds;
+
             const newReq = await addServiceRequest({
                 companyId: loggedInCompany.id,
                 companyName: loggedInCompany.name,
                 plateNumber: pNum,
                 serviceDescription: sDesc,
-                targetBranchIds: targetBranchIds,
+                targetBranchIds: finalBranchIds,
                 companyHiddenBranchIds: loggedInCompany.hiddenBranchIds || []
             });
             toast.success(`تم إنشاء الطلب بنجاح! رقم الطلب: ${newReq.id} 🎉`);
@@ -208,7 +213,11 @@ Please click the link below to view your maintenance request details and barcode
 
         setIsReRouting(true);
         try {
-            await updateServiceRequestBranch(reRouteRequest.id, newTargetBranchIds);
+            const visibleBranches = branches.filter(b => !loggedInCompany?.hiddenBranchIds?.includes(b.id));
+            const finalBranchIds = newTargetBranchIds.includes('all')
+                ? visibleBranches.map(b => b.id)
+                : newTargetBranchIds;
+            await updateServiceRequestBranch(reRouteRequest.id, finalBranchIds);
             toast.success('تم تعديل فروع الطلب بنجاح وإعادة تنشيطه! 🔄');
             setReRouteRequest(null);
         } catch (error) {
