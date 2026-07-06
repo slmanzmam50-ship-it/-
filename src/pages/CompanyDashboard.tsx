@@ -598,7 +598,19 @@ const CompanyDashboard: React.FC = () => {
                                 </a>
                             </div>
                             
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px', marginTop: '6px' }}>
+                            <div style={{ 
+                                maxHeight: '280px', 
+                                overflowY: 'auto', 
+                                padding: '12px', 
+                                border: '1.5px solid var(--border-color)', 
+                                borderRadius: '16px', 
+                                background: 'rgba(0,0,0,0.02)',
+                                display: 'grid', 
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
+                                gap: '10px', 
+                                marginTop: '6px',
+                                scrollbarWidth: 'thin'
+                            }}>
                                 {/* "All" Option Badge */}
                                 {(!branchSearch || normalizeArabicSimple('جميع الفروع (الكل)').includes(normalizeArabicSimple(branchSearch))) && (
                                     <button
