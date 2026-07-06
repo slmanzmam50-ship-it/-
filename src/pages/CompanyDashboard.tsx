@@ -85,7 +85,7 @@ const CompanyDashboard: React.FC = () => {
     };
 
     const handleShareRequest = async (request: ServiceRequest) => {
-        const shareUrl = `${window.location.origin}/map?request=${request.id}`;
+        const shareUrl = `${window.location.origin}/qr?id=${request.id}`;
         const shareText = `🚗 *مراكز خدمة سلمان زمام الخالدي | Salman Zmam Al-Khaldi Service Centers* 🚗
 
 الرجاء الضغط على الرابط أدناه لعرض تفاصيل طلب الصيانة والباركود:
