@@ -13,6 +13,7 @@ import {
     subscribeToCompanies,
     addCompany,
     deleteCompany,
+    updateCompany,
     subscribeToServiceRequests,
     addServiceRequest,
     clearServiceRequestRatings,
@@ -59,6 +60,8 @@ const AdminDashboard: React.FC = () => {
     const [newCompanyUsername, setNewCompanyUsername] = useState('');
     const [newCompanyPassword, setNewCompanyPassword] = useState('');
     const [isAddingCompany, setIsAddingCompany] = useState(false);
+    const [managingHiddenBranchCompany, setManagingHiddenBranchCompany] = useState<CompanyAccount | null>(null);
+    const [tempHiddenBranchIds, setTempHiddenBranchIds] = useState<string[]>([]);
 
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [requestSearch, setRequestSearch] = useState('');
@@ -345,6 +348,27 @@ const AdminDashboard: React.FC = () => {
                 console.error(error);
                 toast.error('فشل حذف الشركة');
             }
+        }
+    };
+
+    const openManageHiddenBranchesModal = (company: CompanyAccount) => {
+        setManagingHiddenBranchCompany(company);
+        setTempHiddenBranchIds(company.hiddenBranchIds || []);
+    };
+
+    const handleSaveHiddenBranches = async () => {
+        if (!managingHiddenBranchCompany) return;
+        try {
+            const updated: CompanyAccount = {
+                ...managingHiddenBranchCompany,
+                hiddenBranchIds: tempHiddenBranchIds
+            };
+            await updateCompany(updated);
+            toast.success(`تم تحديث قائمة الفروع المخفية لشركة ${managingHiddenBranchCompany.name} بنجاح! 💾`);
+            setManagingHiddenBranchCompany(null);
+        } catch (error) {
+            console.error(error);
+            toast.error('حدث خطأ أثناء حفظ الفروع المخفية');
         }
     };
 
@@ -1137,6 +1161,12 @@ const AdminDashboard: React.FC = () => {
                                                     style={{ background: 'rgba(59, 130, 246, 0.1)', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, marginInlineEnd: '8px' }}
                                                 >
                                                     <FileText size={14} style={{ display: 'inline', marginInlineEnd: '4px' }} /> الفواتير
+                                                </button>
+                                                <button 
+                                                    onClick={() => openManageHiddenBranchesModal(c)}
+                                                    style={{ background: 'rgba(245, 158, 11, 0.1)', border: 'none', color: 'var(--accent-orange)', cursor: 'pointer', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, marginInlineEnd: '8px' }}
+                                                >
+                                                    <Settings size={14} style={{ display: 'inline', marginInlineEnd: '4px' }} /> إخفاء الفروع
                                                 </button>
                                                 <button 
                                                     onClick={() => handleDeleteCompany(c.id, c.name)} 
@@ -1961,6 +1991,148 @@ const AdminDashboard: React.FC = () => {
                 </div>
             )}
             {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} />}
+
+            {/* Manage Hidden Branches Modal */}
+            {managingHiddenBranchCompany && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000,
+                    padding: '16px'
+                }}>
+                    <div className="glass animate-scale-up" style={{
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '480px',
+                        padding: '24px',
+                        position: 'relative',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        direction: 'rtl'
+                    }}>
+                        <button 
+                            onClick={() => setManagingHiddenBranchCompany(null)}
+                            style={{
+                                position: 'absolute',
+                                top: '16px',
+                                right: '16px',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '50%',
+                                width: '36px',
+                                height: '36px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <CloseIcon size={18} />
+                        </button>
+
+                        <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800 }}>🚫 إخفاء الفروع عن الشركة</h3>
+                        <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                            حدد الفروع التي ترغب في **إخفائها** عن شركة <strong style={{ color: 'var(--primary-color)' }}>{managingHiddenBranchCompany.name}</strong> وسائقيها. الفروع المحددة لن تظهر لهم مطلقاً.
+                        </p>
+
+                        <div style={{
+                            maxHeight: '300px',
+                            overflowY: 'auto',
+                            padding: '10px',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '16px',
+                            background: 'rgba(0,0,0,0.02)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                            marginBottom: '24px',
+                            scrollbarWidth: 'thin',
+                            textAlign: 'right'
+                        }}>
+                            {branches.map(b => {
+                                const isHidden = tempHiddenBranchIds.includes(b.id);
+                                return (
+                                    <label 
+                                        key={b.id}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            padding: '10px 14px',
+                                            borderRadius: '10px',
+                                            background: isHidden ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-color)',
+                                            border: '1.5px solid ' + (isHidden ? 'var(--error)' : 'var(--border-color)'),
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            userSelect: 'none'
+                                        }}
+                                    >
+                                        <input 
+                                            type="checkbox"
+                                            checked={isHidden}
+                                            onChange={() => {
+                                                if (isHidden) {
+                                                    setTempHiddenBranchIds(tempHiddenBranchIds.filter(id => id !== b.id));
+                                                } else {
+                                                    setTempHiddenBranchIds([...tempHiddenBranchIds, b.id]);
+                                                }
+                                            }}
+                                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                        />
+                                        <div>
+                                            <span style={{ fontWeight: 700, fontSize: '14px', color: isHidden ? 'var(--error)' : 'var(--text-primary)' }}>{b.name}</span>
+                                            <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)' }}>{b.address}</span>
+                                        </div>
+                                    </label>
+                                );
+                            })}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={handleSaveHiddenBranches}
+                                style={{
+                                    flex: 1,
+                                    background: 'var(--primary-color)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+                                }}
+                            >
+                                حفظ الإعدادات 💾
+                            </button>
+                            <button
+                                onClick={() => setManagingHiddenBranchCompany(null)}
+                                style={{
+                                    flex: 1,
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--border-color)',
+                                    color: 'var(--text-primary)',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

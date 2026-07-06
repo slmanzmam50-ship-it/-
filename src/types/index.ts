@@ -67,4 +67,5 @@ export interface CompanyAccount {
     createdAt: number;
     username?: string;
     password?: string;
+    hiddenBranchIds?: string[];
 }

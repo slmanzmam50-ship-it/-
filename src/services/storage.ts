@@ -282,6 +282,14 @@ export const deleteCompany = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, COMPANIES_COLLECTION, id));
 };
 
+export const updateCompany = async (updatedCompany: CompanyAccount): Promise<void> => {
+    const compRef = doc(db, COMPANIES_COLLECTION, updatedCompany.id);
+    const { id, ...dataToUpdate } = updatedCompany;
+    // Remove undefined values to avoid Firestore serialization errors
+    Object.keys(dataToUpdate).forEach(key => (dataToUpdate as any)[key] === undefined && delete (dataToUpdate as any)[key]);
+    await updateDoc(compRef, dataToUpdate);
+};
+
 // --- Service Requests CRUD ---
 export const subscribeToServiceRequests = (callback: (requests: ServiceRequest[]) => void) => {
     return onSnapshot(collection(db, REQUESTS_COLLECTION), (snapshot) => {

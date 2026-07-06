@@ -4,9 +4,9 @@ import { useSearchParams } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Language } from '../services/translations';
-import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories, subscribeToServiceRequests, addServiceRequestRating } from '../services/storage';
+import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories, subscribeToServiceRequests, addServiceRequestRating, subscribeToCompanies } from '../services/storage';
 import { translations } from '../services/translations';
-import type { Branch, Category, ServiceRequest } from '../types';
+import type { Branch, Category, ServiceRequest, CompanyAccount } from '../types';
 import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc, Star, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LocationLoader from '../components/LocationLoader';
@@ -337,7 +337,8 @@ const normalizeArabicSimple = (str: string): string => {
 // MAIN COMPONENT
 // ============================================================
 const ClientMap: React.FC = () => {
-    const [branches, setBranches] = useState<Branch[]>([]);
+    const [allBranches, setAllBranches] = useState<Branch[]>([]);
+    const [companies, setCompanies] = useState<CompanyAccount[]>([]);
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [customLocInput, setCustomLocInput] = useState('');
     const [categories, setCategories] = useState<Category[]>([]);
@@ -426,15 +427,17 @@ const ClientMap: React.FC = () => {
     // Subscribe to data
     useEffect(() => {
         const unsubBranches = subscribeToBranches((data) => {
-            setBranches(data);
+            setAllBranches(data);
             setIsLoading(false);
         });
         const unsubCategories = subscribeToCategories(setCategories);
         const unsubRequests = subscribeToServiceRequests(setRequests);
+        const unsubCompanies = subscribeToCompanies(setCompanies);
         return () => { 
             unsubBranches(); 
             unsubCategories(); 
             unsubRequests(); 
+            unsubCompanies();
         };
     }, []);
 
@@ -442,6 +445,23 @@ const ClientMap: React.FC = () => {
     const [driverRequestId, setDriverRequestId] = useState(searchParams.get('request') || searchParams.get('requestId') || '');
     const [showOnlyTargeted, setShowOnlyTargeted] = useState(false);
     const activeRequest = driverRequestId ? requests.find(r => r.id.trim().toLowerCase() === driverRequestId.trim().toLowerCase()) : null;
+
+    const branches = React.useMemo(() => {
+        let companyIdToFilter: string | null = null;
+        if (activeRequest) {
+            companyIdToFilter = activeRequest.companyId;
+        } else {
+            companyIdToFilter = localStorage.getItem('logged_company_id');
+        }
+
+        if (companyIdToFilter) {
+            const company = companies.find(c => c.id === companyIdToFilter);
+            if (company && company.hiddenBranchIds && company.hiddenBranchIds.length > 0) {
+                return allBranches.filter(b => !company.hiddenBranchIds?.includes(b.id));
+            }
+        }
+        return allBranches;
+    }, [allBranches, activeRequest, companies]);
 
     const typeParam = searchParams.get('type');
     const isCompanyOrAdmin = typeParam === 'company' || typeParam === 'admin';

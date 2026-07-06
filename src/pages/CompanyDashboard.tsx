@@ -643,7 +643,9 @@ const CompanyDashboard: React.FC = () => {
 
                                 {/* Individual Branch Badges */}
                                 {(() => {
-                                    const sorted = [...branches].sort((a, b) => getBranchScore(b.id) - getBranchScore(a.id));
+                                    const sorted = [...branches]
+                                        .filter(b => !loggedInCompany.hiddenBranchIds?.includes(b.id))
+                                        .sort((a, b) => getBranchScore(b.id) - getBranchScore(a.id));
                                     const cleanQuery = normalizeArabicSimple(branchSearch);
                                     const filtered = sorted.filter(b => 
                                         normalizeArabicSimple(b.name).includes(cleanQuery) || 
@@ -1190,7 +1192,9 @@ const CompanyDashboard: React.FC = () => {
 
                                 {/* Individual Branch Badges */}
                                 {(() => {
-                                    const sorted = [...branches].sort((a, b) => getBranchScore(b.id) - getBranchScore(a.id));
+                                    const sorted = [...branches]
+                                        .filter(b => !loggedInCompany.hiddenBranchIds?.includes(b.id))
+                                        .sort((a, b) => getBranchScore(b.id) - getBranchScore(a.id));
                                     const cleanQuery = normalizeArabicSimple(reRouteBranchSearch);
                                     const filtered = sorted.filter(b => 
                                         normalizeArabicSimple(b.name).includes(cleanQuery) || 
