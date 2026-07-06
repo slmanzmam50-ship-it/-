@@ -207,7 +207,7 @@ const QrView: React.FC = () => {
                 </div>
 
                 <a
-                    href={`/map?request=${requestId}`}
+                    href={`/map?request=${requestId}&lang=${lang}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
