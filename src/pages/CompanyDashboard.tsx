@@ -89,9 +89,6 @@ const CompanyDashboard: React.FC = () => {
         const shareText = `🚗 *طلب خدمة جديد - مراكز سلمان الخالدي* 🚗
 
 *رقم الطلب:* ${request.id}
-*رقم اللوحة:* ${request.plateNumber}
-*الخدمة المطلوبة:* ${request.serviceDescription}
-*الفروع الموجه إليها:* ${getBranchNamesStr(request.targetBranchIds)}
 
 📍 *رابط التوجيه الخرائطي للسائق:*
 ${shareUrl}
