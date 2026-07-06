@@ -1,3 +1,29 @@
+// Force clear old PWA caches and reload once
+const FORCE_UPDATE_VERSION = 'clear_cache_v4';
+if (localStorage.getItem('pwa_cache_ver') !== FORCE_UPDATE_VERSION) {
+  localStorage.setItem('pwa_cache_ver', FORCE_UPDATE_VERSION);
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        registration.unregister();
+      }
+    });
+  }
+  if ('caches' in window) {
+    caches.keys().then((names) => {
+      for (const name of names) {
+        caches.delete(name);
+      }
+    });
+  }
+  // Clear browser session storage
+  sessionStorage.clear();
+  // Hard reload
+  setTimeout(() => {
+    window.location.reload();
+  }, 400);
+}
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
