@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest, subscribeToBranches, updateServiceRequestBranch } from '../services/storage';
 import type { CompanyAccount, ServiceRequest, Branch } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight } from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
@@ -82,6 +82,57 @@ const CompanyDashboard: React.FC = () => {
         link.click();
         document.body.removeChild(link);
         toast.success('تم تحميل رمز QR بنجاح');
+    };
+
+    const handleShareRequest = async (request: ServiceRequest) => {
+        const shareUrl = `${window.location.origin}/map?request=${request.id}`;
+        const shareText = `🚗 *طلب خدمة جديد - مراكز سلمان الخالدي* 🚗
+
+*رقم الطلب:* ${request.id}
+*رقم اللوحة:* ${request.plateNumber}
+*الخدمة المطلوبة:* ${request.serviceDescription}
+*الفروع الموجه إليها:* ${getBranchNamesStr(request.targetBranchIds)}
+
+📍 *رابط التوجيه الخرائطي للسائق:*
+${shareUrl}
+
+*(يمكن للموظف في الفرع البحث برقم الطلب يدوياً أو مسح الرمز)*`;
+
+        if (navigator.share) {
+            try {
+                if (modalQrUrl && modalQrUrl.startsWith('data:image')) {
+                    const blob = await fetch(modalQrUrl).then(r => r.blob());
+                    const file = new File([blob], `qr-${request.id}.png`, { type: 'image/png' });
+                    
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: `طلب خدمة رقم ${request.id}`,
+                            text: shareText
+                        });
+                        toast.success('تمت المشاركة بنجاح! 📤');
+                        return;
+                    }
+                }
+                
+                await navigator.share({
+                    title: `طلب خدمة رقم ${request.id}`,
+                    text: shareText
+                });
+                toast.success('تمت المشاركة بنجاح! 📤');
+            } catch (error) {
+                console.error('Error sharing:', error);
+                openWhatsAppShare(shareText);
+            }
+        } else {
+            openWhatsAppShare(shareText);
+        }
+    };
+
+    const openWhatsAppShare = (text: string) => {
+        const encodedText = encodeURIComponent(text);
+        window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+        toast.success('تم فتح واتساب لمشاركة الطلب! 💬');
     };
 
     // Subscribe to branches, companies, and requests
@@ -575,7 +626,7 @@ const CompanyDashboard: React.FC = () => {
                                     )}
                                 </div>
                                 <a 
-                                    href={`/map?type=company&hiddenBranches=${loggedInCompany.hiddenBranchIds?.join(',') || ''}`} 
+                                    href={`/map?type=company&hiddenBranches=${loggedInCompany?.hiddenBranchIds?.join(',') || ''}`} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     style={{
@@ -1429,6 +1480,27 @@ const CompanyDashboard: React.FC = () => {
                                 }}
                             >
                                 <Download size={18} /> تحميل الرمز
+                            </button>
+                            <button
+                                onClick={() => handleShareRequest(selectedQrRequest)}
+                                style={{
+                                    flex: 1,
+                                    background: 'var(--accent-orange)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)'
+                                }}
+                            >
+                                <Share2 size={18} /> مشاركة الطلب
                             </button>
                             <button
                                 onClick={() => setSelectedQrRequest(null)}
