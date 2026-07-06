@@ -8,6 +8,7 @@ import CompanyInvoices from './pages/CompanyInvoices';
 import Login from './pages/Login';
 import CompanyDashboard from './pages/CompanyDashboard';
 import BranchPanel from './pages/BranchPanel';
+import QrView from './pages/QrView';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
 
@@ -115,6 +116,7 @@ function App() {
               </Route>
               <Route path="login" element={<Login />} />
               <Route path="map" element={<ClientMap />} />
+              <Route path="qr" element={<QrView />} />
               {/* Fallback redirects for admin portal */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
@@ -129,6 +131,7 @@ function App() {
               <Route path="login" element={<Login />} />
               <Route path="company" element={<Navigate to="/" replace />} />
               <Route path="map" element={<ClientMap />} />
+              <Route path="qr" element={<QrView />} />
               {/* Fallback redirects for B2B portal */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
@@ -143,6 +146,7 @@ function App() {
               <Route path="login" element={<Login />} />
               <Route path="branch" element={<Navigate to="/" replace />} />
               <Route path="map" element={<ClientMap />} />
+              <Route path="qr" element={<QrView />} />
               {/* Fallback redirects for branch portal */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
@@ -156,6 +160,8 @@ function App() {
             <Route path="/" element={<Layout />}>
               <Route index element={<PublicIndex />} />
               <Route path="login" element={<Login />} />
+              <Route path="map" element={<ClientMap />} />
+              <Route path="qr" element={<QrView />} />
               <Route path="company" element={<CompanyDashboard />} />
               <Route path="branch" element={<BranchPanel />} />
               <Route element={<ProtectedRoute />}>
