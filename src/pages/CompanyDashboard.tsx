@@ -89,13 +89,11 @@ const CompanyDashboard: React.FC = () => {
         const qrShareUrl = `${window.location.origin}/qr?id=${request.id}`;
         const shareText = `🚗 *طلب خدمة جديد - مراكز سلمان الخالدي* 🚗
 
-*رقم الطلب:* ${request.id}
+*رقم الطلب (اضغط لفتح الباركود 📱):*
+${request.id} 👈 ${qrShareUrl}
 
 📍 *رابط التوجيه الخرائطي للسائق:*
 ${shareUrl}
-
-📱 *رابط الباركود السريع للجوال:*
-${qrShareUrl}
 
 *(يمكن للموظف في الفرع البحث برقم الطلب يدوياً أو مسح الرمز)*`;
 
