@@ -32,25 +32,20 @@ function App() {
     return !window.location.pathname.includes('/map');
   });
 
-  const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
-  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
-
   useEffect(() => {
     const handleUpdate = (e: Event) => {
       const customEvent = e as CustomEvent<ServiceWorkerRegistration>;
-      setSwRegistration(customEvent.detail);
-      setSwUpdateAvailable(true);
+      const reg = customEvent.detail;
+      if (reg && reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     };
     window.addEventListener('swUpdateAvailable', handleUpdate);
     return () => window.removeEventListener('swUpdateAvailable', handleUpdate);
   }, []);
-
-  const handleApplyUpdate = () => {
-    if (swRegistration && swRegistration.waiting) {
-      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-    window.location.reload();
-  };
 
   // Dynamic PWA Manifest Switching
   useEffect(() => {
@@ -180,57 +175,7 @@ function App() {
     <BrowserRouter>
       <Toaster position="top-center" reverseOrder={false} />
       <InstallPWA />
-      {swUpdateAvailable && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 999999,
-          width: '92%',
-          maxWidth: '460px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: '1.5px solid var(--primary-color)',
-          borderRadius: '20px',
-          padding: '16px 20px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '16px',
-          animation: 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-          direction: 'rtl'
-        }}>
-          <div style={{ textAlign: 'right' }}>
-            <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 850, color: 'white' }}>
-              ✨ تحديث جديد متوفر للتطبيق!
-            </h4>
-            <p style={{ margin: 0, fontSize: '11.5px', color: '#94a3b8', lineHeight: '1.4' }}>
-              اضغط على تحديث لتطبيق التحسينات وإضافة الميزات الجديدة فوراً.
-            </p>
-          </div>
-          <button 
-            onClick={handleApplyUpdate}
-            className="hover-scale tap-effect"
-            style={{
-              background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '12px',
-              fontWeight: 850,
-              fontSize: '13px',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 8px 20px rgba(59, 130, 246, 0.35)'
-            }}
-          >
-            تحديث الآن 🔄
-          </button>
-        </div>
-      )}
+
       {showSplash ? (
         <Splash onComplete={() => setShowSplash(false)} />
       ) : (
