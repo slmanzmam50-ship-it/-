@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zamam-khaldy-v2';
+const CACHE_NAME = 'zamam-khaldy-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -43,4 +43,10 @@ self.addEventListener('fetch', (event) => {
       });
     })
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

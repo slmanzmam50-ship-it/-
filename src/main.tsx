@@ -7,7 +7,22 @@ import App from './App.tsx'
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('SW registered'))
+      .then(reg => {
+        console.log('SW registered');
+        if (reg.waiting) {
+          window.dispatchEvent(new CustomEvent('swUpdateAvailable', { detail: reg }));
+        }
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                window.dispatchEvent(new CustomEvent('swUpdateAvailable', { detail: reg }));
+              }
+            });
+          }
+        });
+      })
       .catch(err => console.log('SW registration failed', err));
   });
 }
