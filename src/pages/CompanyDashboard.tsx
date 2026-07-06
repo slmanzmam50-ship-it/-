@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest, subscribeToBranches, updateServiceRequestBranch } from '../services/storage';
 import type { CompanyAccount, ServiceRequest, Branch } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2 } from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
@@ -26,7 +26,7 @@ const CompanyDashboard: React.FC = () => {
     const [serviceDescription, setServiceDescription] = useState('');
     const [targetBranchIds, setTargetBranchIds] = useState<string[]>(['all']);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [activeTab, setActiveTab] = useState<'create' | 'active' | 'issues' | 'completed'>('create');
+    const [activeTab, setActiveTab] = useState<'create' | 'active' | 'issues' | 'completed' | null>(null);
     
     // Login and session states
     const [loggedInCompany, setLoggedInCompany] = useState<CompanyAccount | null>(null);
@@ -230,8 +230,9 @@ const CompanyDashboard: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {/* Quick Actions / Categories Navigation Grid */}
-                <div className="company-actions-grid animate-fade-in">
+                {activeTab === null ? (
+                    /* Quick Actions / Categories Navigation Grid */
+                    <div className="company-actions-grid animate-fade-in">
                     {/* 1. Create Request */}
                     <div 
                         onClick={() => setActiveTab('create')}
@@ -361,6 +362,31 @@ const CompanyDashboard: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade-in">
+                    <button
+                        onClick={() => setActiveTab(null)}
+                        className="hover-scale tap-effect"
+                        style={{
+                            alignSelf: 'flex-start',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: 'var(--surface-color)',
+                            border: '1px solid var(--border-color)',
+                            padding: '10px 18px',
+                            borderRadius: '12px',
+                            color: 'var(--primary-color)',
+                            fontSize: '14px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.25s',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                            marginBottom: '4px'
+                        }}
+                    >
+                        <ArrowRight size={16} /> رجوع للوحة التحكم الرئيسية
+                    </button>
 
                 {/* Create Request Section */}
                 <div className="glass animate-slide-up" style={{ 
@@ -999,6 +1025,8 @@ const CompanyDashboard: React.FC = () => {
                         </div>
                     )}
                 </div>
+                </div>
+            )}
             </div>
 
             {/* Re-Route branch Modal */}
