@@ -848,6 +848,24 @@ ${window.location.origin}
                                                     <Link2 size={18} />
                                                 </button>
                                                 <button 
+                                                    onClick={() => handleShareRequest(r)}
+                                                    title="مشاركة تفاصيل الطلب عبر واتساب / التطبيقات"
+                                                    style={{
+                                                        background: 'rgba(34, 197, 94, 0.1)',
+                                                        border: '1px solid rgba(34, 197, 94, 0.3)',
+                                                        borderRadius: '8px',
+                                                        padding: '8px',
+                                                        color: '#22c55e',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <Share2 size={18} />
+                                                </button>
+                                                <button 
                                                     onClick={() => setSelectedQrRequest(r)}
                                                     title="عرض رمز الـ QR"
                                                     style={{
