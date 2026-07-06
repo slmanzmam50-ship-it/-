@@ -57,6 +57,7 @@ export interface ServiceRequest {
     rating?: number;
     ratingComment?: string;
     ratedAt?: number;
+    companyHiddenBranchIds?: string[];
 }
 
 export interface CompanyAccount {

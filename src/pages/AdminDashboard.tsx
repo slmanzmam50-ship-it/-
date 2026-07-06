@@ -444,7 +444,8 @@ const AdminDashboard: React.FC = () => {
                 companyName: compObj.name,
                 plateNumber: pNum,
                 serviceDescription: sDesc,
-                targetBranchIds: adminTargetBranchIds
+                targetBranchIds: adminTargetBranchIds,
+                companyHiddenBranchIds: compObj.hiddenBranchIds || []
             });
             toast.success(`تم إنشاء الطلب بنجاح للشركة ${compObj.name}! رقم الطلب: ${newReq.id} 🎉`);
             setAdminSelectedCompanyId('');

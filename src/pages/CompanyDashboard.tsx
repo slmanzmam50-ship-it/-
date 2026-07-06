@@ -131,7 +131,8 @@ const CompanyDashboard: React.FC = () => {
                 companyName: loggedInCompany.name,
                 plateNumber: pNum,
                 serviceDescription: sDesc,
-                targetBranchIds: targetBranchIds
+                targetBranchIds: targetBranchIds,
+                companyHiddenBranchIds: loggedInCompany.hiddenBranchIds || []
             });
             toast.success(`تم إنشاء الطلب بنجاح! رقم الطلب: ${newReq.id} 🎉`);
             setPlateNumber('');
@@ -574,7 +575,7 @@ const CompanyDashboard: React.FC = () => {
                                     )}
                                 </div>
                                 <a 
-                                    href="/map?type=company" 
+                                    href={`/map?type=company&hiddenBranches=${loggedInCompany.hiddenBranchIds?.join(',') || ''}`} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     style={{
