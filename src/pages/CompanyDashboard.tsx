@@ -93,9 +93,6 @@ const CompanyDashboard: React.FC = () => {
 📍 *رابط التوجيه الخرائطي للسائق:*
 ${shareUrl}
 
-🌐 *رابط الموقع الإلكتروني:*
-${window.location.origin}
-
 *(يمكن للموظف في الفرع البحث برقم الطلب يدوياً أو مسح الرمز)*`;
 
         if (navigator.share) {

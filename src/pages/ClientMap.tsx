@@ -7,9 +7,10 @@ import type { Language } from '../services/translations';
 import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories, subscribeToServiceRequests, addServiceRequestRating } from '../services/storage';
 import { translations } from '../services/translations';
 import type { Branch, Category, ServiceRequest } from '../types';
-import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc, Star, Loader2 } from 'lucide-react';
+import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc, Star, Loader2, QrCode } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LocationLoader from '../components/LocationLoader';
+import QRCode from 'qrcode';
 
 // Fix typical React Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -364,12 +365,15 @@ const ClientMap: React.FC = () => {
     const prevMapZoomRef = useRef<number>(5);
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+    const [showMapQrModal, setShowMapQrModal] = useState(false);
+    const [mapQrUrl, setMapQrUrl] = useState('');
+
+
+
     const [showRatingModal, setShowRatingModal] = useState(false);
     const [ratingValue, setRatingValue] = useState(5);
     const [ratingComment, setRatingComment] = useState('');
     const [isSubmittingRating, setIsSubmittingRating] = useState(false);
-
-
 
     const [showLocationBanner, setShowLocationBanner] = useState(() => {
         return sessionStorage.getItem('gps_banner_dismissed') !== 'true';
@@ -442,6 +446,14 @@ const ClientMap: React.FC = () => {
     const [driverRequestId, setDriverRequestId] = useState(searchParams.get('request') || searchParams.get('requestId') || '');
     const [showOnlyTargeted, setShowOnlyTargeted] = useState(false);
     const activeRequest = driverRequestId ? requests.find(r => r.id.trim().toLowerCase() === driverRequestId.trim().toLowerCase()) : null;
+
+    useEffect(() => {
+        if (activeRequest && showMapQrModal) {
+            QRCode.toDataURL(activeRequest.id, { width: 400, margin: 2 })
+                .then(url => setMapQrUrl(url))
+                .catch(err => console.error(err));
+        }
+    }, [activeRequest?.id, showMapQrModal]);
 
     const branches = React.useMemo(() => {
         let hiddenIds: string[] = [];
@@ -1206,6 +1218,28 @@ const ClientMap: React.FC = () => {
                                     ? (lang === 'ar' ? 'عرض جميع الفروع' : 'Show All Branches')
                                     : (lang === 'ar' ? 'تصفية الفروع الموجهة فقط' : 'Filter Designated Only')}
                             </button>
+                            <button
+                                onClick={() => setShowMapQrModal(true)}
+                                style={{
+                                    flex: 1,
+                                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                                    border: 'none',
+                                    color: 'white',
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    fontSize: '11.5px',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px'
+                                }}
+                            >
+                                <QrCode size={14} />
+                                {lang === 'ar' ? 'عرض باركود الطلب (QR)' : 'Show QR Barcode'}
+                            </button>
                         </div>
                     </div>
                 )}
@@ -1820,6 +1854,110 @@ const ClientMap: React.FC = () => {
                             ) : (
                                 lang === 'ar' ? 'إرسال التقييم' : 'Submit Feedback'
                             )}
+                        </button>
+                    </div>
+                </div>
+            )}
+            {/* Map QR Code Modal for Driver */}
+            {showMapQrModal && activeRequest && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 100000,
+                    padding: '16px'
+                }}>
+                    <div className="glass animate-scale-up" style={{
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '380px',
+                        padding: '24px',
+                        position: 'relative',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        textAlign: 'center',
+                        color: 'var(--text-primary)',
+                        direction: 'rtl'
+                    }}>
+                        <button 
+                            onClick={() => setShowMapQrModal(false)}
+                            style={{
+                                position: 'absolute',
+                                top: '16px',
+                                right: '16px',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '50%',
+                                width: '36px',
+                                height: '36px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800 }}>رمز استجابة سريع للطلب (QR Code)</h3>
+                        <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>اعرض هذا الرمز لموظف الفرع لمسحه وتأكيد الطلب</p>
+
+                        <div style={{
+                            background: 'white',
+                            padding: '16px',
+                            borderRadius: '16px',
+                            display: 'inline-block',
+                            margin: '0 auto 20px',
+                            boxShadow: '0 8px 16px rgba(0,0,0,0.15)'
+                        }}>
+                            {mapQrUrl ? (
+                                <img src={mapQrUrl} alt="QR Code" style={{ width: '220px', height: '220px', display: 'block' }} />
+                            ) : (
+                                <div style={{ width: '220px', height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                                    جاري التحميل...
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{
+                            background: 'var(--bg-color)',
+                            borderRadius: '16px',
+                            padding: '16px',
+                            marginBottom: '20px',
+                            border: '1px solid var(--border-color)',
+                            textAlign: 'right'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم الطلب:</span>
+                                <span style={{ fontWeight: 800, color: 'var(--accent-orange)' }}>{activeRequest.id}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم اللوحة:</span>
+                                <span style={{ fontWeight: 800 }}>{activeRequest.plateNumber}</span>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => setShowMapQrModal(false)}
+                            style={{
+                                width: '100%',
+                                background: 'var(--primary-color)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                fontWeight: 800,
+                                fontSize: '14.5px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            إغلاق
                         </button>
                     </div>
                 </div>
