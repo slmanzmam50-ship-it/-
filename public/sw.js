@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zamam-khaldy-v3';
+const CACHE_NAME = 'zamam-khaldy-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -19,11 +19,13 @@ self.addEventListener('activate', (event) => {
       keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
     ))
   );
-  clients.claim();
+  self.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network first, fallback to cache for HTML/assets
+  if (event.request.method !== 'GET') return;
+
+  // Network first for navigation requests (HTML page)
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => caches.match('/index.html'))
@@ -31,17 +33,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network first with cache fallback for other assets
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request).then((networkResponse) => {
-        // Cache new assets on the fly if they are from our origin
+    fetch(event.request)
+      .then((networkResponse) => {
         if (event.request.url.startsWith(self.location.origin) && networkResponse.status === 200) {
           const cacheCopy = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, cacheCopy));
         }
         return networkResponse;
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
   );
 });
 
