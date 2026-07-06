@@ -93,6 +93,9 @@ const CompanyDashboard: React.FC = () => {
 📍 *رابط التوجيه الخرائطي للسائق:*
 ${shareUrl}
 
+🌐 *رابط الموقع الإلكتروني:*
+${window.location.origin}
+
 *(يمكن للموظف في الفرع البحث برقم الطلب يدوياً أو مسح الرمز)*`;
 
         if (navigator.share) {
@@ -1482,7 +1485,7 @@ ${shareUrl}
                                 onClick={() => handleShareRequest(selectedQrRequest)}
                                 style={{
                                     flex: 1,
-                                    background: 'var(--accent-orange)',
+                                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
                                     color: 'white',
                                     border: 'none',
                                     padding: '12px 16px',
@@ -1494,7 +1497,8 @@ ${shareUrl}
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: '8px',
-                                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)'
+                                    boxShadow: '0 6px 18px rgba(34, 197, 94, 0.35)',
+                                    transition: 'all 0.25s'
                                 }}
                             >
                                 <Share2 size={18} /> مشاركة الطلب
