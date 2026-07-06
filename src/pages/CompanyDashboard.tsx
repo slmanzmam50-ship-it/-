@@ -86,16 +86,12 @@ const CompanyDashboard: React.FC = () => {
 
     const handleShareRequest = async (request: ServiceRequest) => {
         const shareUrl = `${window.location.origin}/map?request=${request.id}`;
-        const qrShareUrl = `${window.location.origin}/qr?id=${request.id}`;
-        const shareText = `🚗 *طلب خدمة جديد - مراكز سلمان الخالدي* 🚗
+        const shareText = `🚗 *مراكز خدمة سلمان زمام الخالدي | Salman Zmam Al-Khaldi Service Centers* 🚗
 
-*رقم الطلب (اضغط لفتح الباركود 📱):*
-${request.id} 👈 ${qrShareUrl}
+الرجاء الضغط على الرابط أدناه لعرض تفاصيل طلب الصيانة والباركود:
+Please click the link below to view your maintenance request details and barcode:
 
-📍 *رابط التوجيه الخرائطي للسائق:*
-${shareUrl}
-
-*(يمكن للموظف في الفرع البحث برقم الطلب يدوياً أو مسح الرمز)*`;
+📍 ${shareUrl}`;
 
         if (navigator.share) {
             try {

@@ -3,7 +3,36 @@ import { useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { subscribeToServiceRequests } from '../services/storage';
 import type { ServiceRequest } from '../types';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Globe } from 'lucide-react';
+
+const translations = {
+    ar: {
+        title: 'رمز الاستجابة السريع للطلب (QR)',
+        subtitle: 'قدم هذا الرمز للموظف في الفرع لمسحه وتأكيد الخدمة فوراً',
+        loading: 'جاري تحميل الرمز...',
+        notFound: 'عذراً، لم يتم العثور على طلب',
+        checkLink: 'تأكد من صحة الرابط المرسل',
+        requestId: 'رقم الطلب:',
+        plateNumber: 'رقم اللوحة:',
+        company: 'الشركة:',
+        systemText: 'نظام سلمان زمام الخالدي المعتمد لطلب الخدمات',
+        close: 'إغلاق',
+        langBtn: 'English'
+    },
+    en: {
+        title: 'Request QR Code',
+        subtitle: 'Show this code to the branch employee to scan and confirm service immediately',
+        loading: 'Loading barcode...',
+        notFound: 'Sorry, request not found',
+        checkLink: 'Please verify the shared link',
+        requestId: 'Request ID:',
+        plateNumber: 'Plate Number:',
+        company: 'Company:',
+        systemText: 'Authorized Salman Zmam Al-Khaldi Service Request System',
+        close: 'Close',
+        langBtn: 'العربية'
+    }
+};
 
 const QrView: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -11,6 +40,7 @@ const QrView: React.FC = () => {
     const [qrUrl, setQrUrl] = useState('');
     const [request, setRequest] = useState<ServiceRequest | null>(null);
     const [loading, setLoading] = useState(true);
+    const [lang, setLang] = useState<'ar' | 'en'>('ar');
 
     useEffect(() => {
         if (requestId) {
@@ -33,10 +63,12 @@ const QrView: React.FC = () => {
         }
     }, [requestId]);
 
+    const t = translations[lang];
+
     if (loading) {
         return (
             <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)', color: 'var(--text-primary)' }}>
-                <h3>جاري تحميل الرمز...</h3>
+                <h3>{t.loading}</h3>
             </div>
         );
     }
@@ -44,8 +76,8 @@ const QrView: React.FC = () => {
     if (!requestId) {
         return (
             <div style={{ display: 'flex', height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)', color: 'var(--text-primary)', padding: '20px', textAlign: 'center' }}>
-                <h3>عذراً، لم يتم العثور على طلب</h3>
-                <p>تأكد من صحة الرابط المرسل</p>
+                <h3>{t.notFound}</h3>
+                <p>{t.checkLink}</p>
             </div>
         );
     }
@@ -61,8 +93,33 @@ const QrView: React.FC = () => {
             color: 'var(--text-primary)',
             padding: '24px',
             boxSizing: 'border-box',
-            direction: 'rtl'
+            direction: lang === 'ar' ? 'rtl' : 'ltr'
         }}>
+            {/* Language Selection Button */}
+            <button
+                onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+                style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'var(--surface-color)',
+                    border: '1.5px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    padding: '8px 18px',
+                    borderRadius: '50px',
+                    fontWeight: 800,
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    marginBottom: '20px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    transition: 'all 0.2s'
+                }}
+                className="hover-scale tap-effect"
+            >
+                <Globe size={16} color="var(--primary-color)" />
+                {t.langBtn}
+            </button>
+
             <div className="glass animate-scale-up" style={{
                 background: 'var(--surface-color)',
                 border: '1px solid var(--border-color)',
@@ -74,10 +131,10 @@ const QrView: React.FC = () => {
                 textAlign: 'center'
             }}>
                 <h3 style={{ margin: '0 0 8px', fontSize: '1.3rem', fontWeight: 800, color: 'var(--primary-color)' }}>
-                    رمز الاستجابة السريع للطلب (QR)
+                    {t.title}
                 </h3>
-                <p style={{ margin: '0 0 24px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    قدم هذا الرمز للموظف في الفرع لمسحه وتأكيد الخدمة فوراً
+                <p style={{ margin: '0 0 24px', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                    {t.subtitle}
                 </p>
 
                 <div style={{
@@ -97,23 +154,23 @@ const QrView: React.FC = () => {
                     padding: '16px',
                     marginBottom: '24px',
                     border: '1px solid var(--border-color)',
-                    textAlign: 'right',
+                    textAlign: lang === 'ar' ? 'right' : 'left',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '10px'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '13.5px' }}>رقم الطلب:</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '13.5px' }}>{t.requestId}</span>
                         <span style={{ fontWeight: 800, color: 'var(--accent-orange)' }}>{requestId}</span>
                     </div>
                     {request && (
                         <>
                             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13.5px' }}>رقم اللوحة:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13.5px' }}>{t.plateNumber}</span>
                                 <span style={{ fontWeight: 800 }}>{request.plateNumber}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13.5px' }}>الشركة:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13.5px' }}>{t.company}</span>
                                 <span style={{ fontWeight: 700 }}>{request.companyName}</span>
                             </div>
                         </>
@@ -122,7 +179,7 @@ const QrView: React.FC = () => {
 
                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
                     <ShieldCheck size={14} color="var(--success)" />
-                    <span>نظام سلمان زمام الخالدي المعتمد لطلب الخدمات</span>
+                    <span>{t.systemText}</span>
                 </div>
             </div>
         </div>
