@@ -388,16 +388,142 @@ export const updateCompany = async (updatedCompany: CompanyAccount): Promise<voi
 
 // --- Service Requests CRUD ---
 export const subscribeToServiceRequests = (callback: (requests: ServiceRequest[]) => void) => {
-    return onSnapshot(collection(db, REQUESTS_COLLECTION), (snapshot) => {
+    // Admin query: Limit to 150 most recent requests to prevent crashing
+    const q = query(
+        collection(db, REQUESTS_COLLECTION),
+        orderBy('createdAt', 'desc'),
+        limit(150)
+    );
+    return onSnapshot(q, (snapshot) => {
         const requests: ServiceRequest[] = [];
         snapshot.forEach((doc) => {
             requests.push({ id: doc.id, ...doc.data() } as ServiceRequest);
         });
-        callback(requests.sort((a, b) => b.createdAt - a.createdAt));
+        callback(requests);
     }, (error) => {
         console.error("Error subscribing to service requests:", error);
         callback([]);
     });
+};
+
+export const subscribeToCompanyRequests = (
+    companyId: string, 
+    callback: (active: ServiceRequest[], completed: ServiceRequest[]) => void,
+    onError: (errorMsg: string) => void
+) => {
+    // 1. Active Requests (No limit, sorted in memory to avoid composite index)
+    const qActive = query(
+        collection(db, REQUESTS_COLLECTION),
+        where('companyId', '==', companyId),
+        where('status', 'in', ['active', 'partial', 'rejected'])
+    );
+
+    // 2. Completed Requests (Limited to 20, ordered by date)
+    // THIS REQUIRES A COMPOSITE INDEX: (companyId ASC, status ASC, createdAt DESC)
+    const qCompleted = query(
+        collection(db, REQUESTS_COLLECTION),
+        where('companyId', '==', companyId),
+        where('status', '==', 'completed'),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+    );
+
+    let activeReqs: ServiceRequest[] = [];
+    let completedReqs: ServiceRequest[] = [];
+    
+    const triggerCallback = () => {
+        // Sort active requests in memory (descending)
+        const sortedActive = [...activeReqs].sort((a, b) => b.createdAt - a.createdAt);
+        callback(sortedActive, completedReqs);
+    };
+
+    const unsubActive = onSnapshot(qActive, (snapshot) => {
+        activeReqs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ServiceRequest));
+        triggerCallback();
+    }, (error: any) => {
+        console.error("Error fetching active requests:", error);
+        if (error.message?.includes('index')) onError(error.message);
+    });
+
+    const unsubCompleted = onSnapshot(qCompleted, (snapshot) => {
+        completedReqs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ServiceRequest));
+        triggerCallback();
+    }, (error: any) => {
+        console.error("Error fetching completed requests:", error);
+        if (error.message?.includes('index')) onError(error.message);
+    });
+
+    return () => {
+        unsubActive();
+        unsubCompleted();
+    };
+};
+
+export const subscribeToBranchRequests = (
+    branchId: string,
+    callback: (requests: ServiceRequest[]) => void,
+    onError: (errorMsg: string) => void
+) => {
+    // Branches only need to see requests that are targeted at them OR completed by them.
+    // To keep it simple and avoid massive composite index requirements with array-contains:
+    // We'll just fetch recent requests overall and filter in memory? No, that's bad.
+    // Let's use two queries:
+    // 1. Target Branch: array-contains targetBranchIds
+    const qTarget = query(
+        collection(db, REQUESTS_COLLECTION),
+        where('targetBranchIds', 'array-contains', branchId),
+        where('status', 'in', ['active', 'partial'])
+    );
+
+    // 2. Target All: array-contains 'all'
+    const qAll = query(
+        collection(db, REQUESTS_COLLECTION),
+        where('targetBranchIds', 'array-contains', 'all'),
+        where('status', 'in', ['active', 'partial'])
+    );
+
+    // 3. Completed by this branch (limit 20)
+    // REQUIRES INDEX: (branchId ASC, status ASC, createdAt DESC)
+    const qCompleted = query(
+        collection(db, REQUESTS_COLLECTION),
+        where('branchId', '==', branchId),
+        where('status', '==', 'completed'),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+    );
+
+    let targetReqs: ServiceRequest[] = [];
+    let allReqs: ServiceRequest[] = [];
+    let compReqs: ServiceRequest[] = [];
+
+    const triggerCallback = () => {
+        // Merge and deduplicate
+        const map = new Map<string, ServiceRequest>();
+        [...targetReqs, ...allReqs, ...compReqs].forEach(req => map.set(req.id, req));
+        const merged = Array.from(map.values()).sort((a, b) => b.createdAt - a.createdAt);
+        callback(merged);
+    };
+
+    const handleErr = (error: any) => {
+        if (error.message?.includes('index')) onError(error.message);
+    };
+
+    const unsubTarget = onSnapshot(qTarget, snap => {
+        targetReqs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ServiceRequest));
+        triggerCallback();
+    }, handleErr);
+
+    const unsubAll = onSnapshot(qAll, snap => {
+        allReqs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ServiceRequest));
+        triggerCallback();
+    }, handleErr);
+
+    const unsubComp = onSnapshot(qCompleted, snap => {
+        compReqs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ServiceRequest));
+        triggerCallback();
+    }, handleErr);
+
+    return () => { unsubTarget(); unsubAll(); unsubComp(); };
 };
 
 export const addServiceRequest = async (request: Omit<ServiceRequest, 'id' | 'status' | 'createdAt'>): Promise<ServiceRequest> => {

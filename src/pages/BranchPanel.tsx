@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { subscribeToServiceRequests, updateServiceRequestStatus, validateBranchSession, subscribeToBranch } from '../services/storage';
+import { subscribeToServiceRequests, updateServiceRequestStatus, validateBranchSession, subscribeToBranch, subscribeToBranchRequests } from '../services/storage';
 import type { Branch, ServiceRequest } from '../types';
 import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, Loader2, ArrowLeftRight, Ban, History, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -11,6 +11,7 @@ const BranchPanel: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [indexError, setIndexError] = useState<string | null>(null);
 
     // Rejection dialog states
     const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -133,9 +134,17 @@ const BranchPanel: React.FC = () => {
             }
         });
 
-        const unsubRequests = subscribeToServiceRequests(setRequests);
+        let unsubRequests: (() => void) | undefined;
+        if (storedBranchId) {
+            unsubRequests = subscribeToBranchRequests(
+                storedBranchId,
+                setRequests,
+                (errorMsg) => setIndexError(errorMsg)
+            );
+        }
+
         return () => { 
-            unsubRequests(); 
+            if (unsubRequests) unsubRequests(); 
             if (unsubBranch) unsubBranch();
         };
     }, []);
@@ -374,8 +383,23 @@ const BranchPanel: React.FC = () => {
     }
 
     return (
-        <div style={{ maxWidth: '800px', margin: '24px auto', padding: '0 16px', direction: 'rtl' }}>
-            {/* Top Info Card */}
+        <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', paddingBottom: '100px', direction: 'rtl' }}>
+            {indexError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #ef4444', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+                    <h4 style={{ color: '#ef4444', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <AlertTriangle size={20} />
+                        تنبيه للإدارة: مطلوب إعداد فهرس (Index)
+                    </h4>
+                    <p style={{ margin: '0 0 12px 0', color: '#7f1d1d', fontSize: '0.95rem' }}>
+                        لتسريع النظام وتقليل استهلاك البيانات، تم تفعيل ميزة "القيود الذكية". لكي تعمل هذه الميزة، يرجى الضغط على الرابط التالي لإنشاء الفهرس في قاعدة البيانات الخاصة بك:
+                    </p>
+                    <a href={indexError.match(/https:\/\/console\.firebase\.google\.com[^\s]*/)?.[0]} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', background: '#ef4444', color: 'white', padding: '8px 16px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>
+                        إنشاء الفهرس الآن
+                    </a>
+                </div>
+            )}
+            
+            {/* Header section */}
             <div className="glass animate-fade-in" style={{ padding: '24px 32px', borderRadius: '20px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h2 style={{ margin: '0 0 6px', fontSize: '1.5rem', fontWeight: 850, display: 'flex', alignItems: 'center', gap: '8px' }}>

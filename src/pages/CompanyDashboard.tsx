@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { subscribeToServiceRequests, addServiceRequest, subscribeToBranches, updateServiceRequestBranch, validateCompanySession, subscribeToCompany } from '../services/storage';
+import { addServiceRequest, subscribeToBranches, updateServiceRequestBranch, validateCompanySession, subscribeToCompany, subscribeToCompanyRequests } from '../services/storage';
 import type { CompanyAccount, ServiceRequest, Branch } from '../types';
 import { PlusCircle, ClipboardList, CheckCircle, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -27,6 +27,7 @@ const CompanyDashboard: React.FC = () => {
     const [targetBranchIds, setTargetBranchIds] = useState<string[]>(['all']);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [activeTab, setActiveTab] = useState<'create' | 'active' | 'rejected' | 'partial' | 'completed' | null>(null);
+    const [indexError, setIndexError] = useState<string | null>(null);
     
     // Login and session states
     const [loggedInCompany, setLoggedInCompany] = useState<CompanyAccount | null>(null);
@@ -279,11 +280,25 @@ Please click the link below to view your maintenance request details and barcode
         });
 
         const unsubBranches = subscribeToBranches(setBranches);
-        const unsubRequests = subscribeToServiceRequests(setRequests);
+        
+        // Use the new targeted subscription instead of subscribing to all requests
+        let unsubRequests: (() => void) | undefined;
+        if (storedCompanyId) {
+            unsubRequests = subscribeToCompanyRequests(
+                storedCompanyId,
+                (active, completed) => {
+                    // Merge them so the rest of the dashboard works seamlessly
+                    setRequests([...active, ...completed]);
+                },
+                (errorMsg) => {
+                    setIndexError(errorMsg);
+                }
+            );
+        }
         
         return () => { 
             unsubBranches(); 
-            unsubRequests(); 
+            if (unsubRequests) unsubRequests(); 
             if (unsubCompany) unsubCompany();
         };
     }, []);
@@ -480,7 +495,21 @@ Please click the link below to view your maintenance request details and barcode
     }
 
     return (
-        <div style={{ maxWidth: '1000px', margin: '24px auto', padding: '0 16px', direction: 'rtl' }}>
+        <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', paddingBottom: '100px', direction: 'rtl' }}>
+            {indexError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #ef4444', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+                    <h4 style={{ color: '#ef4444', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <AlertTriangle size={20} />
+                        تنبيه للإدارة: مطلوب إعداد فهرس (Index)
+                    </h4>
+                    <p style={{ margin: '0 0 12px 0', color: '#7f1d1d', fontSize: '0.95rem' }}>
+                        لتسريع النظام وتقليل استهلاك البيانات، تم تفعيل ميزة "القيود الذكية". لكي تعمل هذه الميزة، يرجى الضغط على الرابط التالي لإنشاء الفهرس في قاعدة البيانات الخاصة بك:
+                    </p>
+                    <a href={indexError.match(/https:\/\/console\.firebase\.google\.com[^\s]*/)?.[0]} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', background: '#ef4444', color: 'white', padding: '8px 16px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>
+                        إنشاء الفهرس الآن
+                    </a>
+                </div>
+            )}
             {/* Top Selector Card */}
             <div className="glass animate-fade-in" style={{ padding: '24px 32px', borderRadius: '20px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
