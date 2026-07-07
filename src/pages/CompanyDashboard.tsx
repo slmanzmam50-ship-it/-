@@ -38,6 +38,9 @@ const CompanyDashboard: React.FC = () => {
     const [newlyCreatedRequest, setNewlyCreatedRequest] = useState<ServiceRequest | null>(null);
     const [detailedRequest, setDetailedRequest] = useState<ServiceRequest | null>(null);
 
+    const [pendingRequestData, setPendingRequestData] = useState<{ plateNumber: string; serviceDescription: string; targetBranchIds: string[] } | null>(null);
+    const [plateGuess, setPlateGuess] = useState('');
+
     const formatAndValidatePlate = (input: string): { formatted: string; isValid: boolean } => {
         const clean = input.replace(/[\s\-\|\\\/,_.]/g, '');
         const digitsMatch = clean.match(/[0-9\u0660-\u0669]/g) || [];
@@ -46,7 +49,7 @@ const CompanyDashboard: React.FC = () => {
         if (digitsMatch.length !== 4 || lettersMatch.length !== 3) {
             return {
                 formatted: input.trim(),
-                isValid: true
+                isValid: false
             };
         }
         
@@ -61,6 +64,24 @@ const CompanyDashboard: React.FC = () => {
             formatted: `${formattedLetters} | ${normalizedDigits}`,
             isValid: true
         };
+    };
+
+    const guessPlateFormat = (input: string): string => {
+        const clean = input.replace(/[\s\-\|\\\/,_.]/g, '');
+        const digitsMatch = clean.match(/[0-9\u0660-\u0669]/g) || [];
+        const lettersMatch = clean.match(/[\u0621-\u064Aa-zA-Z]/g) || [];
+        
+        const arabicToEngMap: Record<string, string> = {
+            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+        };
+        const normalizedDigits = digitsMatch.map(d => arabicToEngMap[d] || d).join('');
+        const formattedLetters = lettersMatch.join(' ');
+        
+        if (formattedLetters && normalizedDigits) {
+            return `${formattedLetters} | ${normalizedDigits}`;
+        }
+        return input.trim();
     };
 
     const handlePlateBlur = () => {
@@ -247,37 +268,19 @@ Please click the link below to view your maintenance request details and barcode
     }, []);
 
 
-    const handleCreateRequest = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const pNum = plateNumber.trim();
-        const sDesc = serviceDescription.trim();
-
-        if (!loggedInCompany) {
-            toast.error('الرجاء تسجيل الدخول أولاً');
-            return;
-        }
-        const validatedPNum = formatAndValidatePlate(pNum).formatted;
-
-        if (!sDesc) {
-            toast.error('الرجاء إدخال الخدمة المطلوبة');
-            return;
-        }
-        if (targetBranchIds.length === 0) {
-            toast.error('الرجاء تحديد فرع واحد على الأقل أو اختيار "الكل"');
-            return;
-        }
-
+    const executeCreateRequest = async (pNum: string, sDesc: string, branchesList: string[]) => {
+        if (!loggedInCompany) return;
         setIsSubmitting(true);
         try {
             const visibleBranches = branches.filter(b => !loggedInCompany.hiddenBranchIds?.includes(b.id));
-            const finalBranchIds = targetBranchIds.includes('all')
+            const finalBranchIds = branchesList.includes('all')
                 ? visibleBranches.map(b => b.id)
-                : targetBranchIds;
+                : branchesList;
 
             const newReq = await addServiceRequest({
                 companyId: loggedInCompany.id,
                 companyName: loggedInCompany.name,
-                plateNumber: validatedPNum,
+                plateNumber: pNum,
                 serviceDescription: sDesc,
                 targetBranchIds: finalBranchIds,
                 companyHiddenBranchIds: loggedInCompany.hiddenBranchIds || []
@@ -287,12 +290,51 @@ Please click the link below to view your maintenance request details and barcode
             setServiceDescription('');
             setTargetBranchIds(['all']);
             setNewlyCreatedRequest(newReq);
+            setPendingRequestData(null);
         } catch (error) {
             console.error(error);
             toast.error('حدث خطأ أثناء إنشاء الطلب');
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleCreateRequest = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const pNum = plateNumber.trim();
+        const sDesc = serviceDescription.trim();
+
+        if (!loggedInCompany) {
+            toast.error('الرجاء تسجيل الدخول أولاً');
+            return;
+        }
+        if (!pNum) {
+            toast.error('الرجاء إدخال رقم اللوحة');
+            return;
+        }
+        if (!sDesc) {
+            toast.error('الرجاء إدخال الخدمة المطلوبة');
+            return;
+        }
+        if (targetBranchIds.length === 0) {
+            toast.error('الرجاء تحديد فرع واحد على الأقل أو اختيار "الكل"');
+            return;
+        }
+
+        const plateValidation = formatAndValidatePlate(pNum);
+        if (!plateValidation.isValid) {
+            // Non-standard format (less than 3 letters or 4 digits) -> Show confirmation modal
+            setPlateGuess(guessPlateFormat(pNum));
+            setPendingRequestData({
+                plateNumber: pNum,
+                serviceDescription: sDesc,
+                targetBranchIds: targetBranchIds
+            });
+            return;
+        }
+
+        // Standard format -> Proceed directly
+        await executeCreateRequest(plateValidation.formatted, sDesc, targetBranchIds);
     };
 
 
@@ -1827,6 +1869,113 @@ Please click the link below to view your maintenance request details and barcode
                                 className="hover-scale tap-effect"
                             >
                                 إغلاق النافذة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Plate Confirmation Modal */}
+            {pendingRequestData && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10005,
+                    padding: '16px'
+                }}>
+                    <div className="glass animate-scale-up" style={{
+                        background: 'var(--surface-color)',
+                        border: '1.5px solid var(--border-color)',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '420px',
+                        padding: '32px 24px 24px',
+                        position: 'relative',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{
+                            background: 'rgba(245, 158, 11, 0.1)',
+                            color: 'var(--accent-orange)',
+                            width: '56px',
+                            height: '56px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 16px'
+                        }}>
+                            <AlertTriangle size={28} />
+                        </div>
+
+                        <h3 style={{ margin: '0 0 16px', fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-primary)', lineHeight: '1.4' }}>
+                            هل تقصد كتابة اللوحة:
+                            <div style={{
+                                fontSize: '1.8rem',
+                                fontWeight: 900,
+                                color: 'var(--primary-color)',
+                                margin: '12px 0',
+                                background: 'var(--bg-color)',
+                                padding: '8px 16px',
+                                borderRadius: '12px',
+                                border: '1px solid var(--border-color)',
+                                display: 'inline-block',
+                                letterSpacing: '1px',
+                                direction: 'rtl'
+                            }}>
+                                {plateGuess}
+                            </div>
+                            ؟
+                        </h3>
+                        <p style={{ margin: '0 0 24px', fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                            رقم اللوحة المدخل أقل من 3 حروف و 4 أرقام.
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={() => {
+                                    executeCreateRequest(pendingRequestData.plateNumber, pendingRequestData.serviceDescription, pendingRequestData.targetBranchIds);
+                                }}
+                                style={{
+                                    flex: 1,
+                                    background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14.5px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)'
+                                }}
+                                className="hover-scale tap-effect"
+                            >
+                                حفظ على أي حال
+                            </button>
+                            
+                            <button
+                                onClick={() => {
+                                    setPendingRequestData(null);
+                                }}
+                                style={{
+                                    flex: 1,
+                                    background: 'rgba(239, 68, 68, 0.08)',
+                                    color: '#ef4444',
+                                    border: '1.5px solid rgba(239, 68, 68, 0.25)',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14.5px',
+                                    cursor: 'pointer'
+                                }}
+                                className="hover-scale tap-effect"
+                            >
+                                تعديل اللوحة
                             </button>
                         </div>
                     </div>
