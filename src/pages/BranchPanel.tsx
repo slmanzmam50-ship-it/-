@@ -140,29 +140,44 @@ const BranchPanel: React.FC = () => {
         };
     }, []);
 
-    const hasModal = activeTab !== null || isScannerOpen || showRejectDialog || showPartialDialog;
-    const prevHasModal = React.useRef(false);
+    const stateRef = React.useRef({ activeTab, isScannerOpen, showRejectDialog, showPartialDialog });
+    stateRef.current = { activeTab, isScannerOpen, showRejectDialog, showPartialDialog };
+
+    const depth = (activeTab !== null ? 1 : 0) + ((isScannerOpen || showRejectDialog || showPartialDialog) ? 1 : 0);
+    const prevDepth = React.useRef(0);
+    const isHardwareBack = React.useRef(false);
+    const ignoreNextPop = React.useRef(false);
 
     useEffect(() => {
-        if (hasModal && !prevHasModal.current) {
-            // Modal opened! Push trap.
-            window.history.pushState({ trap: true }, '');
-        } else if (!hasModal && prevHasModal.current) {
-            // Modal closed via UI button. Clean up the garbage trap if it's still there.
-            if (window.history.state?.trap) {
-                window.history.back();
+        if (depth > prevDepth.current) {
+            window.history.pushState({ trap: depth }, '');
+        } else if (depth < prevDepth.current) {
+            if (isHardwareBack.current) {
+                isHardwareBack.current = false;
+            } else {
+                if (window.history.state?.trap) {
+                    ignoreNextPop.current = true;
+                    window.history.go(depth - prevDepth.current);
+                }
             }
         }
-        prevHasModal.current = hasModal;
-    }, [hasModal]);
+        prevDepth.current = depth;
+    }, [depth]);
 
     useEffect(() => {
         const handlePopState = () => {
-            if (prevHasModal.current) {
-                setActiveTab(null);
+            if (ignoreNextPop.current) {
+                ignoreNextPop.current = false;
+                return;
+            }
+            isHardwareBack.current = true;
+            const s = stateRef.current;
+            if (s.isScannerOpen || s.showRejectDialog || s.showPartialDialog) {
                 setIsScannerOpen(false);
                 setShowRejectDialog(false);
                 setShowPartialDialog(false);
+            } else if (s.activeTab) {
+                setActiveTab(null);
             }
         };
 

@@ -287,30 +287,46 @@ Please click the link below to view your maintenance request details and barcode
             if (unsubCompany) unsubCompany();
         };
     }, []);
-    const hasModal = activeTab !== null || detailedRequest !== null || newlyCreatedRequest !== null || selectedQrRequest !== null || reRouteRequest !== null;
-    const prevHasModal = React.useRef(false);
+
+    const stateRef = React.useRef({ activeTab, detailedRequest, newlyCreatedRequest, selectedQrRequest, reRouteRequest });
+    stateRef.current = { activeTab, detailedRequest, newlyCreatedRequest, selectedQrRequest, reRouteRequest };
+
+    const depth = (activeTab !== null ? 1 : 0) + ((detailedRequest !== null || newlyCreatedRequest !== null || selectedQrRequest !== null || reRouteRequest !== null) ? 1 : 0);
+    const prevDepth = React.useRef(0);
+    const isHardwareBack = React.useRef(false);
+    const ignoreNextPop = React.useRef(false);
 
     useEffect(() => {
-        if (hasModal && !prevHasModal.current) {
-            // Modal opened! Push trap.
-            window.history.pushState({ trap: true }, '');
-        } else if (!hasModal && prevHasModal.current) {
-            // Modal closed via UI button. Clean up the garbage trap if it's still there.
-            if (window.history.state?.trap) {
-                window.history.back();
+        if (depth > prevDepth.current) {
+            window.history.pushState({ trap: depth }, '');
+        } else if (depth < prevDepth.current) {
+            if (isHardwareBack.current) {
+                isHardwareBack.current = false;
+            } else {
+                if (window.history.state?.trap) {
+                    ignoreNextPop.current = true;
+                    window.history.go(depth - prevDepth.current);
+                }
             }
         }
-        prevHasModal.current = hasModal;
-    }, [hasModal]);
+        prevDepth.current = depth;
+    }, [depth]);
 
     useEffect(() => {
         const handlePopState = () => {
-            if (prevHasModal.current) {
-                setActiveTab(null);
+            if (ignoreNextPop.current) {
+                ignoreNextPop.current = false;
+                return;
+            }
+            isHardwareBack.current = true;
+            const s = stateRef.current;
+            if (s.detailedRequest || s.newlyCreatedRequest || s.selectedQrRequest || s.reRouteRequest) {
                 setDetailedRequest(null);
                 setNewlyCreatedRequest(null);
                 setSelectedQrRequest(null);
                 setReRouteRequest(null);
+            } else if (s.activeTab) {
+                setActiveTab(null);
             }
         };
 

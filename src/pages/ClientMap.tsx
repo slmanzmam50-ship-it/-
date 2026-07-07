@@ -413,31 +413,43 @@ const ClientMap: React.FC = () => {
         };
     }, []);
 
-    const hasModal = selectedBranch !== null || showMapQrModal || showRatingModal || lightboxImage !== null || showSortMenu;
-    const prevHasModal = React.useRef(false);
+    const stateRef = React.useRef({ selectedBranch, showSortMenu, showMapQrModal, showRatingModal, lightboxImage });
+    stateRef.current = { selectedBranch, showSortMenu, showMapQrModal, showRatingModal, lightboxImage };
+
+    const depth = (selectedBranch ? 1 : 0) + (showSortMenu ? 1 : 0) + (showMapQrModal ? 1 : 0) + (showRatingModal ? 1 : 0) + (lightboxImage ? 1 : 0);
+    const prevDepth = React.useRef(0);
+    const isHardwareBack = React.useRef(false);
+    const ignoreNextPop = React.useRef(false);
 
     useEffect(() => {
-        if (hasModal && !prevHasModal.current) {
-            // Modal opened! Push trap.
-            window.history.pushState({ trap: true }, '');
-        } else if (!hasModal && prevHasModal.current) {
-            // Modal closed via UI button. Clean up the garbage trap if it's still there.
-            if (window.history.state?.trap) {
-                window.history.back();
+        if (depth > prevDepth.current) {
+            window.history.pushState({ trap: depth }, '');
+        } else if (depth < prevDepth.current) {
+            if (isHardwareBack.current) {
+                isHardwareBack.current = false;
+            } else {
+                if (window.history.state?.trap) {
+                    ignoreNextPop.current = true;
+                    window.history.go(depth - prevDepth.current);
+                }
             }
         }
-        prevHasModal.current = hasModal;
-    }, [hasModal]);
+        prevDepth.current = depth;
+    }, [depth]);
 
     useEffect(() => {
         const handlePopState = () => {
-            if (prevHasModal.current) {
-                setSelectedBranch(null);
-                setShowMapQrModal(false);
-                setShowRatingModal(false);
-                setLightboxImage(null);
-                setShowSortMenu(false);
+            if (ignoreNextPop.current) {
+                ignoreNextPop.current = false;
+                return;
             }
+            isHardwareBack.current = true;
+            const s = stateRef.current;
+            if (s.lightboxImage) setLightboxImage(null);
+            else if (s.showRatingModal) setShowRatingModal(false);
+            else if (s.showMapQrModal) setShowMapQrModal(false);
+            else if (s.showSortMenu) setShowSortMenu(false);
+            else if (s.selectedBranch) setSelectedBranch(null);
         };
 
         window.addEventListener('popstate', handlePopState);
