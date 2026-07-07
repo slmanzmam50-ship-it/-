@@ -35,6 +35,7 @@ const CompanyDashboard: React.FC = () => {
     // QR Code modal state
     const [selectedQrRequest, setSelectedQrRequest] = useState<ServiceRequest | null>(null);
     const [modalQrUrl, setModalQrUrl] = useState<string>('');
+    const [newlyCreatedRequest, setNewlyCreatedRequest] = useState<ServiceRequest | null>(null);
 
     const handleCopyShareLink = (request: ServiceRequest) => {
         const shareUrl = `${window.location.origin}/map?request=${request.id}`;
@@ -189,6 +190,7 @@ Please click the link below to view your maintenance request details and barcode
             setPlateNumber('');
             setServiceDescription('');
             setTargetBranchIds(['all']);
+            setNewlyCreatedRequest(newReq);
         } catch (error) {
             console.error(error);
             toast.error('حدث خطأ أثناء إنشاء الطلب');
@@ -1542,6 +1544,174 @@ Please click the link below to view your maintenance request details and barcode
                                 إغلاق
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* newlyCreatedRequest Modal */}
+            {newlyCreatedRequest && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000,
+                    padding: '16px'
+                }}>
+                    <div className="glass animate-scale-up" style={{
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '420px',
+                        padding: '32px 24px 24px',
+                        position: 'relative',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        textAlign: 'center'
+                    }}>
+                        <button 
+                            onClick={() => setNewlyCreatedRequest(null)}
+                            style={{
+                                position: 'absolute',
+                                top: '16px',
+                                right: '16px',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1.5px solid rgba(239, 68, 68, 0.3)',
+                                borderRadius: '50%',
+                                width: '36px',
+                                height: '36px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                padding: 0
+                            }}
+                            className="hover-scale"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <div style={{
+                            background: 'rgba(34, 197, 94, 0.1)',
+                            color: '#22c55e',
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 16px'
+                        }}>
+                            <Check size={30} />
+                        </div>
+
+                        <h3 style={{ margin: '0 0 4px', fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)' }}>🎉 تم إنشاء الطلب بنجاح!</h3>
+                        <p style={{ margin: '0 0 20px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>بإمكانك الآن مشاركة الطلب مباشرة مع السائق أو فتح كود الاستجابة</p>
+
+                        <div style={{
+                            background: 'var(--bg-color)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '16px',
+                            padding: '16px',
+                            marginBottom: '24px',
+                            textAlign: 'right',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم الطلب:</span>
+                                <span style={{ fontWeight: 800, color: 'var(--primary-color)' }}>#{newlyCreatedRequest.id}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم اللوحة:</span>
+                                <span style={{ fontWeight: 700 }}>{newlyCreatedRequest.plateNumber}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>الخدمة المطلوبة:</span>
+                                <span style={{ fontWeight: 700 }}>{newlyCreatedRequest.serviceDescription}</span>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                const shareUrl = `${window.location.origin}/qr?id=${newlyCreatedRequest.id}`;
+                                const shareText = `🚗 *مراكز خدمة سلمان زمام الخالدي | Salman Zmam Al-Khaldi Service Centers* 🚗\n\nالرجاء الضغط على الرابط أدناه لعرض تفاصيل طلب الصيانة والباركود:\nPlease click the link below to view your maintenance request details and barcode:\n\n📍 ${shareUrl}`;
+                                openWhatsAppShare(shareText);
+                            }}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                width: '100%',
+                                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                                color: 'white',
+                                border: 'none',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                fontWeight: 800,
+                                fontSize: '14.5px',
+                                cursor: 'pointer',
+                                boxShadow: '0 6px 20px rgba(34, 197, 94, 0.25)',
+                                marginBottom: '12px',
+                                transition: 'all 0.2s'
+                            }}
+                            className="hover-scale tap-effect"
+                        >
+                            <Share2 size={16} />
+                            مشاركة عبر الواتساب (WhatsApp)
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                window.open(`/qr?id=${newlyCreatedRequest.id}`, '_blank');
+                            }}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                width: '100%',
+                                background: 'rgba(59, 130, 246, 0.08)',
+                                color: 'var(--primary-color)',
+                                border: '1.5px solid rgba(59, 130, 246, 0.2)',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                fontWeight: 800,
+                                fontSize: '14.5px',
+                                cursor: 'pointer',
+                                marginBottom: '16px',
+                                transition: 'all 0.2s'
+                            }}
+                            className="hover-scale tap-effect"
+                        >
+                            <QrCode size={16} />
+                            عرض الباركود والبيانات
+                        </button>
+
+                        <button
+                            onClick={() => setNewlyCreatedRequest(null)}
+                            style={{
+                                width: '100%',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                                color: '#ef4444',
+                                border: '1.5px solid rgba(239, 68, 68, 0.2)',
+                                padding: '11px 16px',
+                                borderRadius: '12px',
+                                fontWeight: 800,
+                                fontSize: '14px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                            className="hover-scale tap-effect"
+                        >
+                            إغلاق النافذة
+                        </button>
                     </div>
                 </div>
             )}
