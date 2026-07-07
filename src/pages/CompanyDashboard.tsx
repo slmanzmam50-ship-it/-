@@ -1028,9 +1028,8 @@ Please click the link below to view your maintenance request details and barcode
                 </div>
 
                 {/* Lists Grid */}
-                <div style={{ display: (activeTab === 'active' || activeTab === 'rejected' || activeTab === 'partial') ? 'block' : 'none' }}>
-                    {/* Active Requests */}
-                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: activeTab === 'active' ? 'block' : 'none', marginBottom: '24px' }}>
+                {activeTab === 'active' && (
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '24px' }}>
                         <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)' }}>
                             <ClipboardList size={20} /> الطلبات النشطة والمحولة ({activeRequests.length})
                         </h3>
@@ -1044,9 +1043,11 @@ Please click the link below to view your maintenance request details and barcode
                             </div>
                         )}
                     </div>
+                )}
 
-                    {/* Rejected Requests */}
-                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: activeTab === 'rejected' ? 'block' : 'none', marginBottom: '24px' }}>
+                {/* Rejected Requests */}
+                {activeTab === 'rejected' && (
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '24px' }}>
                         <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--error)' }}>
                             <AlertTriangle size={20} /> الطلبات المرفوضة ({rejectedRequests.length})
                         </h3>
@@ -1060,9 +1061,11 @@ Please click the link below to view your maintenance request details and barcode
                             </div>
                         )}
                     </div>
+                )}
 
-                    {/* Incomplete Requests (Partial Services) */}
-                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: activeTab === 'partial' ? 'block' : 'none', marginBottom: '24px' }}>
+                {/* Incomplete Requests (Partial Services) */}
+                {activeTab === 'partial' && (
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', marginBottom: '24px' }}>
                         <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)' }}>
                             <AlertTriangle size={20} /> طلبات بخدمات ناقصة ({partialRequests.length})
                         </h3>
