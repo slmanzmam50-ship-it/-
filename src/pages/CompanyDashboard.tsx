@@ -304,7 +304,7 @@ Please click the link below to view your maintenance request details and barcode
     }, [hasModal]);
 
     useEffect(() => {
-        const handlePopState = (e: PopStateEvent) => {
+        const handlePopState = () => {
             if (prevHasModal.current) {
                 setActiveTab(null);
                 setDetailedRequest(null);

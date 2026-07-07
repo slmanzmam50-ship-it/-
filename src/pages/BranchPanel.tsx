@@ -157,7 +157,7 @@ const BranchPanel: React.FC = () => {
     }, [hasModal]);
 
     useEffect(() => {
-        const handlePopState = (e: PopStateEvent) => {
+        const handlePopState = () => {
             if (prevHasModal.current) {
                 setActiveTab(null);
                 setIsScannerOpen(false);
