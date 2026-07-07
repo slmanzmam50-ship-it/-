@@ -109,6 +109,55 @@ const AdminDashboard: React.FC = () => {
         };
     }, []);
 
+    const stateRef = React.useRef({ activeTab, isFormOpen, isAddingCategory, editingCategoryId, isAddingCompany, managingHiddenBranchCompany, isAdminCreatingRequest });
+    stateRef.current = { activeTab, isFormOpen, isAddingCategory, editingCategoryId, isAddingCompany, managingHiddenBranchCompany, isAdminCreatingRequest };
+
+    const depth = (activeTab !== 'branches' ? 1 : 0) + 
+                  ((isFormOpen || isAddingCategory || editingCategoryId !== null || isAddingCompany || managingHiddenBranchCompany !== null || isAdminCreatingRequest) ? 1 : 0);
+    const prevDepth = React.useRef(0);
+    const isHardwareBack = React.useRef(false);
+    const ignoreNextPop = React.useRef(false);
+
+    useEffect(() => {
+        if (depth > prevDepth.current) {
+            window.history.pushState({ trap: depth }, '');
+        } else if (depth < prevDepth.current) {
+            if (isHardwareBack.current) {
+                isHardwareBack.current = false;
+            } else {
+                if (window.history.state?.trap) {
+                    ignoreNextPop.current = true;
+                    window.history.go(depth - prevDepth.current);
+                }
+            }
+        }
+        prevDepth.current = depth;
+    }, [depth]);
+
+    useEffect(() => {
+        const handlePopState = () => {
+            if (ignoreNextPop.current) {
+                ignoreNextPop.current = false;
+                return;
+            }
+            isHardwareBack.current = true;
+            const s = stateRef.current;
+            if (s.isFormOpen || s.isAddingCategory || s.editingCategoryId !== null || s.isAddingCompany || s.managingHiddenBranchCompany !== null || s.isAdminCreatingRequest) {
+                setIsFormOpen(false);
+                setIsAddingCategory(false);
+                setEditingCategoryId(null);
+                setIsAddingCompany(false);
+                setManagingHiddenBranchCompany(null);
+                setIsAdminCreatingRequest(false);
+            } else if (s.activeTab !== 'branches') {
+                setActiveTab('branches');
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
     const filteredBranches = branches.filter(b => 
         b.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
         b.address.toLowerCase().includes(searchTerm.toLowerCase())
