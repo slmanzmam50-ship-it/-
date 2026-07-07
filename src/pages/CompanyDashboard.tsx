@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest, subscribeToBranches, updateServiceRequestBranch } from '../services/storage';
 import type { CompanyAccount, ServiceRequest, Branch } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, Clock, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight, Share2 } from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
@@ -36,11 +36,110 @@ const CompanyDashboard: React.FC = () => {
     const [selectedQrRequest, setSelectedQrRequest] = useState<ServiceRequest | null>(null);
     const [modalQrUrl, setModalQrUrl] = useState<string>('');
     const [newlyCreatedRequest, setNewlyCreatedRequest] = useState<ServiceRequest | null>(null);
+    const [detailedRequest, setDetailedRequest] = useState<ServiceRequest | null>(null);
+
+    const formatAndValidatePlate = (input: string): { formatted: string; isValid: boolean; error?: string } => {
+        const clean = input.replace(/[\s\-\|\\\/,_.]/g, '');
+        const digitsMatch = clean.match(/[0-9\u0660-\u0669]/g) || [];
+        const lettersMatch = clean.match(/[\u0621-\u064Aa-zA-Z]/g) || [];
+        
+        if (digitsMatch.length !== 4 || lettersMatch.length !== 3) {
+            return {
+                formatted: '',
+                isValid: false,
+                error: 'يجب أن تحتوي اللوحة على 4 أرقام و 3 حروف بالضبط (مثال: 1234 أ ب ج)'
+            };
+        }
+        
+        const arabicToEngMap: Record<string, string> = {
+            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+        };
+        const normalizedDigits = digitsMatch.map(d => arabicToEngMap[d] || d).join('');
+        const formattedLetters = lettersMatch.join(' ');
+        
+        return {
+            formatted: `${normalizedDigits} | ${formattedLetters}`,
+            isValid: true
+        };
+    };
+
+    const handlePlateBlur = () => {
+        if (!plateNumber.trim()) return;
+        const res = formatAndValidatePlate(plateNumber);
+        if (res.isValid) {
+            setPlateNumber(res.formatted);
+        }
+    };
 
     const handleCopyShareLink = (request: ServiceRequest) => {
         const shareUrl = `${window.location.origin}/map?request=${request.id}`;
         navigator.clipboard.writeText(shareUrl);
         toast.success(`تم نسخ رابط التوجيه للطلب ${request.id}! 🔗`);
+    };
+
+    const renderRequestCard = (r: ServiceRequest) => {
+        let statusLabel = 'نشط';
+        let statusColor = 'var(--accent-orange)';
+        if (r.status === 'transferred') {
+            statusLabel = 'محول';
+            statusColor = 'var(--primary-color)';
+        } else if (r.status === 'completed') {
+            statusLabel = 'مكتمل';
+            statusColor = 'var(--success)';
+        } else if (r.status === 'rejected') {
+            statusLabel = 'مرفوض';
+            statusColor = 'var(--error)';
+        } else if (r.status === 'partial') {
+            statusLabel = 'خدمات ناقصة';
+            statusColor = 'var(--accent-orange)';
+        }
+
+        return (
+            <div 
+                key={r.id} 
+                onClick={() => setDetailedRequest(r)}
+                className="hover-scale tap-effect glass"
+                style={{ 
+                    padding: '16px', 
+                    background: 'var(--surface-color)', 
+                    borderRadius: '16px', 
+                    border: '1.5px solid var(--border-color)', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '8px',
+                    cursor: 'pointer',
+                    textAlign: 'right',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                }}
+            >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 900, fontSize: '15px', color: 'var(--text-primary)' }}>
+                        🚗 اللوحة: {r.plateNumber}
+                    </span>
+                    <span style={{ 
+                        fontSize: '11px', 
+                        background: `rgba(${statusColor === 'var(--success)' ? '16, 185, 129' : statusColor === 'var(--error)' ? '239, 68, 68' : statusColor === 'var(--primary-color)' ? '59, 130, 246' : '245, 158, 11'}, 0.1)`, 
+                        color: statusColor, 
+                        padding: '3px 8px', 
+                        borderRadius: '8px', 
+                        fontWeight: 800 
+                    }}>
+                        {statusLabel}
+                    </span>
+                </div>
+                <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                    {r.serviceDescription}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    <span>#{r.id}</span>
+                    <span>{new Date(r.createdAt).toLocaleDateString('ar-SA')}</span>
+                </div>
+            </div>
+        );
     };
 
     // Re-route Modal state
@@ -158,10 +257,13 @@ Please click the link below to view your maintenance request details and barcode
             toast.error('الرجاء تسجيل الدخول أولاً');
             return;
         }
-        if (!pNum) {
-            toast.error('الرجاء إدخال رقم اللوحة');
+        const plateValidation = formatAndValidatePlate(pNum);
+        if (!plateValidation.isValid) {
+            toast.error(plateValidation.error || 'رقم اللوحة غير صالح');
             return;
         }
+        const validatedPNum = plateValidation.formatted;
+
         if (!sDesc) {
             toast.error('الرجاء إدخال الخدمة المطلوبة');
             return;
@@ -181,7 +283,7 @@ Please click the link below to view your maintenance request details and barcode
             const newReq = await addServiceRequest({
                 companyId: loggedInCompany.id,
                 companyName: loggedInCompany.name,
-                plateNumber: pNum,
+                plateNumber: validatedPNum,
                 serviceDescription: sDesc,
                 targetBranchIds: finalBranchIds,
                 companyHiddenBranchIds: loggedInCompany.hiddenBranchIds || []
@@ -492,6 +594,7 @@ Please click the link below to view your maintenance request details and barcode
                                             e.target.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.15), inset 0 2px 4px rgba(0,0,0,0.01)';
                                         }}
                                         onBlur={(e) => {
+                                            handlePlateBlur();
                                             e.target.style.borderColor = 'var(--border-color)';
                                             e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.02)';
                                         }}
@@ -797,130 +900,8 @@ Please click the link below to view your maintenance request details and barcode
                                 لا توجد طلبات نشطة حالياً.
                             </p>
                         ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {activeRequests.map(r => (
-                                    <div key={r.id} style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                                    <p style={{ margin: 0, fontWeight: 800, fontSize: '15px' }}>رقم اللوحة: {r.plateNumber}</p>
-                                                    {r.status === 'transferred' && (
-                                                        <span style={{ fontSize: '10px', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--primary-color)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>محول</span>
-                                                    )}
-                                                </div>
-                                                <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-secondary)' }}>{r.serviceDescription}</p>
-                                                <p style={{ margin: '0 0 6px', fontSize: '12px', color: 'var(--primary-color)', fontWeight: 700 }}>
-                                                    📌 الفروع المحددة: {getBranchNamesStr(r.targetBranchIds)}
-                                                </p>
-                                                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <Clock size={12} /> {new Date(r.createdAt).toLocaleString('ar-SA')}
-                                                </span>
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <button 
-                                                    onClick={() => handleRepeatRequest(r)}
-                                                    title="تكرار الطلب كطلب جديد"
-                                                    style={{
-                                                        background: 'rgba(59, 130, 246, 0.1)',
-                                                        border: '1px solid rgba(59, 130, 246, 0.3)',
-                                                        borderRadius: '8px',
-                                                        padding: '8px',
-                                                        color: 'var(--primary-color)',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    <RefreshCw size={18} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleCopyShareLink(r)}
-                                                    title="نسخ رابط التوجيه الخرائطي للسائق"
-                                                    style={{
-                                                        background: 'rgba(245, 158, 11, 0.1)',
-                                                        border: '1px solid rgba(245, 158, 11, 0.3)',
-                                                        borderRadius: '8px',
-                                                        padding: '8px',
-                                                        color: 'var(--accent-orange)',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    <Link2 size={18} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleShareRequest(r)}
-                                                    title="مشاركة تفاصيل الطلب عبر واتساب / التطبيقات"
-                                                    style={{
-                                                        background: 'rgba(34, 197, 94, 0.1)',
-                                                        border: '1px solid rgba(34, 197, 94, 0.3)',
-                                                        borderRadius: '8px',
-                                                        padding: '8px',
-                                                        color: '#22c55e',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    <Share2 size={18} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => setSelectedQrRequest(r)}
-                                                    title="عرض رمز الـ QR"
-                                                    style={{
-                                                        background: 'rgba(59, 130, 246, 0.1)',
-                                                        border: '1px solid rgba(59, 130, 246, 0.3)',
-                                                        borderRadius: '8px',
-                                                        padding: '8px',
-                                                        color: 'var(--primary-color)',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    <QrCode size={18} />
-                                                </button>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '4px' }}>رقم الطلب</span>
-                                                    <span style={{ background: 'var(--accent-orange)', color: 'white', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '14px' }}>
-                                                        {r.id}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تعديل توجيه الفرع؟</span>
-                                            <button 
-                                                onClick={() => openReRouteModal(r)}
-                                                style={{
-                                                    background: 'rgba(255, 255, 255, 0.05)',
-                                                    border: '1px solid var(--border-color)',
-                                                    borderRadius: '8px',
-                                                    padding: '6px 12px',
-                                                    fontSize: '12px',
-                                                    fontWeight: 700,
-                                                    color: 'var(--text-primary)',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '6px',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                <ArrowLeftRight size={14} /> تغيير الفرع
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                                {activeRequests.map(renderRequestCard)}
                             </div>
                         )}
                     </div>
@@ -935,51 +916,8 @@ Please click the link below to view your maintenance request details and barcode
                                 لا توجد طلبات مرفوضة.
                             </p>
                         ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {rejectedRequests.map(r => (
-                                    <div key={r.id} style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '15px' }}>رقم اللوحة: {r.plateNumber} (الطلب: {r.id})</p>
-                                                <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-secondary)' }}>{r.serviceDescription}</p>
-                                                <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--error)', fontWeight: 700 }}>
-                                                    ❌ رُفض في فرع: {r.branchName || 'غير معروف'}
-                                                </p>
-                                                {r.rejectionReason && (
-                                                    <p style={{ margin: '0 0 6px', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(239, 68, 68, 0.05)', padding: '6px 10px', borderRadius: '6px', borderLeft: '3px solid var(--error)' }}>
-                                                        <strong>السبب:</strong> {r.rejectionReason}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <span style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '13px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                                                مرفوض
-                                            </span>
-                                        </div>
-                                        <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تغيير التوجيه لإعادة التفعيل:</span>
-                                            <button 
-                                                onClick={() => openReRouteModal(r)}
-                                                style={{
-                                                    background: 'var(--primary-color)',
-                                                    border: 'none',
-                                                    borderRadius: '8px',
-                                                    padding: '6px 12px',
-                                                    fontSize: '12px',
-                                                    fontWeight: 800,
-                                                    color: 'white',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '6px',
-                                                    transition: 'all 0.2s',
-                                                    boxShadow: '0 2px 6px rgba(59, 130, 246, 0.2)'
-                                                }}
-                                            >
-                                                <RefreshCw size={12} /> إعادة توجيه وتفعيل الطلب
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                                {rejectedRequests.map(renderRequestCard)}
                             </div>
                         )}
                     </div>
@@ -994,51 +932,8 @@ Please click the link below to view your maintenance request details and barcode
                                 لا توجد طلبات بخدمات ناقصة.
                             </p>
                         ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {partialRequests.map(r => (
-                                    <div key={r.id} style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '15px' }}>رقم اللوحة: {r.plateNumber} (الطلب: {r.id})</p>
-                                                <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-secondary)' }}>الطلب الأصلي: {r.serviceDescription}</p>
-                                                <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--accent-orange)', fontWeight: 700 }}>
-                                                    ⚠️ نُفّذ جزئياً في فرع: {r.branchName || 'غير معروف'}
-                                                </p>
-                                                {r.remainingServices && (
-                                                    <p style={{ margin: '0 0 6px', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(245, 158, 11, 0.05)', padding: '6px 10px', borderRadius: '6px', borderLeft: '3px solid var(--accent-orange)' }}>
-                                                        <strong>الخدمات المتبقية:</strong> {r.remainingServices}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <span style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--accent-orange)', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '13px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-                                                خدمات ناقصة
-                                            </span>
-                                        </div>
-                                        <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تحويل المتبقي لطلب جديد؟</span>
-                                            <button 
-                                                onClick={() => handleRecreateFromPartial(r)}
-                                                style={{
-                                                    background: 'var(--primary-color)',
-                                                    border: 'none',
-                                                    borderRadius: '8px',
-                                                    padding: '6px 12px',
-                                                    fontSize: '12px',
-                                                    fontWeight: 800,
-                                                    color: 'white',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '6px',
-                                                    transition: 'all 0.2s',
-                                                    boxShadow: '0 2px 6px rgba(59, 130, 246, 0.2)'
-                                                }}
-                                            >
-                                                <RefreshCw size={12} /> تحويل لطلب جديد
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                                {partialRequests.map(renderRequestCard)}
                             </div>
                         )}
                     </div>
@@ -1054,64 +949,8 @@ Please click the link below to view your maintenance request details and barcode
                             لا توجد طلبات منفذة بعد.
                         </p>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', flexWrap: 'wrap' }}>
-                            {completedRequests.map(r => (
-                                <div key={r.id} style={{ padding: '16px', background: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '15px' }}>رقم اللوحة: {r.plateNumber}</p>
-                                        <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-secondary)' }}>{r.serviceDescription}</p>
-                                        <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--success)', fontWeight: 700 }}>
-                                            🟢 نُفّذ في فرع: {r.branchName || 'غير معروف'}
-                                        </p>
-                                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <Clock size={12} /> {r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : ''}
-                                        </span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <button 
-                                            onClick={() => handleRepeatRequest(r)}
-                                            title="تكرار الطلب كطلب جديد"
-                                            style={{
-                                                background: 'rgba(59, 130, 246, 0.1)',
-                                                border: '1px solid rgba(59, 130, 246, 0.3)',
-                                                borderRadius: '8px',
-                                                padding: '8px',
-                                                color: 'var(--primary-color)',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            <RefreshCw size={18} />
-                                        </button>
-                                        <button 
-                                            onClick={() => setSelectedQrRequest(r)}
-                                            title="عرض رمز الـ QR"
-                                            style={{
-                                                background: 'rgba(59, 130, 246, 0.1)',
-                                                border: '1px solid rgba(59, 130, 246, 0.3)',
-                                                borderRadius: '8px',
-                                                padding: '8px',
-                                                color: 'var(--primary-color)',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            <QrCode size={18} />
-                                        </button>
-                                        <div>
-                                            <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', padding: '6px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '12px', border: '1px solid var(--success)' }}>
-                                                {r.id}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                            {completedRequests.map(renderRequestCard)}
                         </div>
                     )}
                 </div>
@@ -1712,6 +1551,290 @@ Please click the link below to view your maintenance request details and barcode
                         >
                             إغلاق النافذة
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* detailedRequest Modal */}
+            {detailedRequest && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000,
+                    padding: '16px'
+                }}>
+                    <div className="glass animate-scale-up" style={{
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '420px',
+                        padding: '32px 24px 24px',
+                        position: 'relative',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        textAlign: 'center'
+                    }}>
+                        <button 
+                            onClick={() => setDetailedRequest(null)}
+                            style={{
+                                position: 'absolute',
+                                top: '16px',
+                                right: '16px',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1.5px solid rgba(239, 68, 68, 0.3)',
+                                borderRadius: '50%',
+                                width: '36px',
+                                height: '36px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                padding: 0
+                            }}
+                            className="hover-scale"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <h3 style={{ margin: '0 0 4px', fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)' }}>📋 تفاصيل طلب الخدمة</h3>
+                        <p style={{ margin: '0 0 20px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>رقم المعرف الفريد للطلب: #{detailedRequest.id}</p>
+
+                        <div style={{
+                            background: 'var(--bg-color)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '16px',
+                            padding: '16px',
+                            marginBottom: '24px',
+                            textAlign: 'right',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم اللوحة:</span>
+                                <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{detailedRequest.plateNumber}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>الخدمة المطلوبة:</span>
+                                <span style={{ fontWeight: 700 }}>{detailedRequest.serviceDescription}</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>الفروع الموجه إليها الطلب:</span>
+                                <span style={{ fontWeight: 700, color: 'var(--primary-color)', fontSize: '12.5px' }}>{getBranchNamesStr(detailedRequest.targetBranchIds)}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>حالة الطلب:</span>
+                                <span style={{ 
+                                    fontWeight: 800, 
+                                    color: detailedRequest.status === 'completed' ? 'var(--success)' : detailedRequest.status === 'rejected' ? 'var(--error)' : 'var(--accent-orange)' 
+                                }}>
+                                    {detailedRequest.status === 'completed' ? '🟢 مكتمل / تم الصيانة' : detailedRequest.status === 'rejected' ? '🔴 مرفوض' : detailedRequest.status === 'transferred' ? '🔵 محول' : '🟡 نشط معلق'}
+                                </span>
+                            </div>
+                            {detailedRequest.status === 'rejected' && detailedRequest.rejectionReason && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(239, 68, 68, 0.05)', padding: '8px', borderRadius: '8px', borderLeft: '3px solid var(--error)' }}>
+                                    <span style={{ color: 'var(--error)', fontSize: '12px', fontWeight: 800 }}>سبب الرفض:</span>
+                                    <span style={{ fontSize: '12.5px', color: 'var(--text-primary)' }}>{detailedRequest.rejectionReason}</span>
+                                </div>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>تاريخ الإنشاء:</span>
+                                <span style={{ fontSize: '12.5px' }}>{new Date(detailedRequest.createdAt).toLocaleString('ar-SA')}</span>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <button
+                                onClick={() => {
+                                    handleShareRequest(detailedRequest);
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    width: '100%',
+                                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 6px 18px rgba(34, 197, 94, 0.25)',
+                                    transition: 'all 0.2s'
+                                }}
+                                className="hover-scale tap-effect"
+                            >
+                                <Share2 size={16} />
+                                مشاركة عبر الواتساب (WhatsApp)
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setSelectedQrRequest(detailedRequest);
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    width: '100%',
+                                    background: 'rgba(59, 130, 246, 0.08)',
+                                    color: 'var(--primary-color)',
+                                    border: '1.5px solid rgba(59, 130, 246, 0.2)',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                className="hover-scale tap-effect"
+                            >
+                                <QrCode size={16} />
+                                عرض رمز الـ QR والباركود
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    handleCopyShareLink(detailedRequest);
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    width: '100%',
+                                    background: 'var(--bg-color)',
+                                    color: 'var(--text-primary)',
+                                    border: '1px solid var(--border-color)',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                className="hover-scale tap-effect"
+                            >
+                                <Link2 size={16} />
+                                نسخ رابط التوجيه الخرائطي
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    handleRepeatRequest(detailedRequest);
+                                    setDetailedRequest(null);
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    width: '100%',
+                                    background: 'rgba(59, 130, 246, 0.08)',
+                                    color: 'var(--primary-color)',
+                                    border: '1.5px solid rgba(59, 130, 246, 0.2)',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                className="hover-scale tap-effect"
+                            >
+                                <RefreshCw size={16} />
+                                تكرار الطلب كطلب جديد
+                            </button>
+
+                            {(detailedRequest.status === 'active' || detailedRequest.status === 'transferred' || detailedRequest.status === 'rejected') && (
+                                <button
+                                    onClick={() => {
+                                        openReRouteModal(detailedRequest);
+                                        setDetailedRequest(null);
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        width: '100%',
+                                        background: 'var(--primary-color)',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '12px 16px',
+                                        borderRadius: '12px',
+                                        fontWeight: 800,
+                                        fontSize: '14px',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    className="hover-scale tap-effect"
+                                >
+                                    <ArrowLeftRight size={16} />
+                                    تعديل توجيه فروع الطلب
+                                </button>
+                            )}
+
+                            {detailedRequest.status === 'partial' && (
+                                <button
+                                    onClick={() => {
+                                        handleRecreateFromPartial(detailedRequest);
+                                        setDetailedRequest(null);
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        width: '100%',
+                                        background: 'var(--primary-color)',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '12px 16px',
+                                        borderRadius: '12px',
+                                        fontWeight: 800,
+                                        fontSize: '14px',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    className="hover-scale tap-effect"
+                                >
+                                    <RefreshCw size={16} />
+                                    تحويل الخدمات المتبقية لطلب جديد
+                                </button>
+                            )}
+
+                            <button
+                                onClick={() => setDetailedRequest(null)}
+                                style={{
+                                    width: '100%',
+                                    background: 'rgba(239, 68, 68, 0.08)',
+                                    color: '#ef4444',
+                                    border: '1.5px solid rgba(239, 68, 68, 0.2)',
+                                    padding: '11px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                className="hover-scale tap-effect"
+                            >
+                                إغلاق النافذة
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
