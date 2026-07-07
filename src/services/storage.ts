@@ -1,6 +1,6 @@
 import type { Branch, NavigationIntent, Category, ServiceRequest, CompanyAccount } from '../types';
 import { db, storage } from './firebase';
-import { collection, onSnapshot, query, where, getDocs, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, getDocs, updateDoc, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const COLLECTION_NAME = 'branches';
@@ -8,6 +8,73 @@ const CATEGORIES_COLLECTION = 'categories';
 const INTENTS_COLLECTION = 'active_navigators';
 const COMPANIES_COLLECTION = 'company_accounts';
 const REQUESTS_COLLECTION = 'service_requests';
+
+// --- Security Utilities ---
+export const generateSecureId = (prefix: string = '', length: number = 20): string => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = prefix;
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const array = new Uint8Array(length);
+        crypto.getRandomValues(array);
+        for (let i = 0; i < length; i++) {
+            result += chars[array[i] % chars.length];
+        }
+    } else {
+        for (let i = 0; i < length; i++) {
+            result += chars[Math.floor(Math.random() * chars.length)];
+        }
+    }
+    return result;
+};
+
+// --- Authentication (Server-side validation simulation) ---
+export const loginCompanyAccount = async (username: string, password: string): Promise<{ id: string, token: string, name: string } | null> => {
+    const q = query(collection(db, COMPANIES_COLLECTION), where('username', '==', username), where('password', '==', password));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    
+    const docSnap = snapshot.docs[0];
+    const token = generateSecureId('ST-', 32);
+    await updateDoc(docSnap.ref, { sessionToken: token });
+    return { id: docSnap.id, token, name: docSnap.data().name };
+};
+
+export const loginBranchAccount = async (username: string, password: string): Promise<{ id: string, token: string, name: string } | null> => {
+    const q = query(collection(db, COLLECTION_NAME), where('username', '==', username), where('password', '==', password));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    
+    const docSnap = snapshot.docs[0];
+    const token = generateSecureId('ST-', 32);
+    await updateDoc(docSnap.ref, { sessionToken: token });
+    return { id: docSnap.id, token, name: docSnap.data().name };
+};
+
+export const validateCompanySession = async (id: string, token: string): Promise<boolean> => {
+    try {
+        if (!id || !token) return false;
+        const docRef = doc(db, COMPANIES_COLLECTION, id);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) return false;
+        return docSnap.data().sessionToken === token;
+    } catch (error) {
+        console.error("Session validation error:", error);
+        return false;
+    }
+};
+
+export const validateBranchSession = async (id: string, token: string): Promise<boolean> => {
+    try {
+        if (!id || !token) return false;
+        const docRef = doc(db, COLLECTION_NAME, id);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) return false;
+        return docSnap.data().sessionToken === token;
+    } catch (error) {
+        console.error("Session validation error:", error);
+        return false;
+    }
+};
 
 // --- Branches Real-time Sync ---
 export const subscribeToBranches = (callback: (branches: Branch[]) => void) => {
@@ -19,6 +86,7 @@ export const subscribeToBranches = (callback: (branches: Branch[]) => void) => {
         callback(branches);
     }, (error) => {
         console.error("Error subscribing to branches:", error);
+        callback([]);
     });
 };
 
@@ -31,6 +99,20 @@ export const subscribeToCategories = (callback: (categories: Category[]) => void
         callback(categories);
     }, (error) => {
         console.error("Error subscribing to categories:", error);
+        callback([]);
+    });
+};
+
+export const subscribeToBranch = (id: string, callback: (branch: Branch | null) => void) => {
+    return onSnapshot(doc(db, COLLECTION_NAME, id), (docSnap) => {
+        if (docSnap.exists()) {
+            callback({ id: docSnap.id, ...docSnap.data() } as Branch);
+        } else {
+            callback(null);
+        }
+    }, (error) => {
+        console.error("Error subscribing to branch:", error);
+        callback(null);
     });
 };
 
@@ -50,7 +132,7 @@ export const getBranches = async (): Promise<Branch[]> => {
 };
 
 export const addBranch = async (branch: Omit<Branch, 'id'>): Promise<Branch> => {
-    const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const newId = generateSecureId('BR-', 16);
     const cleanData = { ...branch };
     Object.keys(cleanData).forEach(key => (cleanData as any)[key] === undefined && delete (cleanData as any)[key]);
     const newBranch = { ...cleanData, id: newId } as Branch;
@@ -71,7 +153,7 @@ export const deleteBranch = async (id: string): Promise<void> => {
 
 // --- Navigation Intents (Optimized) ---
 export const addNavigationIntent = async (branchId: string, etaMinutes: number): Promise<string> => {
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const id = generateSecureId('NAV-', 16);
     const now = Date.now();
     const expiresAt = now + ((etaMinutes + 10) * 60000);
 
@@ -129,7 +211,7 @@ export const getCategories = async (): Promise<Category[]> => {
 };
 
 export const addCategory = async (name: string, imageUrl?: string): Promise<Category> => {
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const id = generateSecureId('CAT-', 16);
     const newCat: any = { id, name };
     if (imageUrl !== undefined) newCat.imageUrl = imageUrl;
     await setDoc(doc(db, CATEGORIES_COLLECTION, id), newCat);
@@ -264,11 +346,25 @@ export const subscribeToCompanies = (callback: (companies: CompanyAccount[]) => 
         callback(companies.sort((a, b) => b.createdAt - a.createdAt));
     }, (error) => {
         console.error("Error subscribing to companies:", error);
+        callback([]);
+    });
+};
+
+export const subscribeToCompany = (id: string, callback: (company: CompanyAccount | null) => void) => {
+    return onSnapshot(doc(db, COMPANIES_COLLECTION, id), (docSnap) => {
+        if (docSnap.exists()) {
+            callback({ id: docSnap.id, ...docSnap.data() } as CompanyAccount);
+        } else {
+            callback(null);
+        }
+    }, (error) => {
+        console.error("Error subscribing to company:", error);
+        callback(null);
     });
 };
 
 export const addCompany = async (company: Omit<CompanyAccount, 'id' | 'createdAt'>): Promise<CompanyAccount> => {
-    const id = 'CO-' + Date.now().toString() + Math.random().toString(36).substr(2, 4);
+    const id = generateSecureId('CO-', 16);
     const newCompany: CompanyAccount = {
         ...company,
         id,
@@ -300,11 +396,12 @@ export const subscribeToServiceRequests = (callback: (requests: ServiceRequest[]
         callback(requests.sort((a, b) => b.createdAt - a.createdAt));
     }, (error) => {
         console.error("Error subscribing to service requests:", error);
+        callback([]);
     });
 };
 
 export const addServiceRequest = async (request: Omit<ServiceRequest, 'id' | 'status' | 'createdAt'>): Promise<ServiceRequest> => {
-    const id = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit numeric-only code (e.g., 582491)
+    const id = generateSecureId('REQ-', 12); // Secure, unguessable string ID
     const newRequest: ServiceRequest = {
         ...request,
         id,

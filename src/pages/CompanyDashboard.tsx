@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { subscribeToCompanies, subscribeToServiceRequests, addServiceRequest, subscribeToBranches, updateServiceRequestBranch } from '../services/storage';
+import { subscribeToServiceRequests, addServiceRequest, subscribeToBranches, updateServiceRequestBranch, validateCompanySession, subscribeToCompany } from '../services/storage';
 import type { CompanyAccount, ServiceRequest, Branch } from '../types';
 import { PlusCircle, ClipboardList, CheckCircle, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -250,22 +250,74 @@ Please click the link below to view your maintenance request details and barcode
         toast.success('تم فتح واتساب لمشاركة الطلب! 💬');
     };
 
-    // Subscribe to branches, companies, and requests
+    // Subscribe to branches, company account, and requests
     useEffect(() => {
-        const unsubBranches = subscribeToBranches(setBranches);
-        const unsubCompanies = subscribeToCompanies((data) => {
-            const storedCompanyId = localStorage.getItem('logged_company_id');
-            if (storedCompanyId) {
-                const found = data.find(c => c.id === storedCompanyId);
-                if (found) {
-                    setLoggedInCompany(found);
-                }
-            }
+        const storedCompanyId = localStorage.getItem('logged_company_id');
+        const storedSessionToken = localStorage.getItem('company_session_token');
+
+        if (!storedCompanyId || !storedSessionToken) {
             setIsLoading(false);
+            setLoggedInCompany(null);
+            return;
+        }
+
+        let unsubCompany: (() => void) | undefined;
+        
+        validateCompanySession(storedCompanyId, storedSessionToken).then(isValid => {
+            if (isValid) {
+                unsubCompany = subscribeToCompany(storedCompanyId, (company) => {
+                    setLoggedInCompany(company);
+                    setIsLoading(false);
+                });
+            } else {
+                localStorage.removeItem('logged_company_id');
+                localStorage.removeItem('company_session_token');
+                setLoggedInCompany(null);
+                setIsLoading(false);
+                toast.error('انتهت صلاحية الجلسة. الرجاء تسجيل الدخول مرة أخرى.');
+            }
         });
+
+        const unsubBranches = subscribeToBranches(setBranches);
         const unsubRequests = subscribeToServiceRequests(setRequests);
-        return () => { unsubBranches(); unsubCompanies(); unsubRequests(); };
+        
+        return () => { 
+            unsubBranches(); 
+            unsubRequests(); 
+            if (unsubCompany) unsubCompany();
+        };
     }, []);
+    const hasModal = activeTab !== null || detailedRequest !== null || newlyCreatedRequest !== null || selectedQrRequest !== null || reRouteRequest !== null;
+    const prevHasModal = React.useRef(false);
+
+    useEffect(() => {
+        if (hasModal && !prevHasModal.current) {
+            // Modal opened! Push trap.
+            window.history.pushState({ trap: true }, '');
+        } else if (!hasModal && prevHasModal.current) {
+            // Modal closed via UI button. Clean up the garbage trap if it's still there.
+            if (window.history.state?.trap) {
+                window.history.back();
+            }
+        }
+        prevHasModal.current = hasModal;
+    }, [hasModal]);
+
+    useEffect(() => {
+        const handlePopState = (e: PopStateEvent) => {
+            if (prevHasModal.current) {
+                setActiveTab(null);
+                setDetailedRequest(null);
+                setNewlyCreatedRequest(null);
+                setSelectedQrRequest(null);
+                setReRouteRequest(null);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
 
 
     const executeCreateRequest = async (pNum: string, sDesc: string, branchesList: string[]) => {

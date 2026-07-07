@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { subscribeToBranches, subscribeToServiceRequests, updateServiceRequestStatus } from '../services/storage';
+import { subscribeToServiceRequests, updateServiceRequestStatus, validateBranchSession, subscribeToBranch } from '../services/storage';
 import type { Branch, ServiceRequest } from '../types';
 import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, Loader2, ArrowLeftRight, Ban, History, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -107,18 +107,67 @@ const BranchPanel: React.FC = () => {
 
     // Subscribe to branches and requests
     useEffect(() => {
-        const unsubBranches = subscribeToBranches((data) => {
-            const storedBranchId = localStorage.getItem('logged_branch_id');
-            if (storedBranchId) {
-                const found = data.find(b => b.id === storedBranchId);
-                if (found) {
-                    setLoggedInBranch(found);
-                }
-            }
+        const storedBranchId = localStorage.getItem('logged_branch_id');
+        const storedSessionToken = localStorage.getItem('branch_session_token');
+
+        if (!storedBranchId || !storedSessionToken) {
             setIsLoading(false);
+            setLoggedInBranch(null);
+            return;
+        }
+
+        let unsubBranch: (() => void) | undefined;
+        
+        validateBranchSession(storedBranchId, storedSessionToken).then(isValid => {
+            if (isValid) {
+                unsubBranch = subscribeToBranch(storedBranchId, (branch) => {
+                    setLoggedInBranch(branch);
+                    setIsLoading(false);
+                });
+            } else {
+                localStorage.removeItem('logged_branch_id');
+                localStorage.removeItem('branch_session_token');
+                setLoggedInBranch(null);
+                setIsLoading(false);
+                toast.error('انتهت صلاحية الجلسة. الرجاء تسجيل الدخول مرة أخرى.');
+            }
         });
+
         const unsubRequests = subscribeToServiceRequests(setRequests);
-        return () => { unsubBranches(); unsubRequests(); };
+        return () => { 
+            unsubRequests(); 
+            if (unsubBranch) unsubBranch();
+        };
+    }, []);
+
+    const hasModal = activeTab !== null || isScannerOpen || showRejectDialog || showPartialDialog;
+    const prevHasModal = React.useRef(false);
+
+    useEffect(() => {
+        if (hasModal && !prevHasModal.current) {
+            // Modal opened! Push trap.
+            window.history.pushState({ trap: true }, '');
+        } else if (!hasModal && prevHasModal.current) {
+            // Modal closed via UI button. Clean up the garbage trap if it's still there.
+            if (window.history.state?.trap) {
+                window.history.back();
+            }
+        }
+        prevHasModal.current = hasModal;
+    }, [hasModal]);
+
+    useEffect(() => {
+        const handlePopState = (e: PopStateEvent) => {
+            if (prevHasModal.current) {
+                setActiveTab(null);
+                setIsScannerOpen(false);
+                setShowRejectDialog(false);
+                setShowPartialDialog(false);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
 

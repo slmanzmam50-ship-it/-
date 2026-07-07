@@ -413,6 +413,37 @@ const ClientMap: React.FC = () => {
         };
     }, []);
 
+    const hasModal = selectedBranch !== null || showMapQrModal || showRatingModal || lightboxImage !== null || showSortMenu;
+    const prevHasModal = React.useRef(false);
+
+    useEffect(() => {
+        if (hasModal && !prevHasModal.current) {
+            // Modal opened! Push trap.
+            window.history.pushState({ trap: true }, '');
+        } else if (!hasModal && prevHasModal.current) {
+            // Modal closed via UI button. Clean up the garbage trap if it's still there.
+            if (window.history.state?.trap) {
+                window.history.back();
+            }
+        }
+        prevHasModal.current = hasModal;
+    }, [hasModal]);
+
+    useEffect(() => {
+        const handlePopState = (e: PopStateEvent) => {
+            if (prevHasModal.current) {
+                setSelectedBranch(null);
+                setShowMapQrModal(false);
+                setShowRatingModal(false);
+                setLightboxImage(null);
+                setShowSortMenu(false);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
     // Get active request if provided in URL search params or entered manually
     const [driverRequestId, setDriverRequestId] = useState(searchParams.get('request') || searchParams.get('requestId') || '');
     const [showOnlyTargeted] = useState(false);

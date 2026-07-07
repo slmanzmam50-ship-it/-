@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Lock, User, Building2, Store, ArrowRight, Shield } from 'lucide-react';
-import { subscribeToCompanies, subscribeToBranches } from '../services/storage';
-import type { CompanyAccount, Branch } from '../types';
+import { Lock, User, Building2, Store, ArrowRight, Shield, Loader2 } from 'lucide-react';
+import { loginCompanyAccount, loginBranchAccount } from '../services/storage';
 import toast from 'react-hot-toast';
 
 const Login: React.FC = () => {
@@ -39,17 +38,7 @@ const Login: React.FC = () => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    const [companies, setCompanies] = useState<CompanyAccount[]>([]);
-    const [branches, setBranches] = useState<Branch[]>([]);
-
-    useEffect(() => {
-        const unsubCompanies = subscribeToCompanies(setCompanies);
-        const unsubBranches = subscribeToBranches(setBranches);
-        return () => {
-            unsubCompanies();
-            unsubBranches();
-        };
-    }, []);
+    const [isLoading, setIsLoading] = useState(false);
 
     // If query parameters or mode changes, update selected portal
     useEffect(() => {
@@ -60,50 +49,63 @@ const Login: React.FC = () => {
         }
     }, [typeParam, mode]);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
-        const u = username.trim();
-        const p = password.trim();
+        try {
+            const u = username.trim();
+            const p = password.trim();
 
-        if (selectedPortal === 'admin') {
-            if (p === '0539893200') {
-                localStorage.setItem('isAuthenticated', 'true');
-                toast.success('مرحباً بك! تم تسجيل الدخول للإدارة 👋');
-                navigate('/admin');
-            } else {
-                setError('كلمة المرور غير صحيحة ❌');
-                toast.error('كلمة المرور غير صحيحة ❌');
+            if (selectedPortal === 'admin') {
+                if (u === 'ahmd.alyazidi2023@gmail.com' && p === 'Aa0539893200') {
+                    localStorage.setItem('isAuthenticated', 'true');
+                    toast.success('مرحباً بك! تم تسجيل الدخول للإدارة 👋');
+                    navigate('/admin');
+                } else {
+                    setError('بيانات الدخول غير صحيحة ❌');
+                    toast.error('بيانات الدخول غير صحيحة ❌');
+                }
+            } else if (selectedPortal === 'company') {
+                if (!u || !p) {
+                    toast.error('الرجاء إدخال اسم المستخدم وكلمة المرور');
+                    setIsLoading(false);
+                    return;
+                }
+                const result = await loginCompanyAccount(u, p);
+                if (result) {
+                    localStorage.setItem('logged_company_id', result.id);
+                    localStorage.setItem('company_session_token', result.token);
+                    toast.success(`مرحباً بك! تم تسجيل الدخول لـ ${result.name} 👋`);
+                    navigate('/company');
+                } else {
+                    setError('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
+                    toast.error('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
+                }
+            } else if (selectedPortal === 'branch') {
+                if (!u || !p) {
+                    toast.error('الرجاء إدخال اسم المستخدم وكلمة المرور');
+                    setIsLoading(false);
+                    return;
+                }
+                const result = await loginBranchAccount(u, p);
+                if (result) {
+                    localStorage.setItem('logged_branch_id', result.id);
+                    localStorage.setItem('branch_session_token', result.token);
+                    toast.success(`مرحباً بك! تم تسجيل الدخول لـ ${result.name} 👋`);
+                    navigate('/branch');
+                } else {
+                    setError('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
+                    toast.error('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
+                }
             }
-        } else if (selectedPortal === 'company') {
-            if (!u || !p) {
-                toast.error('الرجاء إدخال اسم المستخدم وكلمة المرور');
-                return;
-            }
-            const found = companies.find(c => c.username === u && c.password === p);
-            if (found) {
-                localStorage.setItem('logged_company_id', found.id);
-                toast.success(`مرحباً بك! تم تسجيل الدخول لـ ${found.name} 👋`);
-                navigate('/company');
-            } else {
-                setError('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
-                toast.error('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
-            }
-        } else if (selectedPortal === 'branch') {
-            if (!u || !p) {
-                toast.error('الرجاء إدخال اسم المستخدم وكلمة المرور');
-                return;
-            }
-            const found = branches.find(b => b.username === u && b.password === p);
-            if (found) {
-                localStorage.setItem('logged_branch_id', found.id);
-                toast.success(`مرحباً بك! تم تسجيل الدخول لـ ${found.name} 👋`);
-                navigate('/branch');
-            } else {
-                setError('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
-                toast.error('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
-            }
+        } catch (error) {
+            console.error('Login error:', error);
+            setError('حدث خطأ أثناء الاتصال بقاعدة البيانات. تأكد من اتصالك بالإنترنت.');
+            toast.error('حدث خطأ في النظام');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -301,27 +303,27 @@ const Login: React.FC = () => {
                 )}
 
                 <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    {selectedPortal !== 'admin' && (
-                        <div style={{ textAlign: 'right' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 800, fontSize: '13px', color: 'var(--text-secondary)' }}>اسم المستخدم</label>
-                            <div style={{ position: 'relative' }}>
-                                <User size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                                <input
-                                    type="text"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    placeholder="أدخل اسم المستخدم للقسم"
-                                    required
-                                    style={{
-                                        width: '100%', padding: '0.85rem 2.6rem 0.85rem 0.85rem', borderRadius: '12px',
-                                        border: '1px solid var(--border-color)', background: 'var(--bg-color)',
-                                        color: 'var(--text-primary)', fontSize: '14px', outline: 'none',
-                                        boxSizing: 'border-box'
-                                    }}
-                                />
-                            </div>
+                    <div style={{ textAlign: 'right' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 800, fontSize: '13px', color: 'var(--text-secondary)' }}>
+                            {selectedPortal === 'admin' ? 'البريد الإلكتروني' : 'اسم المستخدم'}
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                            <User size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                            <input
+                                type={selectedPortal === 'admin' ? 'email' : 'text'}
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder={selectedPortal === 'admin' ? 'أدخل البريد الإلكتروني للإدارة' : 'أدخل اسم المستخدم للقسم'}
+                                required
+                                style={{
+                                    width: '100%', padding: '0.85rem 2.6rem 0.85rem 0.85rem', borderRadius: '12px',
+                                    border: '1px solid var(--border-color)', background: 'var(--bg-color)',
+                                    color: 'var(--text-primary)', fontSize: '14px', outline: 'none',
+                                    boxSizing: 'border-box'
+                                }}
+                            />
                         </div>
-                    )}
+                    </div>
 
                     <div style={{ textAlign: 'right' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 800, fontSize: '13px', color: 'var(--text-secondary)' }}>كلمة المرور</label>
@@ -343,13 +345,14 @@ const Login: React.FC = () => {
                         </div>
                     </div>
 
-                    <button type="submit" style={{
+                    <button type="submit" disabled={isLoading} style={{
                         marginTop: '0.5rem', padding: '0.9rem', background: selectedPortal === 'branch' ? 'var(--accent-orange)' : 'var(--primary-color)',
-                        color: 'white', border: 'none', borderRadius: '12px',
-                        fontSize: '15px', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
+                        color: 'white', border: 'none', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px',
+                        fontSize: '15px', fontWeight: 800, cursor: isLoading ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: isLoading ? 0.7 : 1,
                         boxShadow: `0 8px 20px -4px ${selectedPortal === 'branch' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`
                     }}>
-                        دخول البوابة 🔓
+                        {isLoading ? <Loader2 className="animate-spin" size={20} /> : null}
+                        {isLoading ? 'جاري التحقق...' : 'دخول البوابة 🔓'}
                     </button>
                 </form>
 
