@@ -38,16 +38,15 @@ const CompanyDashboard: React.FC = () => {
     const [newlyCreatedRequest, setNewlyCreatedRequest] = useState<ServiceRequest | null>(null);
     const [detailedRequest, setDetailedRequest] = useState<ServiceRequest | null>(null);
 
-    const formatAndValidatePlate = (input: string): { formatted: string; isValid: boolean; error?: string } => {
+    const formatAndValidatePlate = (input: string): { formatted: string; isValid: boolean } => {
         const clean = input.replace(/[\s\-\|\\\/,_.]/g, '');
         const digitsMatch = clean.match(/[0-9\u0660-\u0669]/g) || [];
         const lettersMatch = clean.match(/[\u0621-\u064Aa-zA-Z]/g) || [];
         
         if (digitsMatch.length !== 4 || lettersMatch.length !== 3) {
             return {
-                formatted: '',
-                isValid: false,
-                error: 'يجب أن تحتوي اللوحة على 4 أرقام و 3 حروف بالضبط (مثال: 1234 أ ب ج)'
+                formatted: input.trim(),
+                isValid: true
             };
         }
         
@@ -59,7 +58,7 @@ const CompanyDashboard: React.FC = () => {
         const formattedLetters = lettersMatch.join(' ');
         
         return {
-            formatted: `${normalizedDigits} | ${formattedLetters}`,
+            formatted: `${formattedLetters} | ${normalizedDigits}`,
             isValid: true
         };
     };
@@ -257,12 +256,7 @@ Please click the link below to view your maintenance request details and barcode
             toast.error('الرجاء تسجيل الدخول أولاً');
             return;
         }
-        const plateValidation = formatAndValidatePlate(pNum);
-        if (!plateValidation.isValid) {
-            toast.error(plateValidation.error || 'رقم اللوحة غير صالح');
-            return;
-        }
-        const validatedPNum = plateValidation.formatted;
+        const validatedPNum = formatAndValidatePlate(pNum).formatted;
 
         if (!sDesc) {
             toast.error('الرجاء إدخال الخدمة المطلوبة');
