@@ -659,11 +659,12 @@ const BranchPanel: React.FC = () => {
                                                 </p>
                                             </div>
                                         ) : (
-                                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
                                                 <button 
                                                     onClick={handleCompleteRequest}
                                                     disabled={isProcessing}
                                                     style={{
+                                                        justifyContent: 'center',
                                                         background: 'var(--success)',
                                                         color: 'white',
                                                         border: 'none',
@@ -685,6 +686,7 @@ const BranchPanel: React.FC = () => {
                                                     onClick={handleTransferRequest}
                                                     disabled={isProcessing}
                                                     style={{
+                                                        justifyContent: 'center',
                                                         background: 'rgba(59, 130, 246, 0.1)',
                                                         border: '1px solid rgba(59, 130, 246, 0.3)',
                                                         color: 'var(--primary-color)',
@@ -705,6 +707,7 @@ const BranchPanel: React.FC = () => {
                                                     onClick={() => setShowPartialDialog(true)}
                                                     disabled={isProcessing}
                                                     style={{
+                                                        justifyContent: 'center',
                                                         background: 'rgba(245, 158, 11, 0.1)',
                                                         border: '1px solid rgba(245, 158, 11, 0.3)',
                                                         color: 'var(--accent-orange)',
@@ -725,6 +728,7 @@ const BranchPanel: React.FC = () => {
                                                     onClick={() => setShowRejectDialog(true)}
                                                     disabled={isProcessing}
                                                     style={{
+                                                        justifyContent: 'center',
                                                         background: 'rgba(239, 68, 68, 0.1)',
                                                         border: '1px solid rgba(239, 68, 68, 0.3)',
                                                         color: 'var(--error)',
@@ -1028,7 +1032,7 @@ const BranchPanel: React.FC = () => {
                             />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <button
                                 onClick={handleRejectRequest}
                                 disabled={isProcessing}
@@ -1066,6 +1070,7 @@ const BranchPanel: React.FC = () => {
                             <button
                                 onClick={() => setShowRejectDialog(false)}
                                 style={{
+                                    gridColumn: '1 / -1',
                                     background: 'rgba(255,255,255,0.05)',
                                     border: '1px solid var(--border-color)',
                                     color: 'var(--text-primary)',
@@ -1136,7 +1141,7 @@ const BranchPanel: React.FC = () => {
                             />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <button
                                 onClick={handlePartialRequest}
                                 disabled={isProcessing}
