@@ -900,7 +900,7 @@ const AdminDashboard: React.FC = () => {
                                 <strong style={{ fontSize: '1.5rem', color: 'var(--primary-color)' }}>{totalBranches}</strong>
                             </div>
                             <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '10px', borderRadius: '12px' }}>
-                                <Database size={32} color="var(--primary-color)" />
+                                <Database size={42} color="var(--primary-color)" />
                             </div>
                         </div>
                         <div className="glass admin-stats-card hover-scale tap-effect">
@@ -909,7 +909,7 @@ const AdminDashboard: React.FC = () => {
                                 <strong style={{ fontSize: '1.5rem', color: 'var(--success)' }}>{openBranchesCount}</strong>
                             </div>
                             <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px', borderRadius: '12px' }}>
-                                <Check size={32} color="var(--success)" />
+                                <Check size={42} color="var(--success)" />
                             </div>
                         </div>
                     </div>

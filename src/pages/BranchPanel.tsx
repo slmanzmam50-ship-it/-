@@ -448,11 +448,11 @@ const BranchPanel: React.FC = () => {
                                 gridColumn: 'span 2'
                             }}
                         >
-                            <div style={{ background: activeTab === 'search' ? 'var(--primary-color)' : 'rgba(59, 130, 246, 0.1)', color: activeTab === 'search' ? 'white' : 'var(--primary-color)', width: '64px', height: '64px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                                <Search size={32} />
+                            <div style={{ background: activeTab === 'search' ? 'var(--primary-color)' : 'rgba(59, 130, 246, 0.1)', color: activeTab === 'search' ? 'white' : 'var(--primary-color)', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                                <Search size={42} />
                             </div>
                             <div>
-                                <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>استلام طلب خدمة جديد</h4>
+                                <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>استلام طلب خدمة جديد</h4>
                                 <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>مسح الباركود (QR) أو البحث برقم الطلب</span>
                             </div>
                         </div>
@@ -476,11 +476,11 @@ const BranchPanel: React.FC = () => {
                                 boxShadow: activeTab === 'today' ? '0 10px 20px -5px rgba(139, 92, 246, 0.2)' : 'none'
                             }}
                         >
-                            <div style={{ background: activeTab === 'today' ? '#8b5cf6' : 'rgba(139, 92, 246, 0.1)', color: activeTab === 'today' ? 'white' : '#8b5cf6', width: '64px', height: '64px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                                <CheckCircle size={32} />
+                            <div style={{ background: activeTab === 'today' ? '#8b5cf6' : 'rgba(139, 92, 246, 0.1)', color: activeTab === 'today' ? 'white' : '#8b5cf6', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                                <CheckCircle size={42} />
                             </div>
                             <div>
-                                <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>
+                                <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>
                                     عمليات اليوم
                                     <span style={{ background: '#8b5cf6', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
                                         {branchCompletedToday.length}
@@ -509,11 +509,11 @@ const BranchPanel: React.FC = () => {
                                 boxShadow: activeTab === 'history' ? '0 10px 20px -5px rgba(16, 185, 129, 0.2)' : 'none'
                             }}
                         >
-                            <div style={{ background: activeTab === 'history' ? 'var(--success)' : 'rgba(16, 185, 129, 0.1)', color: activeTab === 'history' ? 'white' : 'var(--success)', width: '64px', height: '64px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                                <History size={32} />
+                            <div style={{ background: activeTab === 'history' ? 'var(--success)' : 'rgba(16, 185, 129, 0.1)', color: activeTab === 'history' ? 'white' : 'var(--success)', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                                <History size={42} />
                             </div>
                             <div>
-                                <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>
+                                <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>
                                     سجل العمليات
                                     <span style={{ background: 'var(--success)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
                                         {branchAllProcessed.length}
@@ -635,15 +635,15 @@ const BranchPanel: React.FC = () => {
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                         <div>
                                             <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>الشركة صاحبة الطلب:</p>
-                                            <p style={{ margin: 0, fontWeight: 700, fontSize: '17px' }}>{matchedRequest.companyName}</p>
+                                            <p style={{ margin: 0, fontWeight: 700, fontSize: '18px' }}>{matchedRequest.companyName}</p>
                                         </div>
                                         <div>
                                             <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>رقم لوحة السيارة:</p>
-                                            <p style={{ margin: 0, fontWeight: 700, fontSize: '17px' }}>{matchedRequest.plateNumber}</p>
+                                            <p style={{ margin: 0, fontWeight: 700, fontSize: '18px' }}>{matchedRequest.plateNumber}</p>
                                         </div>
                                         <div style={{ gridColumn: 'span 2' }}>
                                             <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>الخدمة المطلوبة:</p>
-                                            <p style={{ margin: 0, fontWeight: 700, fontSize: '17px', color: 'var(--primary-color)' }}>{matchedRequest.serviceDescription}</p>
+                                            <p style={{ margin: 0, fontWeight: 700, fontSize: '18px', color: 'var(--primary-color)' }}>{matchedRequest.serviceDescription}</p>
                                         </div>
                                     </div>
 
@@ -774,7 +774,7 @@ const BranchPanel: React.FC = () => {
                                 borderBottom: activeTab === 'today' ? '3px solid var(--primary-color)' : '3px solid transparent',
                                 color: activeTab === 'today' ? 'var(--primary-color)' : 'var(--text-secondary)',
                                 fontWeight: activeTab === 'today' ? 800 : 600,
-                                fontSize: '17px',
+                                fontSize: '18px',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -798,7 +798,7 @@ const BranchPanel: React.FC = () => {
                                 borderBottom: activeTab === 'history' ? '3px solid var(--primary-color)' : '3px solid transparent',
                                 color: activeTab === 'history' ? 'var(--primary-color)' : 'var(--text-secondary)',
                                 fontWeight: activeTab === 'history' ? 800 : 600,
-                                fontSize: '17px',
+                                fontSize: '18px',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -999,7 +999,7 @@ const BranchPanel: React.FC = () => {
                         textAlign: 'right'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--error)', marginBottom: '16px' }}>
-                            <AlertTriangle size={32} />
+                            <AlertTriangle size={42} />
                             <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>هل أنت متأكد من رفض الطلب؟</h3>
                         </div>
 
@@ -1107,7 +1107,7 @@ const BranchPanel: React.FC = () => {
                         textAlign: 'right'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)', marginBottom: '16px' }}>
-                            <AlertTriangle size={32} />
+                            <AlertTriangle size={42} />
                             <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>تسجيل خدمات ناقصة</h3>
                         </div>
 
