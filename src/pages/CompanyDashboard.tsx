@@ -138,7 +138,7 @@ const CompanyDashboard: React.FC = () => {
                 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 900, fontSize: '15px', color: 'var(--text-primary)' }}>
+                    <span style={{ fontWeight: 900, fontSize: '17px', color: 'var(--text-primary)' }}>
                         🚗 اللوحة: {r.plateNumber}
                     </span>
                     <span style={{ 
@@ -545,11 +545,11 @@ Please click the link below to view your maintenance request details and barcode
                             boxShadow: activeTab === 'create' ? '0 10px 20px -5px rgba(59, 130, 246, 0.2)' : 'none'
                         }}
                     >
-                        <div style={{ background: activeTab === 'create' ? 'var(--primary-color)' : 'rgba(59, 130, 246, 0.1)', color: activeTab === 'create' ? 'white' : 'var(--primary-color)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <PlusCircle size={24} />
+                        <div style={{ background: activeTab === 'create' ? 'var(--primary-color)' : 'rgba(59, 130, 246, 0.1)', color: activeTab === 'create' ? 'white' : 'var(--primary-color)', width: '64px', height: '64px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <PlusCircle size={32} />
                         </div>
                         <div>
-                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>إنشاء طلب جديد</h4>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>إنشاء طلب جديد</h4>
                             <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تعبئة وتوجيه سيارة جديدة</span>
                         </div>
                     </div>
@@ -573,11 +573,11 @@ Please click the link below to view your maintenance request details and barcode
                             boxShadow: activeTab === 'active' ? '0 10px 20px -5px rgba(245, 158, 11, 0.2)' : 'none'
                         }}
                     >
-                        <div style={{ background: activeTab === 'active' ? 'var(--accent-orange)' : 'rgba(245, 158, 11, 0.1)', color: activeTab === 'active' ? 'white' : 'var(--accent-orange)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <ClipboardList size={24} />
+                        <div style={{ background: activeTab === 'active' ? 'var(--accent-orange)' : 'rgba(245, 158, 11, 0.1)', color: activeTab === 'active' ? 'white' : 'var(--accent-orange)', width: '64px', height: '64px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <ClipboardList size={32} />
                         </div>
                         <div>
-                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>
                                 الطلبات النشطة
                                 <span style={{ background: 'var(--accent-orange)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
                                     {activeRequests.length}
@@ -606,11 +606,11 @@ Please click the link below to view your maintenance request details and barcode
                             boxShadow: activeTab === 'rejected' ? '0 10px 20px -5px rgba(239, 68, 68, 0.2)' : 'none'
                         }}
                     >
-                        <div style={{ background: activeTab === 'rejected' ? 'var(--error)' : 'rgba(239, 68, 68, 0.1)', color: activeTab === 'rejected' ? 'white' : 'var(--error)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <AlertTriangle size={24} />
+                        <div style={{ background: activeTab === 'rejected' ? 'var(--error)' : 'rgba(239, 68, 68, 0.1)', color: activeTab === 'rejected' ? 'white' : 'var(--error)', width: '64px', height: '64px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <AlertTriangle size={32} />
                         </div>
                         <div>
-                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>
                                 الطلبات المرفوضة
                                 {rejectedRequests.length > 0 && (
                                     <span style={{ background: 'var(--error)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
@@ -641,11 +641,11 @@ Please click the link below to view your maintenance request details and barcode
                             boxShadow: activeTab === 'partial' ? '0 10px 20px -5px rgba(245, 158, 11, 0.2)' : 'none'
                         }}
                     >
-                        <div style={{ background: activeTab === 'partial' ? 'var(--accent-orange)' : 'rgba(245, 158, 11, 0.1)', color: activeTab === 'partial' ? 'white' : 'var(--accent-orange)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <AlertTriangle size={24} />
+                        <div style={{ background: activeTab === 'partial' ? 'var(--accent-orange)' : 'rgba(245, 158, 11, 0.1)', color: activeTab === 'partial' ? 'white' : 'var(--accent-orange)', width: '64px', height: '64px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <AlertTriangle size={32} />
                         </div>
                         <div>
-                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>
                                 خدمات ناقصة
                                 {partialRequests.length > 0 && (
                                     <span style={{ background: 'var(--accent-orange)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
@@ -676,11 +676,11 @@ Please click the link below to view your maintenance request details and barcode
                             boxShadow: activeTab === 'completed' ? '0 10px 20px -5px rgba(16, 185, 129, 0.2)' : 'none'
                         }}
                     >
-                        <div style={{ background: activeTab === 'completed' ? 'var(--success)' : 'rgba(16, 185, 129, 0.1)', color: activeTab === 'completed' ? 'white' : 'var(--success)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <CheckCircle size={24} />
+                        <div style={{ background: activeTab === 'completed' ? 'var(--success)' : 'rgba(16, 185, 129, 0.1)', color: activeTab === 'completed' ? 'white' : 'var(--success)', width: '64px', height: '64px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <CheckCircle size={32} />
                         </div>
                         <div>
-                            <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>
                                 الطلبات المنفذة
                                 <span style={{ background: 'var(--success)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginInlineStart: '6px', fontWeight: 800 }}>
                                     {completedRequests.length}

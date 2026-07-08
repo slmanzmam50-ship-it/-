@@ -900,7 +900,7 @@ const AdminDashboard: React.FC = () => {
                                 <strong style={{ fontSize: '1.5rem', color: 'var(--primary-color)' }}>{totalBranches}</strong>
                             </div>
                             <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '10px', borderRadius: '12px' }}>
-                                <Database size={24} color="var(--primary-color)" />
+                                <Database size={32} color="var(--primary-color)" />
                             </div>
                         </div>
                         <div className="glass admin-stats-card hover-scale tap-effect">
@@ -909,7 +909,7 @@ const AdminDashboard: React.FC = () => {
                                 <strong style={{ fontSize: '1.5rem', color: 'var(--success)' }}>{openBranchesCount}</strong>
                             </div>
                             <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px', borderRadius: '12px' }}>
-                                <Check size={24} color="var(--success)" />
+                                <Check size={32} color="var(--success)" />
                             </div>
                         </div>
                     </div>
@@ -1042,7 +1042,7 @@ const AdminDashboard: React.FC = () => {
                         <button 
                             onClick={handleAddCategory} 
                             disabled={isAddingCategory} 
-                            style={{ background: 'var(--success)', color: 'white', padding: '0 2rem', height: '48px', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer', minWidth: '100px' }}
+                            style={{ background: 'var(--success)', color: 'white', padding: '0 2rem', height: '64px', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer', minWidth: '100px' }}
                         >
                             {isAddingCategory ? <Loader2 className="animate-spin" size={20} /> : 'إضافة'}
                         </button>
