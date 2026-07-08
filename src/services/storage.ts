@@ -608,6 +608,10 @@ export const clearServiceRequestRatings = async (requestIds: string[]): Promise<
     await Promise.all(batchPromises);
 };
 
+export const deleteServiceRequest = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, REQUESTS_COLLECTION, id));
+};
+
 export const deleteServiceRequestsByIds = async (ids: string[]): Promise<void> => {
     const batchPromises = ids.map(id => deleteDoc(doc(db, REQUESTS_COLLECTION, id)));
     await Promise.all(batchPromises);

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { addServiceRequest, subscribeToBranches, updateServiceRequestBranch, validateCompanySession, subscribeToCompany, subscribeToCompanyRequests } from '../services/storage';
+import { addServiceRequest, subscribeToBranches, updateServiceRequestBranch, validateCompanySession, subscribeToCompany, subscribeToCompanyRequests , deleteServiceRequest, updateServiceRequestStatus} from '../services/storage';
 import type { CompanyAccount, ServiceRequest, Branch } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight, Share2 } from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight, Share2 , Trash2, Ban} from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
@@ -545,8 +545,8 @@ Please click the link below to view your maintenance request details and barcode
                             boxShadow: activeTab === 'create' ? '0 10px 20px -5px rgba(59, 130, 246, 0.2)' : 'none'
                         }}
                     >
-                        <div style={{ background: activeTab === 'create' ? 'var(--primary-color)' : 'rgba(59, 130, 246, 0.1)', color: activeTab === 'create' ? 'white' : 'var(--primary-color)', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <PlusCircle size={42} />
+                        <div style={{ background: activeTab === 'create' ? 'var(--primary-color)' : 'rgba(59, 130, 246, 0.1)', color: activeTab === 'create' ? 'white' : 'var(--primary-color)', width: '86px', height: '86px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <PlusCircle size={46} />
                         </div>
                         <div>
                             <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>إنشاء طلب جديد</h4>
@@ -573,8 +573,8 @@ Please click the link below to view your maintenance request details and barcode
                             boxShadow: activeTab === 'active' ? '0 10px 20px -5px rgba(245, 158, 11, 0.2)' : 'none'
                         }}
                     >
-                        <div style={{ background: activeTab === 'active' ? 'var(--accent-orange)' : 'rgba(245, 158, 11, 0.1)', color: activeTab === 'active' ? 'white' : 'var(--accent-orange)', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <ClipboardList size={42} />
+                        <div style={{ background: activeTab === 'active' ? 'var(--accent-orange)' : 'rgba(245, 158, 11, 0.1)', color: activeTab === 'active' ? 'white' : 'var(--accent-orange)', width: '86px', height: '86px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <ClipboardList size={46} />
                         </div>
                         <div>
                             <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>
@@ -606,8 +606,8 @@ Please click the link below to view your maintenance request details and barcode
                             boxShadow: activeTab === 'rejected' ? '0 10px 20px -5px rgba(239, 68, 68, 0.2)' : 'none'
                         }}
                     >
-                        <div style={{ background: activeTab === 'rejected' ? 'var(--error)' : 'rgba(239, 68, 68, 0.1)', color: activeTab === 'rejected' ? 'white' : 'var(--error)', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <AlertTriangle size={42} />
+                        <div style={{ background: activeTab === 'rejected' ? 'var(--error)' : 'rgba(239, 68, 68, 0.1)', color: activeTab === 'rejected' ? 'white' : 'var(--error)', width: '86px', height: '86px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <AlertTriangle size={46} />
                         </div>
                         <div>
                             <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>
@@ -641,8 +641,8 @@ Please click the link below to view your maintenance request details and barcode
                             boxShadow: activeTab === 'partial' ? '0 10px 20px -5px rgba(245, 158, 11, 0.2)' : 'none'
                         }}
                     >
-                        <div style={{ background: activeTab === 'partial' ? 'var(--accent-orange)' : 'rgba(245, 158, 11, 0.1)', color: activeTab === 'partial' ? 'white' : 'var(--accent-orange)', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <AlertTriangle size={42} />
+                        <div style={{ background: activeTab === 'partial' ? 'var(--accent-orange)' : 'rgba(245, 158, 11, 0.1)', color: activeTab === 'partial' ? 'white' : 'var(--accent-orange)', width: '86px', height: '86px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <AlertTriangle size={46} />
                         </div>
                         <div>
                             <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>
@@ -676,8 +676,8 @@ Please click the link below to view your maintenance request details and barcode
                             boxShadow: activeTab === 'completed' ? '0 10px 20px -5px rgba(16, 185, 129, 0.2)' : 'none'
                         }}
                     >
-                        <div style={{ background: activeTab === 'completed' ? 'var(--success)' : 'rgba(16, 185, 129, 0.1)', color: activeTab === 'completed' ? 'white' : 'var(--success)', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <CheckCircle size={42} />
+                        <div style={{ background: activeTab === 'completed' ? 'var(--success)' : 'rgba(16, 185, 129, 0.1)', color: activeTab === 'completed' ? 'white' : 'var(--success)', width: '86px', height: '86px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            <CheckCircle size={46} />
                         </div>
                         <div>
                             <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>
@@ -843,7 +843,7 @@ Please click the link below to view your maintenance request details and barcode
                         </button>
 
                         {/* Branch Selector Chip Grid */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
                                 <label style={{ fontWeight: 800, fontSize: '14.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                                     <MapPin size={18} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:
@@ -1176,7 +1176,7 @@ Please click the link below to view your maintenance request details and barcode
                         </button>
 
                         <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800 }}>تعديل توجيه الطلب (إعادة التعيين)</h3>
-                        <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                        <p style={{ margin: '0 0 20px', fontSize: '14.5px', color: 'var(--text-secondary)' }}>
                             تعديل الفروع المستهدفة للطلب رقم <strong style={{ color: 'var(--accent-orange)' }}>{reRouteRequest.id}</strong> (اللوحة: {reRouteRequest.plateNumber})
                         </p>
 
@@ -1199,7 +1199,7 @@ Please click the link below to view your maintenance request details and barcode
                                         border: '1.5px solid var(--border-color)',
                                         background: 'var(--bg-color)',
                                         color: 'var(--text-primary)',
-                                        fontSize: '13px',
+                                        fontSize: '14.5px',
                                         fontWeight: 600,
                                         width: '100%',
                                         outline: 'none',
@@ -1446,7 +1446,7 @@ Please click the link below to view your maintenance request details and barcode
                         </button>
 
                         <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800 }}>رمز استجابة سريع للطلب (QR Code)</h3>
-                        <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>سيمسح الموظف هذا الرمز في الفرع لتنفيذ طلبك مباشرة</p>
+                        <p style={{ margin: '0 0 20px', fontSize: '14.5px', color: 'var(--text-secondary)' }}>سيمسح الموظف هذا الرمز في الفرع لتنفيذ طلبك مباشرة</p>
 
                         <div style={{
                             background: 'white',
@@ -1474,21 +1474,21 @@ Please click the link below to view your maintenance request details and barcode
                             textAlign: 'right'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم الطلب:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>رقم الطلب:</span>
                                 <span style={{ fontWeight: 800, color: 'var(--accent-orange)' }}>{selectedQrRequest.id}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم اللوحة:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>رقم اللوحة:</span>
                                 <span style={{ fontWeight: 800 }}>{selectedQrRequest.plateNumber}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>الخدمة المطلوبة:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>الخدمة المطلوبة:</span>
                                 <span style={{ fontWeight: 600, maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={selectedQrRequest.serviceDescription}>
                                     {selectedQrRequest.serviceDescription}
                                 </span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>الفروع الموجه إليها:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>الفروع الموجه إليها:</span>
                                 <span style={{ fontWeight: 600, maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--primary-color)' }}>
                                     {getBranchNamesStr(selectedQrRequest.targetBranchIds)}
                                 </span>
@@ -1636,15 +1636,15 @@ Please click the link below to view your maintenance request details and barcode
                             gap: '10px'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم الطلب:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>رقم الطلب:</span>
                                 <span style={{ fontWeight: 800, color: 'var(--primary-color)' }}>#{newlyCreatedRequest.id}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم اللوحة:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>رقم اللوحة:</span>
                                 <span style={{ fontWeight: 700 }}>{newlyCreatedRequest.plateNumber}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>الخدمة المطلوبة:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>الخدمة المطلوبة:</span>
                                 <span style={{ fontWeight: 700 }}>{newlyCreatedRequest.serviceDescription}</span>
                             </div>
                         </div>
@@ -1790,19 +1790,19 @@ Please click the link below to view your maintenance request details and barcode
                             gap: '10px'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>رقم اللوحة:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>رقم اللوحة:</span>
                                 <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{detailedRequest.plateNumber}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>الخدمة المطلوبة:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>الخدمة المطلوبة:</span>
                                 <span style={{ fontWeight: 700 }}>{detailedRequest.serviceDescription}</span>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>الفروع الموجه إليها الطلب:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>الفروع الموجه إليها الطلب:</span>
                                 <span style={{ fontWeight: 700, color: 'var(--primary-color)', fontSize: '12.5px' }}>{getBranchNamesStr(detailedRequest.targetBranchIds)}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>حالة الطلب:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>حالة الطلب:</span>
                                 <span style={{ 
                                     fontWeight: 800, 
                                     color: detailedRequest.status === 'completed' ? 'var(--success)' : detailedRequest.status === 'rejected' ? 'var(--error)' : 'var(--accent-orange)' 
@@ -1817,7 +1817,7 @@ Please click the link below to view your maintenance request details and barcode
                                 </div>
                             )}
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>تاريخ الإنشاء:</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '14.5px' }}>تاريخ الإنشاء:</span>
                                 <span style={{ fontSize: '12.5px' }}>{new Date(detailedRequest.createdAt).toLocaleString('ar-SA')}</span>
                             </div>
                         </div>
@@ -1959,6 +1959,77 @@ Please click the link below to view your maintenance request details and barcode
                                 </button>
                             )}
 
+                            
+                            {(detailedRequest.status === 'active' || detailedRequest.status === 'transferred') && (
+                                <button
+                                    onClick={async () => {
+                                        if (window.confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
+                                            try {
+                                                await updateServiceRequestStatus(detailedRequest.id, 'rejected', 'ملغى من قبل الشركة');
+                                                toast.success('تم إلغاء الطلب بنجاح');
+                                                setDetailedRequest(null);
+                                            } catch(err) {
+                                                toast.error('حدث خطأ أثناء الإلغاء');
+                                            }
+                                        }
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        width: '100%',
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        color: '#ef4444',
+                                        border: '1.5px solid rgba(239, 68, 68, 0.3)',
+                                        padding: '12px 16px',
+                                        borderRadius: '12px',
+                                        fontWeight: 800,
+                                        fontSize: '14px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    className="hover-scale tap-effect"
+                                >
+                                    <Ban size={16} />
+                                    إلغاء الطلب
+                                </button>
+                            )}
+                            <button
+                                onClick={async () => {
+                                    if (window.confirm('هل أنت متأكد من حذف هذا الطلب نهائياً؟')) {
+                                        try {
+                                            await deleteServiceRequest(detailedRequest.id);
+                                            toast.success('تم حذف الطلب بنجاح');
+                                            setDetailedRequest(null);
+                                        } catch(err) {
+                                            toast.error('حدث خطأ أثناء الحذف');
+                                        }
+                                    }
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    width: '100%',
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 16px',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)'
+                                }}
+                                className="hover-scale tap-effect"
+                            >
+                                <Trash2 size={16} />
+                                حذف الطلب
+                            </button>
+
                             {detailedRequest.status === 'partial' && (
                                 <button
                                     onClick={() => {
@@ -1992,6 +2063,7 @@ Please click the link below to view your maintenance request details and barcode
                             <button
                                 onClick={() => setDetailedRequest(null)}
                                 style={{
+                                    gridColumn: '1 / -1',
                                     width: '100%',
                                     background: 'rgba(239, 68, 68, 0.08)',
                                     color: '#ef4444',

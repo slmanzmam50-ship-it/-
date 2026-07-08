@@ -900,7 +900,7 @@ const AdminDashboard: React.FC = () => {
                                 <strong style={{ fontSize: '1.5rem', color: 'var(--primary-color)' }}>{totalBranches}</strong>
                             </div>
                             <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '10px', borderRadius: '12px' }}>
-                                <Database size={42} color="var(--primary-color)" />
+                                <Database size={46} color="var(--primary-color)" />
                             </div>
                         </div>
                         <div className="glass admin-stats-card hover-scale tap-effect">
@@ -909,7 +909,7 @@ const AdminDashboard: React.FC = () => {
                                 <strong style={{ fontSize: '1.5rem', color: 'var(--success)' }}>{openBranchesCount}</strong>
                             </div>
                             <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px', borderRadius: '12px' }}>
-                                <Check size={42} color="var(--success)" />
+                                <Check size={46} color="var(--success)" />
                             </div>
                         </div>
                     </div>
@@ -1084,7 +1084,7 @@ const AdminDashboard: React.FC = () => {
                                             <input value={categoryEditName} onChange={e => setCategoryEditName(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--primary-color)', background: 'var(--bg-color)', outline: 'none' }} placeholder="اسم القسم" />
                                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', borderRadius: '8px', border: '1px dashed var(--primary-color)', background: 'var(--surface-color)', color: 'var(--primary-color)', cursor: 'pointer' }}>
                                                 <ImageIcon size={16} />
-                                                <span style={{ fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                <span style={{ fontSize: '14.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                     {categoryEditFile ? categoryEditFile.name : (categoryEditImageUrl ? 'تغيير الصورة' : 'إرفاق صورة')}
                                                 </span>
                                                 <input 
@@ -1258,7 +1258,7 @@ const AdminDashboard: React.FC = () => {
                                         border: '1px solid var(--border-color)', 
                                         width: '100%',
                                         background: 'var(--surface-color)',
-                                        fontSize: '13px'
+                                        fontSize: '14.5px'
                                     }} 
                                 />
                             </div>
@@ -1271,7 +1271,7 @@ const AdminDashboard: React.FC = () => {
                                     border: '1px solid var(--border-color)',
                                     background: 'var(--surface-color)',
                                     color: 'var(--text-primary)',
-                                    fontSize: '13px',
+                                    fontSize: '14.5px',
                                     fontWeight: 700,
                                     outline: 'none',
                                     height: '40px'
@@ -1296,7 +1296,7 @@ const AdminDashboard: React.FC = () => {
                                     display: 'flex', 
                                     alignItems: 'center', 
                                     gap: '6px',
-                                    fontSize: '13px',
+                                    fontSize: '14.5px',
                                     height: '40px',
                                     boxShadow: '0 4px 10px rgba(59, 130, 246, 0.2)'
                                 }}
@@ -1316,7 +1316,7 @@ const AdminDashboard: React.FC = () => {
                                     display: 'flex', 
                                     alignItems: 'center', 
                                     gap: '6px',
-                                    fontSize: '13px',
+                                    fontSize: '14.5px',
                                     height: '40px'
                                 }}
                             >
@@ -1371,7 +1371,7 @@ const AdminDashboard: React.FC = () => {
                                             <td style={{ fontWeight: 800, color: 'var(--primary-color)' }}>{r.id}</td>
                                             <td style={{ fontWeight: 700 }}>{r.companyName}</td>
                                             <td style={{ fontWeight: 700 }}>{r.plateNumber}</td>
-                                            <td style={{ fontSize: '13px' }}>{r.serviceDescription}</td>
+                                            <td style={{ fontSize: '14.5px' }}>{r.serviceDescription}</td>
                                             <td style={{ fontSize: '12px', color: 'var(--primary-color)', fontWeight: 600 }}>
                                                 {getBranchNamesStr(r.targetBranchIds)}
                                             </td>
@@ -1410,7 +1410,7 @@ const AdminDashboard: React.FC = () => {
                                             <td style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                                                 {r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : '-'}
                                             </td>
-                                            <td style={{ fontWeight: 700, fontSize: '13px' }}>{r.branchName || '-'}</td>
+                                            <td style={{ fontWeight: 700, fontSize: '14.5px' }}>{r.branchName || '-'}</td>
                                             <td>
                                                 {r.rating ? (
                                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
@@ -1487,14 +1487,14 @@ const AdminDashboard: React.FC = () => {
                                 <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary-color)' }}>
                                     ➕ إنشاء طلب صيانة بالنيابة عن شركة
                                 </h3>
-                                <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                <p style={{ margin: '0 0 20px', fontSize: '14.5px', color: 'var(--text-secondary)' }}>
                                     يمكنك تعبئة هذا النموذج لرفع طلب مركبة لشركة مفوض عنها مباشرة.
                                 </p>
 
                                 <form onSubmit={handleAdminCreateRequest} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                                     {/* Company Selector */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>🏢 الشركة صاحبة الطلب:</label>
+                                        <label style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text-secondary)' }}>🏢 الشركة صاحبة الطلب:</label>
                                         <select
                                             value={adminSelectedCompanyId}
                                             onChange={(e) => setAdminSelectedCompanyId(e.target.value)}
@@ -1527,7 +1527,7 @@ const AdminDashboard: React.FC = () => {
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                         {/* Plate Number */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <label style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <Car size={14} /> رقم لوحة السيارة:
                                             </label>
                                             <input 
@@ -1556,7 +1556,7 @@ const AdminDashboard: React.FC = () => {
                                         </div>
                                         {/* Service Description */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <label style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <Wrench size={14} /> الخدمة المطلوبة:
                                             </label>
                                             <input 
@@ -1587,7 +1587,7 @@ const AdminDashboard: React.FC = () => {
 
                                     {/* Branch Selector Chip Grid */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                        <label style={{ fontWeight: 800, fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <label style={{ fontWeight: 800, fontSize: '14.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             <MapPin size={16} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:
                                         </label>
 
@@ -1605,7 +1605,7 @@ const AdminDashboard: React.FC = () => {
                                                     border: '1.5px solid var(--border-color)',
                                                     background: 'var(--bg-color)',
                                                     color: 'var(--text-primary)',
-                                                    fontSize: '13px',
+                                                    fontSize: '14.5px',
                                                     fontWeight: 600,
                                                     width: '100%',
                                                     outline: 'none',
@@ -1813,7 +1813,7 @@ const AdminDashboard: React.FC = () => {
                         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
                             <Settings size={22} /> إعدادات صيانة وتصفية البيانات
                         </h2>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '0 0 24px' }}>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '14.5px', margin: '0 0 24px' }}>
                             أدوات مخصصة لتنظيف قاعدة البيانات بشكل دوري والحفاظ عليها من التراكم، مع نظام تأمين صارم يفرض حفظ نسخة احتياطية أولاً قبل تصفية أي سجلات.
                         </p>
 
@@ -1826,7 +1826,7 @@ const AdminDashboard: React.FC = () => {
                                 <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.5' }}>
                                     تقوم هذه العملية بحذف كافة النجوم والتعليقات الخاصة بالسائقين من السجل، لتقليل حجم البيانات وحماية الخصوصية. يتطلب النظام حفظها في ملف Word مسبقاً.
                                 </p>
-                                <div style={{ background: 'rgba(245, 158, 11, 0.05)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.15)', fontSize: '13px' }}>
+                                <div style={{ background: 'rgba(245, 158, 11, 0.05)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.15)', fontSize: '14.5px' }}>
                                     📊 عدد التقييمات المخزنة حالياً: <strong>{requests.filter(r => r.rating).length} تقييم</strong>
                                 </div>
                                 <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
@@ -1888,7 +1888,7 @@ const AdminDashboard: React.FC = () => {
                                 <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.5' }}>
                                     حذف وتصفية كافة طلبات صيانة السيارات القديمة الصادرة من الشركات المتعاقدة والتي تجاوز عمرها 6 أشهر بالكامل. يتطلب تنزيل وحفظ نسخة إكسل/وورد أولاً.
                                 </p>
-                                <div style={{ background: 'rgba(245, 158, 11, 0.05)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.15)', fontSize: '13px' }}>
+                                <div style={{ background: 'rgba(245, 158, 11, 0.05)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.15)', fontSize: '14.5px' }}>
                                     📊 عدد الطلبات التاريخية (الأقدم من 6 أشهر): <strong>{getOldRequestsCount()} طلب</strong>
                                 </div>
                                 <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
@@ -1949,7 +1949,7 @@ const AdminDashboard: React.FC = () => {
                         <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
                             🔗 روابط البوابات والأقسام الرسمية للمشاركة
                         </h3>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '0 0 20px' }}>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '14.5px', margin: '0 0 20px' }}>
                             انسخ وشارك روابط تسجيل الدخول المباشرة لأي قسم مع المدراء، الشركات، الفروع، أو السائقين بنقرة واحدة:
                         </p>
 
@@ -2093,7 +2093,7 @@ const AdminDashboard: React.FC = () => {
                         </button>
 
                         <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800 }}>🚫 إخفاء الفروع عن الشركة</h3>
-                        <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                        <p style={{ margin: '0 0 20px', fontSize: '14.5px', color: 'var(--text-secondary)' }}>
                             حدد الفروع التي ترغب في **إخفائها** عن شركة <strong style={{ color: 'var(--primary-color)' }}>{managingHiddenBranchCompany.name}</strong> وسائقيها. الفروع المحددة لن تظهر لهم مطلقاً.
                         </p>
 

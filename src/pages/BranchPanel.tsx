@@ -418,8 +418,8 @@ const BranchPanel: React.FC = () => {
                         <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-secondary)' }}>لتفادي مشاكل المسح الضوئي وتحديد المسارات، يرجى تفعيل الأذونات الكلية من متصفحك.</p>
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={requestAllPermissions} className="hover-scale tap-effect" style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>تفعيل الآن ⚡</button>
-                        <button onClick={() => { setShowPermissionsBanner(false); sessionStorage.setItem('permissions_banner_dismissed', 'true'); }} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>إغلاق</button>
+                        <button onClick={requestAllPermissions} className="hover-scale tap-effect" style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer' }}>تفعيل الآن ⚡</button>
+                        <button onClick={() => { setShowPermissionsBanner(false); sessionStorage.setItem('permissions_banner_dismissed', 'true'); }} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '8px', fontSize: '14.5px', cursor: 'pointer' }}>إغلاق</button>
                     </div>
                 </div>
             )}
@@ -448,8 +448,8 @@ const BranchPanel: React.FC = () => {
                                 gridColumn: 'span 2'
                             }}
                         >
-                            <div style={{ background: activeTab === 'search' ? 'var(--primary-color)' : 'rgba(59, 130, 246, 0.1)', color: activeTab === 'search' ? 'white' : 'var(--primary-color)', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                                <Search size={42} />
+                            <div style={{ background: activeTab === 'search' ? 'var(--primary-color)' : 'rgba(59, 130, 246, 0.1)', color: activeTab === 'search' ? 'white' : 'var(--primary-color)', width: '86px', height: '86px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                                <Search size={46} />
                             </div>
                             <div>
                                 <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>استلام طلب خدمة جديد</h4>
@@ -476,8 +476,8 @@ const BranchPanel: React.FC = () => {
                                 boxShadow: activeTab === 'today' ? '0 10px 20px -5px rgba(139, 92, 246, 0.2)' : 'none'
                             }}
                         >
-                            <div style={{ background: activeTab === 'today' ? '#8b5cf6' : 'rgba(139, 92, 246, 0.1)', color: activeTab === 'today' ? 'white' : '#8b5cf6', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                                <CheckCircle size={42} />
+                            <div style={{ background: activeTab === 'today' ? '#8b5cf6' : 'rgba(139, 92, 246, 0.1)', color: activeTab === 'today' ? 'white' : '#8b5cf6', width: '86px', height: '86px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                                <CheckCircle size={46} />
                             </div>
                             <div>
                                 <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>
@@ -509,8 +509,8 @@ const BranchPanel: React.FC = () => {
                                 boxShadow: activeTab === 'history' ? '0 10px 20px -5px rgba(16, 185, 129, 0.2)' : 'none'
                             }}
                         >
-                            <div style={{ background: activeTab === 'history' ? 'var(--success)' : 'rgba(16, 185, 129, 0.1)', color: activeTab === 'history' ? 'white' : 'var(--success)', width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                                <History size={42} />
+                            <div style={{ background: activeTab === 'history' ? 'var(--success)' : 'rgba(16, 185, 129, 0.1)', color: activeTab === 'history' ? 'white' : 'var(--success)', width: '86px', height: '86px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                                <History size={46} />
                             </div>
                             <div>
                                 <h4 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800 }}>
@@ -654,7 +654,7 @@ const BranchPanel: React.FC = () => {
                                                     <AlertTriangle size={18} />
                                                     <span>تنبيه: هذا الطلب غير موجه لفرعكم الحالي!</span>
                                                 </div>
-                                                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.6' }}>
+                                                <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-primary)', lineHeight: '1.6' }}>
                                                     الرجاء التواصل مع إدارة الشركة أو المشرف لإعادة توجيه الطلب إلى فرعكم (<strong>{loggedInBranch.name}</strong>) ليصبح متاحاً للتنفيذ على النظام.
                                                 </p>
                                             </div>
@@ -743,15 +743,15 @@ const BranchPanel: React.FC = () => {
                                             </div>
                                         )
                                     ) : matchedRequest.status === 'rejected' ? (
-                                        <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'var(--error)', fontSize: '13px', fontWeight: 700 }}>
+                                        <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'var(--error)', fontSize: '14.5px', fontWeight: 700 }}>
                                             ❌ هذا الطلب تم رفضه وإعادته للشركة. لمزيد من التعديلات يرجى إبلاغ الشركة بإعادة توجيهه.
                                         </div>
                                     ) : matchedRequest.status === 'partial' ? (
-                                        <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.2)', color: 'var(--accent-orange)', fontSize: '13px', fontWeight: 700 }}>
+                                        <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.2)', color: 'var(--accent-orange)', fontSize: '14.5px', fontWeight: 700 }}>
                                             ⚠️ تم تنفيذ هذا الطلب مع وجود خدمات ناقصة في فرع: ({matchedRequest.branchName}) بتاريخ {matchedRequest.completedAt ? new Date(matchedRequest.completedAt).toLocaleString('ar-SA') : ''}. الخدمات المتبقية: ({matchedRequest.remainingServices})
                                         </div>
                                     ) : (
-                                        <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '13px', fontWeight: 700 }}>
+                                        <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', color: 'var(--success)', fontSize: '14.5px', fontWeight: 700 }}>
                                             🟢 تم تنفيذ هذا الطلب بنجاح في فرع: ({matchedRequest.branchName}) بتاريخ {matchedRequest.completedAt ? new Date(matchedRequest.completedAt).toLocaleString('ar-SA') : ''}
                                         </div>
                                     )}
@@ -860,7 +860,7 @@ const BranchPanel: React.FC = () => {
                                             border: '1px solid var(--border-color)',
                                             background: 'var(--bg-color)',
                                             color: 'var(--text-primary)',
-                                            fontSize: '13px',
+                                            fontSize: '14.5px',
                                             fontWeight: 600,
                                             outline: 'none'
                                         }}
@@ -898,7 +898,7 @@ const BranchPanel: React.FC = () => {
 
                             {/* History list */}
                             {filteredHistory.length === 0 ? (
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center', margin: '30px 0' }}>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '14.5px', textAlign: 'center', margin: '30px 0' }}>
                                     لم يتم العثور على أي عمليات مطابقة للفلاتر.
                                 </p>
                             ) : (
@@ -999,16 +999,16 @@ const BranchPanel: React.FC = () => {
                         textAlign: 'right'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--error)', marginBottom: '16px' }}>
-                            <AlertTriangle size={42} />
+                            <AlertTriangle size={46} />
                             <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>هل أنت متأكد من رفض الطلب؟</h3>
                         </div>
 
-                        <div style={{ background: 'rgba(245, 158, 11, 0.08)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '16px', marginBottom: '20px', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-primary)' }}>
+                        <div style={{ background: 'rgba(245, 158, 11, 0.08)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '16px', marginBottom: '20px', fontSize: '14.5px', lineHeight: '1.6', color: 'var(--text-primary)' }}>
                             ⚠️ <strong>تنبيه هام للورشة:</strong> نقترح عليك استخدام خيار <strong>"التحويل لكافة الفروع"</strong> بدلاً من الرفض التام، حيث يتيح ذلك للعميل التوجه لأي ورشة/فرع آخر دون حاجة الشركة لإرسال طلب جديد كلياً. 
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>سبب رفض الطلب:</label>
+                            <label style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text-secondary)' }}>سبب رفض الطلب:</label>
                             <textarea
                                 value={rejectionReason}
                                 onChange={(e) => setRejectionReason(e.target.value)}
@@ -1107,16 +1107,16 @@ const BranchPanel: React.FC = () => {
                         textAlign: 'right'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-orange)', marginBottom: '16px' }}>
-                            <AlertTriangle size={42} />
+                            <AlertTriangle size={46} />
                             <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>تسجيل خدمات ناقصة</h3>
                         </div>
 
-                        <div style={{ background: 'rgba(245, 158, 11, 0.08)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '16px', marginBottom: '20px', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-primary)' }}>
+                        <div style={{ background: 'rgba(245, 158, 11, 0.08)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '16px', marginBottom: '20px', fontSize: '14.5px', lineHeight: '1.6', color: 'var(--text-primary)' }}>
                             ⚠️ <strong>تنبيه:</strong> سيتم تسجيل هذا الطلب كمنفذ جزئياً. سيظهر للشركة الخدمات المتبقية التي لم يتمكن الفرع من إكمالها ليتم إعادة توجيهها أو إنشاؤها كطلب جديد.
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-                            <label style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-secondary)' }}>الخدمات المتبقية (التي لم يتم تنفيذها):</label>
+                            <label style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text-secondary)' }}>الخدمات المتبقية (التي لم يتم تنفيذها):</label>
                             <textarea
                                 value={partialRemainingServices}
                                 onChange={(e) => setPartialRemainingServices(e.target.value)}
@@ -1222,7 +1222,7 @@ const BranchPanel: React.FC = () => {
                         </button>
 
                         <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800 }}>مسح الرمز (QR Code)</h3>
-                        <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>قم بتوجيه كاميرا جهازك نحو رمز الاستجابة السريع للطلب</p>
+                        <p style={{ margin: '0 0 20px', fontSize: '14.5px', color: 'var(--text-secondary)' }}>قم بتوجيه كاميرا جهازك نحو رمز الاستجابة السريع للطلب</p>
 
                         <div 
                             id="qr-reader" 
