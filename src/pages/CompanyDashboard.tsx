@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { addServiceRequest, subscribeToBranches, updateServiceRequestBranch, validateCompanySession, subscribeToCompany, subscribeToCompanyRequests , deleteServiceRequest, updateServiceRequestStatus} from '../services/storage';
+import { addServiceRequest, subscribeToBranches, updateServiceRequestBranch, validateCompanySession, subscribeToCompany, subscribeToCompanyRequests , deleteServiceRequest} from '../services/storage';
 import type { CompanyAccount, ServiceRequest, Branch } from '../types';
-import { PlusCircle, ClipboardList, CheckCircle, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight, Share2 , Trash2, Ban} from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, QrCode, Download, X, Loader2, RefreshCw, AlertTriangle, ArrowLeftRight, Car, Wrench, MapPin, Check, Globe, Search, Flame, Link2, ArrowRight, Share2 , Trash2} from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
