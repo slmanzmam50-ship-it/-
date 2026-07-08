@@ -1108,23 +1108,25 @@ Please click the link below to view your maintenance request details and barcode
                             </div>
                         )}
                     </div>
-                </div>
+                )}
 
                 {/* Completed Requests */}
-                <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: activeTab === 'completed' ? 'block' : 'none' }}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success)' }}>
-                        <CheckCircle size={20} /> الطلبات المنفذة والمستلمة ({completedRequests.length})
-                    </h3>
-                    {completedRequests.length === 0 ? (
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', margin: '30px 0' }}>
-                            لا توجد طلبات منفذة بعد.
-                        </p>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-                            {completedRequests.map(renderRequestCard)}
-                        </div>
-                    )}
-                </div>
+                {activeTab === 'completed' && (
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                        <h3 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success)' }}>
+                            <CheckCircle size={20} /> الطلبات المنفذة والمستلمة ({completedRequests.length})
+                        </h3>
+                        {completedRequests.length === 0 ? (
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', margin: '30px 0' }}>
+                                لا توجد طلبات منفذة بعد.
+                            </p>
+                        ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                                {completedRequests.map(renderRequestCard)}
+                            </div>
+                        )}
+                    </div>
+                )}
                 </div>
             )}
             </div>

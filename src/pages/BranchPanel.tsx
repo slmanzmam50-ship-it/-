@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { subscribeToServiceRequests, updateServiceRequestStatus, validateBranchSession, subscribeToBranch, subscribeToBranchRequests } from '../services/storage';
+import { updateServiceRequestStatus, validateBranchSession, subscribeToBranch, subscribeToBranchRequests } from '../services/storage';
 import type { Branch, ServiceRequest } from '../types';
 import { Search, CheckCircle, Clock, AlertTriangle, QrCode, X, Loader2, ArrowLeftRight, Ban, History, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';

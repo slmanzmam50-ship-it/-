@@ -1,6 +1,6 @@
 import type { Branch, NavigationIntent, Category, ServiceRequest, CompanyAccount } from '../types';
 import { db, storage } from './firebase';
-import { collection, onSnapshot, query, where, getDocs, updateDoc, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, limit, getDocs, updateDoc, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const COLLECTION_NAME = 'branches';
