@@ -843,7 +843,7 @@ Please click the link below to view your maintenance request details and barcode
                         </button>
 
                         {/* Branch Selector Chip Grid */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
                                 <label style={{ fontWeight: 800, fontSize: '14.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                                     <MapPin size={18} color="var(--primary-color)" /> الفروع الموجه إليها الطلب:

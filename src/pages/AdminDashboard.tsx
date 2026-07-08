@@ -21,7 +21,7 @@ import {
 } from '../services/storage';
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings , PlusCircle} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
 
@@ -722,6 +722,30 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <div className="admin-container">
+            <button 
+                onClick={() => setIsAdminCreatingRequest(true)}
+                style={{ 
+                    width: '100%',
+                    background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%)', 
+                    color: 'white', 
+                    padding: '16px', 
+                    borderRadius: '16px', 
+                    border: 'none', 
+                    fontWeight: 800, 
+                    fontSize: '18px',
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: '12px',
+                    marginBottom: '1.5rem',
+                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.3)'
+                }}
+                className="hover-scale tap-effect"
+            >
+                <PlusCircle size={24} />
+                <span>إنشاء طلب جديد لأي شركة</span>
+            </button>
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
                 <button 
                     onClick={() => setActiveTab('branches')} 
