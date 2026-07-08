@@ -928,8 +928,7 @@ Please click the link below to view your maintenance request details and barcode
                             </div>
                             
                             <div style={{ 
-                                maxHeight: '280px', 
-                                overflowY: 'auto', 
+                                 
                                 padding: '12px', 
                                 border: '1.5px solid var(--border-color)', 
                                 borderRadius: '16px', 
@@ -1822,7 +1821,7 @@ Please click the link below to view your maintenance request details and barcode
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                             <button
                                 onClick={() => {
                                     handleShareRequest(detailedRequest);
