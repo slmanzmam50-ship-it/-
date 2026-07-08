@@ -903,3 +903,20 @@ button {
     border-radius: 8px !important;
   }
 }
+
+.actions-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-top: 12px !important;
+}
+.actions-grid > * {
+    width: 100% !important;
+    margin: 0 !important;
+    grid-column: auto !important;
+}
+.actions-grid > *:last-child:nth-child(odd) {
+    grid-column: 1 / -1 !important;
+}
+

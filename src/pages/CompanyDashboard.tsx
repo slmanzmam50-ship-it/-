@@ -1821,7 +1821,7 @@ Please click the link below to view your maintenance request details and barcode
                             </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div className="actions-grid">
                             <button
                                 onClick={() => {
                                     handleShareRequest(detailedRequest);
@@ -1972,7 +1972,6 @@ Please click the link below to view your maintenance request details and barcode
                                     }
                                 }}
                                 style={{
-                                    gridColumn: '1 / -1',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -2028,7 +2027,6 @@ Please click the link below to view your maintenance request details and barcode
                             <button
                                 onClick={() => setDetailedRequest(null)}
                                 style={{
-                                    gridColumn: '1 / -1',
                                     width: '100%',
                                     background: 'rgba(239, 68, 68, 0.08)',
                                     color: '#ef4444',

@@ -659,7 +659,7 @@ const BranchPanel: React.FC = () => {
                                                 </p>
                                             </div>
                                         ) : (
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
+                                            <div className="actions-grid">
                                                 <button 
                                                     onClick={handleCompleteRequest}
                                                     disabled={isProcessing}
@@ -1032,7 +1032,7 @@ const BranchPanel: React.FC = () => {
                             />
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="actions-grid">
                             <button
                                 onClick={handleRejectRequest}
                                 disabled={isProcessing}
@@ -1070,7 +1070,6 @@ const BranchPanel: React.FC = () => {
                             <button
                                 onClick={() => setShowRejectDialog(false)}
                                 style={{
-                                    gridColumn: '1 / -1',
                                     background: 'rgba(255,255,255,0.05)',
                                     border: '1px solid var(--border-color)',
                                     color: 'var(--text-primary)',
@@ -1141,7 +1140,7 @@ const BranchPanel: React.FC = () => {
                             />
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="actions-grid">
                             <button
                                 onClick={handlePartialRequest}
                                 disabled={isProcessing}

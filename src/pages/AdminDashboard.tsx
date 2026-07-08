@@ -1548,7 +1548,7 @@ const AdminDashboard: React.FC = () => {
                                     </div>
 
                                     {/* Inputs Grid */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div className="actions-grid">
                                         {/* Plate Number */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                             <label style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
