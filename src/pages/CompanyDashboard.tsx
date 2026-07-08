@@ -1960,44 +1960,9 @@ Please click the link below to view your maintenance request details and barcode
                             )}
 
                             
-                            {(detailedRequest.status === 'active' || detailedRequest.status === 'transferred') && (
-                                <button
-                                    onClick={async () => {
-                                        if (window.confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
-                                            try {
-                                                await updateServiceRequestStatus(detailedRequest.id, 'rejected', 'ملغى من قبل الشركة');
-                                                toast.success('تم إلغاء الطلب بنجاح');
-                                                setDetailedRequest(null);
-                                            } catch(err) {
-                                                toast.error('حدث خطأ أثناء الإلغاء');
-                                            }
-                                        }
-                                    }}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '8px',
-                                        width: '100%',
-                                        background: 'rgba(239, 68, 68, 0.1)',
-                                        color: '#ef4444',
-                                        border: '1.5px solid rgba(239, 68, 68, 0.3)',
-                                        padding: '12px 16px',
-                                        borderRadius: '12px',
-                                        fontWeight: 800,
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                    }}
-                                    className="hover-scale tap-effect"
-                                >
-                                    <Ban size={16} />
-                                    إلغاء الطلب
-                                </button>
-                            )}
                             <button
                                 onClick={async () => {
-                                    if (window.confirm('هل أنت متأكد من حذف هذا الطلب نهائياً؟')) {
+                                    if (window.confirm('هل أنت متأكد من إلغاء وحذف هذا الطلب نهائياً؟')) {
                                         try {
                                             await deleteServiceRequest(detailedRequest.id);
                                             toast.success('تم حذف الطلب بنجاح');
@@ -2008,6 +1973,7 @@ Please click the link below to view your maintenance request details and barcode
                                     }
                                 }}
                                 style={{
+                                    gridColumn: '1 / -1',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -2027,7 +1993,7 @@ Please click the link below to view your maintenance request details and barcode
                                 className="hover-scale tap-effect"
                             >
                                 <Trash2 size={16} />
-                                حذف الطلب
+                                إلغاء وحذف الطلب
                             </button>
 
                             {detailedRequest.status === 'partial' && (
