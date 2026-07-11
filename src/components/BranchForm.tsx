@@ -364,11 +364,16 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                 if (match && match[1]) {
                     let imageUrl = match[1].replace(/&amp;/g, '&');
                     
-                    if (imageUrl.includes('googleusercontent.com') || imageUrl.includes('ggpht.com')) {
-                        imageUrl = imageUrl.replace(/=[ws]\d+[^&]*/, '=s800');
-                        if (!imageUrl.includes('=')) {
-                            imageUrl += '=s800';
+                    try {
+                        const urlObj = new URL(imageUrl);
+                        if (urlObj.hostname.endsWith('googleusercontent.com') || urlObj.hostname.endsWith('ggpht.com')) {
+                            imageUrl = imageUrl.replace(/=[ws]\d+[^&]*/g, '=s800');
+                            if (!imageUrl.includes('=')) {
+                                imageUrl += '=s800';
+                            }
                         }
+                    } catch (e) {
+                        // ignore invalid URL
                     }
 
                     const imgResponse = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`);
@@ -672,7 +677,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                 {(imageFile || formData.imageUrl) && (
                                     <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                                         <img 
-                                            src={imageFile ? URL.createObjectURL(imageFile) : formData.imageUrl} 
+                                            src={imageFile ? URL.createObjectURL(imageFile) : (formData.imageUrl && (formData.imageUrl.startsWith('http://') || formData.imageUrl.startsWith('https://') || formData.imageUrl.startsWith('data:image/')) ? formData.imageUrl : '')} 
                                             alt="Preview" 
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                                         />
