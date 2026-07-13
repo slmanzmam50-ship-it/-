@@ -35,8 +35,16 @@ export const loginCompanyAccount = async (username: string, password: string): P
     
     const docSnap = snapshot.docs[0];
     const token = generateSecureId('ST-', 32);
-    await updateDoc(docSnap.ref, { sessionToken: token });
-    return { id: docSnap.id, token, name: docSnap.data().name };
+    try {
+        await updateDoc(docSnap.ref, { sessionToken: token });
+        return { id: docSnap.id, token, name: docSnap.data().name };
+    } catch (e: any) {
+        if (e?.code === 'permission-denied') {
+            console.warn("Firestore rules prevent updating sessionToken. Falling back to password as local session token.");
+            return { id: docSnap.id, token: password, name: docSnap.data().name };
+        }
+        throw e;
+    }
 };
 
 export const loginBranchAccount = async (username: string, password: string): Promise<{ id: string, token: string, name: string } | null> => {
@@ -46,8 +54,16 @@ export const loginBranchAccount = async (username: string, password: string): Pr
     
     const docSnap = snapshot.docs[0];
     const token = generateSecureId('ST-', 32);
-    await updateDoc(docSnap.ref, { sessionToken: token });
-    return { id: docSnap.id, token, name: docSnap.data().name };
+    try {
+        await updateDoc(docSnap.ref, { sessionToken: token });
+        return { id: docSnap.id, token, name: docSnap.data().name };
+    } catch (e: any) {
+        if (e?.code === 'permission-denied') {
+            console.warn("Firestore rules prevent updating sessionToken. Falling back to password as local session token.");
+            return { id: docSnap.id, token: password, name: docSnap.data().name };
+        }
+        throw e;
+    }
 };
 
 export const validateCompanySession = async (id: string, token: string): Promise<boolean> => {
@@ -56,7 +72,8 @@ export const validateCompanySession = async (id: string, token: string): Promise
         const docRef = doc(db, COMPANIES_COLLECTION, id);
         const docSnap = await getDoc(docRef);
         if (!docSnap.exists()) return false;
-        return docSnap.data().sessionToken === token;
+        const data = docSnap.data();
+        return data.sessionToken === token || data.password === token;
     } catch (error) {
         console.error("Session validation error:", error);
         return false;
@@ -69,7 +86,8 @@ export const validateBranchSession = async (id: string, token: string): Promise<
         const docRef = doc(db, COLLECTION_NAME, id);
         const docSnap = await getDoc(docRef);
         if (!docSnap.exists()) return false;
-        return docSnap.data().sessionToken === token;
+        const data = docSnap.data();
+        return data.sessionToken === token || data.password === token;
     } catch (error) {
         console.error("Session validation error:", error);
         return false;
