@@ -1710,7 +1710,9 @@ const AdminDashboard: React.FC = () => {
 
                                             {/* Individual Branch Badges */}
                                             {(() => {
-                                                const sorted = [...branches].sort((a, b) => getAdminBranchScore(b.id) - getAdminBranchScore(a.id));
+                                                const compObj = companies.find(c => c.id === adminSelectedCompanyId);
+                                                const visibleBranches = branches.filter(b => !compObj?.hiddenBranchIds?.includes(b.id));
+                                                const sorted = [...visibleBranches].sort((a, b) => getAdminBranchScore(b.id) - getAdminBranchScore(a.id));
                                                 const filtered = sorted.filter(b => b.name.toLowerCase().includes(adminBranchSearch.toLowerCase()));
                                                 return filtered.map(b => {
                                                     const isSelected = adminTargetBranchIds.includes(b.id);
