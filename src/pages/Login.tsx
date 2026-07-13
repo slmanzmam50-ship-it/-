@@ -100,10 +100,11 @@ const Login: React.FC = () => {
                     toast.error('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Login error:', error);
-            setError('حدث خطأ أثناء الاتصال بقاعدة البيانات. تأكد من اتصالك بالإنترنت.');
-            toast.error('حدث خطأ في النظام');
+            const errDetails = error?.code ? ` (${error.code}: ${error.message})` : '';
+            setError(`حدث خطأ أثناء الاتصال بقاعدة البيانات. تأكد من اتصالك بالإنترنت.${errDetails}`);
+            toast.error(`حدث خطأ في النظام: ${error?.message || error}`);
         } finally {
             setIsLoading(false);
         }
