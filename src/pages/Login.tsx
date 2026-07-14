@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, User, Building2, Store, ArrowRight, Shield, Loader2 } from 'lucide-react';
 import { loginCompanyAccount, loginBranchAccount } from '../services/storage';
+import { auth } from '../services/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import toast from 'react-hot-toast';
 
 const Login: React.FC = () => {
@@ -74,11 +76,12 @@ const Login: React.FC = () => {
             const p = password.trim();
 
             if (selectedPortal === 'admin') {
-                if (u === 'ahmd.alyazidi2023@gmail.com' && p === 'Aa0539893200') {
+                try {
+                    await signInWithEmailAndPassword(auth, u, p);
                     localStorage.setItem('isAuthenticated', 'true');
                     toast.success('مرحباً بك! تم تسجيل الدخول للإدارة 👋');
                     navigate('/admin');
-                } else {
+                } catch (err: any) {
                     setError('بيانات الدخول غير صحيحة ❌');
                     toast.error('بيانات الدخول غير صحيحة ❌');
                 }

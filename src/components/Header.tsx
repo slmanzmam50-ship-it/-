@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { auth } from '../services/firebase';
+import { signOut } from 'firebase/auth';
 import { LogOut, Map, Sun, Moon, Share2, Building2, Store, Sliders, X, ArrowLeft, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -40,11 +42,18 @@ const Header: React.FC = () => {
     };
     const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Error signing out from Firebase:", error);
+        }
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('logged_company_id');
         localStorage.removeItem('logged_branch_id');
-        navigate('/login');
+        localStorage.removeItem('company_session_token');
+        localStorage.removeItem('branch_session_token');
+        navigate('/');
     };
 
     const handleShareApp = async () => {
