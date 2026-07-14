@@ -49,6 +49,21 @@ const Login: React.FC = () => {
         }
     }, [typeParam, mode]);
 
+    // Auto-login redirection if session already exists
+    useEffect(() => {
+        const storedCompanyId = localStorage.getItem('logged_company_id');
+        const storedBranchId = localStorage.getItem('logged_branch_id');
+        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+
+        if (isAuthenticated && selectedPortal === 'admin') {
+            navigate('/admin');
+        } else if (storedCompanyId && selectedPortal === 'company') {
+            navigate('/company');
+        } else if (storedBranchId && selectedPortal === 'branch') {
+            navigate('/branch');
+        }
+    }, [selectedPortal, navigate]);
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
