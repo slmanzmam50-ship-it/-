@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Companies Collection
-    match /companies/{companyId} {
+    match /company_accounts/{companyId} {
       allow read: if true;
       allow write: if true;
     }
@@ -29,7 +29,7 @@ service cloud.firestore {
     }
 
     // Navigation Intents
-    match /navigation_intents/{intentId} {
+    match /active_navigators/{intentId} {
       allow read, write: if true;
     }
   }
