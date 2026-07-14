@@ -1,5 +1,6 @@
 import type { Branch, NavigationIntent, Category, ServiceRequest, CompanyAccount } from '../types';
-import { db, storage } from './firebase';
+import { db, storage, auth, secondaryAuth } from './firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, where, orderBy, limit, getDocs, updateDoc, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -29,48 +30,77 @@ export const generateSecureId = (prefix: string = '', length: number = 20): stri
 
 // --- Authentication (Server-side validation simulation) ---
 export const loginCompanyAccount = async (username: string, password: string): Promise<{ id: string, token: string, name: string } | null> => {
-    const q = query(collection(db, COMPANIES_COLLECTION), where('username', '==', username), where('password', '==', password));
+    const q = query(collection(db, COMPANIES_COLLECTION), where('username', '==', username));
     const snapshot = await getDocs(q);
     if (snapshot.empty) return null;
     
     const docSnap = snapshot.docs[0];
-    const token = generateSecureId('ST-', 32);
-    try {
-        await updateDoc(docSnap.ref, { sessionToken: token });
-        return { id: docSnap.id, token, name: docSnap.data().name };
-    } catch (e: any) {
-        if (e?.code === 'permission-denied') {
-            console.warn("Firestore rules prevent updating sessionToken. Falling back to password as local session token.");
-            return { id: docSnap.id, token: password, name: docSnap.data().name };
+    const data = docSnap.data() as CompanyAccount;
+    
+    if (data.email) {
+        try {
+            await signInWithEmailAndPassword(auth, data.email, password);
+            return { id: docSnap.id, token: 'firebase-auth', name: data.name };
+        } catch (e) {
+            return null;
         }
-        throw e;
     }
+    
+    if (data.password === password) {
+        const email = `${docSnap.id}@company.slman-zmam.com`;
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            const cleanData = { ...data };
+            delete cleanData.password;
+            cleanData.email = email;
+            await setDoc(doc(db, COMPANIES_COLLECTION, docSnap.id), cleanData);
+            return { id: docSnap.id, token: 'firebase-auth', name: data.name };
+        } catch (e) {
+            console.error("Migration failed:", e);
+            return { id: docSnap.id, token: password, name: data.name };
+        }
+    }
+    return null;
 };
 
 export const loginBranchAccount = async (username: string, password: string): Promise<{ id: string, token: string, name: string } | null> => {
-    const q = query(collection(db, COLLECTION_NAME), where('username', '==', username), where('password', '==', password));
+    const q = query(collection(db, COLLECTION_NAME), where('username', '==', username));
     const snapshot = await getDocs(q);
     if (snapshot.empty) return null;
     
     const docSnap = snapshot.docs[0];
-    const token = generateSecureId('ST-', 32);
-    try {
-        await updateDoc(docSnap.ref, { sessionToken: token });
-        return { id: docSnap.id, token, name: docSnap.data().name };
-    } catch (e: any) {
-        if (e?.code === 'permission-denied') {
-            console.warn("Firestore rules prevent updating sessionToken. Falling back to password as local session token.");
-            return { id: docSnap.id, token: password, name: docSnap.data().name };
+    const data = docSnap.data() as Branch;
+    
+    if (data.email) {
+        try {
+            await signInWithEmailAndPassword(auth, data.email, password);
+            return { id: docSnap.id, token: 'firebase-auth', name: data.name };
+        } catch (e) {
+            return null;
         }
-        throw e;
     }
+    
+    if (data.password === password) {
+        const email = `${docSnap.id}@branch.slman-zmam.com`;
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            const cleanData = { ...data };
+            delete cleanData.password;
+            cleanData.email = email;
+            await setDoc(doc(db, COLLECTION_NAME, docSnap.id), cleanData);
+            return { id: docSnap.id, token: 'firebase-auth', name: data.name };
+        } catch (e) {
+            console.error("Migration failed:", e);
+            return { id: docSnap.id, token: password, name: data.name };
+        }
+    }
+    return null;
 };
 
 export const validateCompanySession = async (id: string, token: string): Promise<boolean> => {
+    if (token === 'firebase-auth') return true;
     try {
-        if (!id || !token) return false;
-        const docRef = doc(db, COMPANIES_COLLECTION, id);
-        const docSnap = await getDoc(docRef);
+        const docSnap = await getDoc(doc(db, COMPANIES_COLLECTION, id));
         if (!docSnap.exists()) return false;
         const data = docSnap.data();
         return data.sessionToken === token || data.password === token;
@@ -81,10 +111,9 @@ export const validateCompanySession = async (id: string, token: string): Promise
 };
 
 export const validateBranchSession = async (id: string, token: string): Promise<boolean> => {
+    if (token === 'firebase-auth') return true;
     try {
-        if (!id || !token) return false;
-        const docRef = doc(db, COLLECTION_NAME, id);
-        const docSnap = await getDoc(docRef);
+        const docSnap = await getDoc(doc(db, COLLECTION_NAME, id));
         if (!docSnap.exists()) return false;
         const data = docSnap.data();
         return data.sessionToken === token || data.password === token;
@@ -151,9 +180,26 @@ export const getBranches = async (): Promise<Branch[]> => {
 
 export const addBranch = async (branch: Omit<Branch, 'id'>): Promise<Branch> => {
     const newId = generateSecureId('BR-', 16);
+    const email = `${newId}@branch.slman-zmam.com`;
+    
+    // Create Firebase Auth user using secondary app
+    if (branch.password) {
+        try {
+            await createUserWithEmailAndPassword(secondaryAuth, email, branch.password);
+            await signOut(secondaryAuth); // Sign out secondary app immediately
+        } catch (error) {
+            console.error("Error creating branch auth:", error);
+            throw new Error("فشل إنشاء حساب الفرع. الرجاء المحاولة مرة أخرى.");
+        }
+    }
+
     const cleanData = { ...branch };
     Object.keys(cleanData).forEach(key => (cleanData as any)[key] === undefined && delete (cleanData as any)[key]);
-    const newBranch = { ...cleanData, id: newId } as Branch;
+    
+    // Remove password from database, add email
+    delete cleanData.password;
+    
+    const newBranch = { ...cleanData, id: newId, email } as Branch;
     await setDoc(doc(db, COLLECTION_NAME, newId), newBranch);
     return newBranch;
 };
@@ -383,11 +429,29 @@ export const subscribeToCompany = (id: string, callback: (company: CompanyAccoun
 
 export const addCompany = async (company: Omit<CompanyAccount, 'id' | 'createdAt'>): Promise<CompanyAccount> => {
     const id = generateSecureId('CO-', 16);
+    const email = `${id}@company.slman-zmam.com`;
+
+    // Create Firebase Auth user using secondary app
+    if (company.password) {
+        try {
+            await createUserWithEmailAndPassword(secondaryAuth, email, company.password);
+            await signOut(secondaryAuth); // Sign out secondary app immediately
+        } catch (error) {
+            console.error("Error creating company auth:", error);
+            throw new Error("فشل إنشاء حساب الشركة. الرجاء المحاولة مرة أخرى.");
+        }
+    }
+
     const newCompany: CompanyAccount = {
         ...company,
         id,
+        email,
         createdAt: Date.now()
     };
+    
+    // Remove password from database
+    delete newCompany.password;
+
     await setDoc(doc(db, COMPANIES_COLLECTION, id), newCompany);
     return newCompany;
 };

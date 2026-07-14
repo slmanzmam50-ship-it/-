@@ -24,6 +24,7 @@ export interface Branch {
     managerName?: string;
     username?: string;
     password?: string;
+    email?: string; // Auto-generated for Firebase Auth
 }
 
 export interface NavigationIntent {
@@ -68,5 +69,6 @@ export interface CompanyAccount {
     createdAt: number;
     username?: string;
     password?: string;
+    email?: string; // Auto-generated for Firebase Auth
     hiddenBranchIds?: string[];
 }

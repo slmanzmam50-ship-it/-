@@ -5,32 +5,31 @@ service cloud.firestore {
     // Companies Collection
     match /company_accounts/{companyId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if request.auth != null;
     }
 
     // Branches Collection
     match /branches/{branchId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if request.auth != null;
     }
 
     // Service Requests Collection
     match /service_requests/{requestId} {
       allow read: if true;
-      allow create, update: if request.resource.data.plateNumber != null 
-                           && request.resource.data.companyId != null;
-      allow delete: if true;
+      allow write: if request.auth != null;
     }
 
     // Categories Collection
     match /categories/{categoryId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if request.auth != null;
     }
 
     // Navigation Intents
     match /active_navigators/{intentId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null;
     }
   }
 }

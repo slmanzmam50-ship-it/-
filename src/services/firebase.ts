@@ -15,8 +15,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Secondary App for creating users without signing out the main app
+export const secondaryApp = initializeApp(firebaseConfig, "Secondary");
+
 // Initialize Auth
 export const auth = getAuth(app);
+export const secondaryAuth = getAuth(secondaryApp);
 
 // Initialize Storage
 export const storage = getStorage(app);
