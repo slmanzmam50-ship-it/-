@@ -736,18 +736,22 @@ const ClientMap: React.FC = () => {
                     // B. Fallback coordinate matches
                     const coordMatch = html.match(/ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) ||
                                        html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
-                                       html.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+                                       html.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/);
 
                     if (coordMatch) {
                         const resolvedLat = parseFloat(coordMatch[1]);
                         const resolvedLng = parseFloat(coordMatch[2]);
-                        const loc: [number, number] = [resolvedLat, resolvedLng];
-                        setUserLoc(loc);
-                        setMapCenter(loc);
-                        setMapZoom(13);
-                        setSortBy('nearest');
-                        toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! ✅' : 'Location resolved successfully! ✅', { id: toastId });
-                        return;
+                        
+                        // Sanity check to avoid Null Island (0,0) or NaN
+                        if (!isNaN(resolvedLat) && !isNaN(resolvedLng) && (resolvedLat !== 0 || resolvedLng !== 0)) {
+                            const loc: [number, number] = [resolvedLat, resolvedLng];
+                            setUserLoc(loc);
+                            setMapCenter(loc);
+                            setMapZoom(13);
+                            setSortBy('nearest');
+                            toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! ✅' : 'Location resolved successfully! ✅', { id: toastId });
+                            return;
+                        }
                     }
 
                     // C. Fallback og:url match
@@ -762,13 +766,16 @@ const ClientMap: React.FC = () => {
                         if (resolvedMatch) {
                             const resolvedLat = parseFloat(resolvedMatch[1]);
                             const resolvedLng = parseFloat(resolvedMatch[2]);
-                            const loc: [number, number] = [resolvedLat, resolvedLng];
-                            setUserLoc(loc);
-                            setMapCenter(loc);
-                            setMapZoom(13);
-                            setSortBy('nearest');
-                            toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! ✅' : 'Location resolved successfully! ✅', { id: toastId });
-                            return;
+                            
+                            if (!isNaN(resolvedLat) && !isNaN(resolvedLng) && (resolvedLat !== 0 || resolvedLng !== 0)) {
+                                const loc: [number, number] = [resolvedLat, resolvedLng];
+                                setUserLoc(loc);
+                                setMapCenter(loc);
+                                setMapZoom(13);
+                                setSortBy('nearest');
+                                toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! ✅' : 'Location resolved successfully! ✅', { id: toastId });
+                                return;
+                            }
                         }
                     }
 
