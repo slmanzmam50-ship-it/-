@@ -353,6 +353,14 @@ const normalizeArabicSimple = (str: string): string => {
         .trim();
 };
 
+const formatDuration = (mins: number, lang: Language): string => {
+    if (mins < 60) return `${mins} ${lang === 'ar' ? 'دقيقة' : 'min'}`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (m === 0) return `${h} ${lang === 'ar' ? 'ساعة' : 'hr'}`;
+    return `${h} ${lang === 'ar' ? 'ساعة' : 'hr'} ${lang === 'ar' ? 'و' : 'and'} ${m} ${lang === 'ar' ? 'د' : 'm'}`;
+};
+
 // ============================================================
 // MAIN COMPONENT
 // ============================================================
@@ -892,13 +900,16 @@ const ClientMap: React.FC = () => {
 
     const fallbackLocate = (nearest: Branch & { dist: number }, openBranches: Branch[]) => {
         const distKm = nearest.dist.toFixed(1);
+        const estMins = Math.ceil(nearest.dist / 0.66);
+        const formattedDur = formatDuration(estMins, lang);
+        
         const label = openBranches.length > 0
             ? (lang === 'ar' ? `أقرب فرع مفتوح: ${nearest.name} (${distKm} كم)` : `Nearest open: ${nearest.name} (${distKm} km)`)
             : (lang === 'ar' ? `أقرب فرع: ${nearest.name} (${distKm} كم)` : `Nearest: ${nearest.name} (${distKm} km)`);
         toast.success(label, { id: 'locate-toast', duration: 4000 });
         setRouteInfo({
             distance: `${distKm} ${lang === 'ar' ? 'كم' : 'km'}`,
-            duration: `~${Math.ceil(nearest.dist / 0.66)} ${lang === 'ar' ? 'دقيقة' : 'min'}`, // Rough estimate
+            duration: `~${formattedDur}`,
             branchId: nearest.id
         });
     };
@@ -1952,7 +1963,7 @@ const ClientMap: React.FC = () => {
                                                 </span>
                                                 <span>•</span>
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <Clock size={12} /> ~{estMins} {lang === 'ar' ? 'دقيقة' : 'min'}
+                                                    <Clock size={12} /> ~{formatDuration(estMins, lang)}
                                                 </span>
                                             </div>
                                         </div>
