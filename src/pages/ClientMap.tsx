@@ -677,6 +677,7 @@ const ClientMap: React.FC = () => {
                         setMapCenter(loc);
                         setMapZoom(13);
                         setSortBy('nearest');
+                        setShowNearestSheet(true);
                         toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح عبر السيرفر! ✅' : 'Location resolved successfully via server! ✅', { id: toastId });
                         return true;
                     }
@@ -729,6 +730,7 @@ const ClientMap: React.FC = () => {
                         setMapCenter(loc);
                         setMapZoom(13);
                         setSortBy('nearest');
+                        setShowNearestSheet(true);
                         toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح من الدبوس! ✅' : 'Location resolved from exact pin! ✅', { id: toastId });
                         return;
                     }
@@ -749,6 +751,7 @@ const ClientMap: React.FC = () => {
                             setMapCenter(loc);
                             setMapZoom(13);
                             setSortBy('nearest');
+                            setShowNearestSheet(true);
                             toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! ✅' : 'Location resolved successfully! ✅', { id: toastId });
                             return;
                         }
