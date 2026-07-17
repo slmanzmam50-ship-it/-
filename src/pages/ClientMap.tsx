@@ -401,6 +401,8 @@ const ClientMap: React.FC = () => {
     const [ratingComment, setRatingComment] = useState('');
     const [isSubmittingRating, setIsSubmittingRating] = useState(false);
     
+    const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as 'light' | 'dark') || 'light');
+    
     // OSRM Route Info
     const [routeInfo, setRouteInfo] = useState<{distance: string, duration: string, branchId: string} | null>(null);
 
@@ -866,11 +868,11 @@ const ClientMap: React.FC = () => {
                     toast.success(label, { id: 'locate-toast', duration: 4000 });
                 } else {
                     // Fallback to straight line
-                    fallbackLocate(nearest, loc, openBranches);
+                    fallbackLocate(nearest, openBranches);
                 }
             } catch (e) {
                 // Fallback to straight line on API error
-                fallbackLocate(nearest, loc, openBranches);
+                fallbackLocate(nearest, openBranches);
             }
 
             prevMapZoomRef.current = mapZoom;
@@ -885,7 +887,7 @@ const ClientMap: React.FC = () => {
         setIsLocatingLoc(false);
     };
 
-    const fallbackLocate = (nearest: Branch & { dist: number }, loc: [number, number], openBranches: Branch[]) => {
+    const fallbackLocate = (nearest: Branch & { dist: number }, openBranches: Branch[]) => {
         const distKm = nearest.dist.toFixed(1);
         const label = openBranches.length > 0
             ? (lang === 'ar' ? `أقرب فرع مفتوح: ${nearest.name} (${distKm} كم)` : `Nearest open: ${nearest.name} (${distKm} km)`)
@@ -1596,6 +1598,7 @@ const ClientMap: React.FC = () => {
                     onClose={() => setSelectedBranch(null)}
                     onNavigate={() => { handleNavigate(selectedBranch); setSelectedBranch(null); }}
                     onImageClick={(url) => setLightboxImage(url)}
+                    routeInfo={routeInfo}
                 />
             )}
 
