@@ -40,9 +40,10 @@ interface BranchFormProps {
     onSave: (branch: Omit<Branch, 'id'> | Branch) => void;
     onClose: () => void;
     categories: Category[];
+    existingBranches?: Branch[]; // Optional for backwards compatibility, but passed from dashboards
 }
 
-const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, categories }) => {
+const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, categories, existingBranches = [] }) => {
     const [formData, setFormData] = useState<Omit<Branch, 'id'>>({
         name: '',
         latitude: 24.7136,
@@ -420,6 +421,20 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         e.preventDefault();
 
         if (!validateForm()) return;
+
+        // Duplicate Location Check (only when adding a new branch)
+        if (!branch && existingBranches.length > 0) {
+            // Check if any existing branch has coordinates very close to the new one (e.g. exactly same or < 0.0001 diff)
+            const duplicate = existingBranches.find(b => 
+                Math.abs(b.latitude - formData.latitude) < 0.00005 && 
+                Math.abs(b.longitude - formData.longitude) < 0.00005
+            );
+            if (duplicate) {
+                toast.error(`عفواً، هذا الموقع مسجل مسبقاً لفرع: ${duplicate.name}`);
+                return;
+            }
+        }
+
         setIsSaving(true);
         try {
             let finalImageUrl = formData.imageUrl;

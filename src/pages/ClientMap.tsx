@@ -198,7 +198,8 @@ const BranchDetailModal: React.FC<{
     onClose: () => void;
     onNavigate: () => void;
     onImageClick: (url: string) => void;
-}> = ({ branch, lang, congestionLevel, onClose, onNavigate, onImageClick }) => {
+    routeInfo?: { distance: string, duration: string, branchId: string } | null;
+}> = ({ branch, lang, congestionLevel, onClose, onNavigate, onImageClick, routeInfo }) => {
     const open = isCurrentlyOpen(branch);
     const timeRem = getTimeRemaining(branch, lang);
 
@@ -223,6 +224,24 @@ const BranchDetailModal: React.FC<{
                         <h2 style={{ margin: '0 0 6px', fontSize: '1.4rem', fontWeight: 800 }}>{branch.name}</h2>
                         <p style={{ margin: 0, fontSize: '14px', opacity: 0.7 }}>{branch.address}</p>
                     </div>
+
+                    {/* Routing Info from OSRM */}
+                    {routeInfo && routeInfo.branchId === branch.id && (
+                        <div style={{
+                            background: 'var(--primary-color)', color: 'white', padding: '12px', borderRadius: '12px', 
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, fontSize: '14px',
+                            boxShadow: '0 4px 12px rgba(59,130,246,0.3)'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Navigation size={18} />
+                                <span>{lang === 'ar' ? 'المسافة:' : 'Distance:'} {routeInfo.distance}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Clock size={18} />
+                                <span>{lang === 'ar' ? 'الوقت:' : 'Time:'} {routeInfo.duration}</span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Status + Time Remaining */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -381,8 +400,11 @@ const ClientMap: React.FC = () => {
     const [ratingValue, setRatingValue] = useState(5);
     const [ratingComment, setRatingComment] = useState('');
     const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+    
+    // OSRM Route Info
+    const [routeInfo, setRouteInfo] = useState<{distance: string, duration: string, branchId: string} | null>(null);
 
-
+    const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
     const t = translations[lang];
 
@@ -807,7 +829,7 @@ const ClientMap: React.FC = () => {
     };
 
     // ─── Smart 3-phase geolocation ────────────────────────────────────────
-    const locateAndCenter = (loc: [number, number]) => {
+    const locateAndCenter = async (loc: [number, number]) => {
         setUserLoc(loc);
         const openBranches = branches.filter(b => isCurrentlyOpen(b));
         const allBranches = branches;
@@ -817,20 +839,56 @@ const ClientMap: React.FC = () => {
                 .map(b => ({ ...b, dist: calculateDistance(loc[0], loc[1], b.latitude, b.longitude) }))
                 .sort((a, b) => a.dist - b.dist);
             const nearest = sorted[0];
-            const distKm = sorted[0].dist.toFixed(1);
-            const label = openBranches.length > 0
-                ? (lang === 'ar' ? `أقرب فرع مفتوح: ${nearest.name} (${distKm} كم)` : `Nearest open: ${nearest.name} (${distKm} km)`)
-                : (lang === 'ar' ? `أقرب فرع: ${nearest.name} (${distKm} كم)` : `Nearest: ${nearest.name} (${distKm} km)`);
-            toast.success(label, { id: 'locate-toast', duration: 4000 });
+            
+            // Try fetching real route from OSRM
+            try {
+                const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${loc[1]},${loc[0]};${nearest.longitude},${nearest.latitude}?overview=false`);
+                const data = await res.json();
+                if (data.routes && data.routes.length > 0) {
+                    const distKm = (data.routes[0].distance / 1000).toFixed(1);
+                    const durMins = Math.ceil(data.routes[0].duration / 60);
+                    setRouteInfo({
+                        distance: `${distKm} ${lang === 'ar' ? 'كم' : 'km'}`,
+                        duration: `${durMins} ${lang === 'ar' ? 'دقيقة' : 'min'}`,
+                        branchId: nearest.id
+                    });
+                    
+                    const label = openBranches.length > 0
+                        ? (lang === 'ar' ? `أقرب فرع مفتوح: ${nearest.name} (${distKm} كم | ${durMins} دقيقة)` : `Nearest open: ${nearest.name} (${distKm} km | ${durMins} min)`)
+                        : (lang === 'ar' ? `أقرب فرع: ${nearest.name} (${distKm} كم | ${durMins} دقيقة)` : `Nearest: ${nearest.name} (${distKm} km | ${durMins} min)`);
+                    toast.success(label, { id: 'locate-toast', duration: 4000 });
+                } else {
+                    // Fallback to straight line
+                    fallbackLocate(nearest, loc, openBranches);
+                }
+            } catch (e) {
+                // Fallback to straight line on API error
+                fallbackLocate(nearest, loc, openBranches);
+            }
+
             prevMapZoomRef.current = mapZoom;
             setMapCenter([nearest.latitude, nearest.longitude]);
             setMapZoom(14);
+            setSelectedBranch(nearest); // Open the modal automatically to show route info
         } else {
             toast.success(lang === 'ar' ? 'تم تحديد موقعك' : 'Location found', { id: 'locate-toast' });
             setMapCenter(loc);
             setMapZoom(12);
         }
         setIsLocatingLoc(false);
+    };
+
+    const fallbackLocate = (nearest: Branch & { dist: number }, loc: [number, number], openBranches: Branch[]) => {
+        const distKm = nearest.dist.toFixed(1);
+        const label = openBranches.length > 0
+            ? (lang === 'ar' ? `أقرب فرع مفتوح: ${nearest.name} (${distKm} كم)` : `Nearest open: ${nearest.name} (${distKm} km)`)
+            : (lang === 'ar' ? `أقرب فرع: ${nearest.name} (${distKm} كم)` : `Nearest: ${nearest.name} (${distKm} km)`);
+        toast.success(label, { id: 'locate-toast', duration: 4000 });
+        setRouteInfo({
+            distance: `${distKm} ${lang === 'ar' ? 'كم' : 'km'}`,
+            duration: `~${Math.ceil(nearest.dist / 0.66)} ${lang === 'ar' ? 'دقيقة' : 'min'}`, // Rough estimate
+            branchId: nearest.id
+        });
     };
 
     const tryIPFallback = async () => {
@@ -974,7 +1032,7 @@ const ClientMap: React.FC = () => {
         }
 
         // Clean punctuation from text for seamless matching (e.g. commas, dashes)
-        const cleanString = (s: string) => s.replace(/[،,.\-\/]/g, ' ');
+        const cleanString = (s: string) => s.replace(/[\,,.\-\/]/g, ' ');
 
         // Split query into individual words/terms to support multi-word search (e.g. "الدمام العمامرة")
         const terms = queryText.split(/\s+/).filter(Boolean);

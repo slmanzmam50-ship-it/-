@@ -2071,7 +2071,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                 </div>
             )}
-            {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} />}
+            {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} existingBranches={branches} />}
 
             {/* Manage Hidden Branches Modal */}
             {managingHiddenBranchCompany && (
