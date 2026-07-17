@@ -7,7 +7,7 @@ import type { Language } from '../services/translations';
 import { subscribeToBranches, addNavigationIntent, subscribeToActiveNavigators, subscribeToCategories, subscribeToServiceRequests, addServiceRequestRating } from '../services/storage';
 import { translations } from '../services/translations';
 import type { Branch, Category, ServiceRequest } from '../types';
-import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, X, SortAsc, Star, Loader2 } from 'lucide-react';
+import { Navigation, MessageCircle, Fuel, Wrench, Zap, CircleDashed, ShieldCheck, Car, Layers, Search, MapPin, Share2, AlertCircle, BarChart2, Phone, Clock, ChevronDown, ChevronLeft, X, SortAsc, Star, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LocationLoader from '../components/LocationLoader';
 import QRCode from 'qrcode';
@@ -385,6 +385,7 @@ const ClientMap: React.FC = () => {
     // #4 - Branch detail modal
     const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
     const [showSortMenu, setShowSortMenu] = useState(false);
+    const [showNearestSheet, setShowNearestSheet] = useState(false);
     // #11 - Track popup open state for zoom behavior
     const [popupOpen, setPopupOpen] = useState(false);
     const [isLocatingLoc, setIsLocatingLoc] = useState(false);
@@ -433,10 +434,10 @@ const ClientMap: React.FC = () => {
         };
     }, []);
 
-    const stateRef = React.useRef({ selectedBranch, showSortMenu, showMapQrModal, showRatingModal, lightboxImage });
-    stateRef.current = { selectedBranch, showSortMenu, showMapQrModal, showRatingModal, lightboxImage };
+    const stateRef = React.useRef({ selectedBranch, showSortMenu, showMapQrModal, showRatingModal, lightboxImage, showNearestSheet });
+    stateRef.current = { selectedBranch, showSortMenu, showMapQrModal, showRatingModal, lightboxImage, showNearestSheet };
 
-    const depth = (selectedBranch ? 1 : 0) + (showSortMenu ? 1 : 0) + (showMapQrModal ? 1 : 0) + (showRatingModal ? 1 : 0) + (lightboxImage ? 1 : 0);
+    const depth = (selectedBranch ? 1 : 0) + (showSortMenu ? 1 : 0) + (showMapQrModal ? 1 : 0) + (showRatingModal ? 1 : 0) + (lightboxImage ? 1 : 0) + (showNearestSheet ? 1 : 0);
     const prevDepth = React.useRef(0);
     const isHardwareBack = React.useRef(false);
     const ignoreNextPop = React.useRef(false);
@@ -469,6 +470,7 @@ const ClientMap: React.FC = () => {
             else if (s.showRatingModal) setShowRatingModal(false);
             else if (s.showMapQrModal) setShowMapQrModal(false);
             else if (s.showSortMenu) setShowSortMenu(false);
+            else if (s.showNearestSheet) setShowNearestSheet(false);
             else if (s.selectedBranch) setSelectedBranch(null);
         };
 
@@ -769,8 +771,9 @@ const ClientMap: React.FC = () => {
                                 const loc: [number, number] = [resolvedLat, resolvedLng];
                                 setUserLoc(loc);
                                 setMapCenter(loc);
-                                setMapZoom(13);
+                                setMapZoom(12);
                                 setSortBy('nearest');
+                                setShowNearestSheet(true);
                                 toast.success(lang === 'ar' ? 'تم تحديد موقع العميل بنجاح! ✅' : 'Location resolved successfully! ✅', { id: toastId });
                                 return;
                             }
@@ -872,13 +875,14 @@ const ClientMap: React.FC = () => {
             }
 
             prevMapZoomRef.current = mapZoom;
-            setMapCenter([nearest.latitude, nearest.longitude]);
-            setMapZoom(14);
-            setSelectedBranch(nearest); // Open the modal automatically to show route info
+            setMapCenter(loc);
+            setMapZoom(12);
+            setShowNearestSheet(true); // Open the nearest branches sheet
         } else {
             toast.success(lang === 'ar' ? 'تم تحديد موقعك' : 'Location found', { id: 'locate-toast' });
             setMapCenter(loc);
             setMapZoom(12);
+            setShowNearestSheet(true);
         }
         setIsLocatingLoc(false);
     };
@@ -1905,6 +1909,63 @@ const ClientMap: React.FC = () => {
                         >
                             إغلاق
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Nearest Branches Bottom Sheet */}
+            {showNearestSheet && userLoc && (
+                <div className="bottom-sheet-overlay" onClick={() => setShowNearestSheet(false)}>
+                    <div 
+                        className={`bottom-sheet ${showNearestSheet ? 'open' : ''}`}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="bottom-sheet-handle" onClick={() => setShowNearestSheet(false)}></div>
+                        <h3 style={{ padding: '0 16px 12px', margin: 0, borderBottom: '1px solid var(--border-color)' }}>
+                            {lang === 'ar' ? 'أقرب الفروع إليك' : 'Nearest Branches'}
+                        </h3>
+                        <div className="bottom-sheet-content">
+                            {sortedBranches.slice(0, 10).map((branch) => {
+                                const dist = calculateDistance(userLoc[0], userLoc[1], branch.latitude, branch.longitude);
+                                const estMins = Math.ceil(dist / 0.66); // Roughly 40km/h in city
+                                const isOpen = isCurrentlyOpen(branch);
+                                
+                                return (
+                                    <div key={branch.id} className="bottom-sheet-item" onClick={() => {
+                                        setMapCenter([branch.latitude, branch.longitude]);
+                                        setMapZoom(15);
+                                        setSelectedBranch(branch);
+                                        setShowNearestSheet(false);
+                                    }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <span style={{ fontWeight: 700, fontSize: '15px' }}>{branch.name}</span>
+                                            <div style={{ display: 'flex', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isOpen ? 'var(--success)' : 'var(--error)' }}>
+                                                    {isOpen ? (lang === 'ar' ? 'مفتوح' : 'Open') : (lang === 'ar' ? 'مغلق' : 'Closed')}
+                                                </span>
+                                                <span>•</span>
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <Navigation size={12} /> {dist.toFixed(1)} {lang === 'ar' ? 'كم' : 'km'}
+                                                </span>
+                                                <span>•</span>
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <Clock size={12} /> ~{estMins} {lang === 'ar' ? 'دقيقة' : 'min'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div 
+                                            style={{ 
+                                                width: '36px', height: '36px', borderRadius: '50%', 
+                                                background: 'var(--bg-color)', display: 'flex', 
+                                                alignItems: 'center', justifyContent: 'center', color: 'var(--primary-color)' 
+                                            }}
+                                        >
+                                            <ChevronLeft size={20} style={{ transform: lang === 'en' ? 'rotate(180deg)' : 'none' }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             )}
