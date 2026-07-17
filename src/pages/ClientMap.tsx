@@ -401,12 +401,8 @@ const ClientMap: React.FC = () => {
     const [ratingComment, setRatingComment] = useState('');
     const [isSubmittingRating, setIsSubmittingRating] = useState(false);
     
-    const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as 'light' | 'dark') || 'light');
-    
     // OSRM Route Info
     const [routeInfo, setRouteInfo] = useState<{distance: string, duration: string, branchId: string} | null>(null);
-
-    const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
     const t = translations[lang];
 
