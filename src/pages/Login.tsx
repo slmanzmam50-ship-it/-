@@ -82,8 +82,8 @@ const Login: React.FC = () => {
                     toast.success('مرحباً بك! تم تسجيل الدخول للإدارة 👋');
                     navigate('/admin');
                 } catch (err: any) {
-                    setError('بيانات الدخول غير صحيحة ❌');
-                    toast.error('بيانات الدخول غير صحيحة ❌');
+                    setError(`خطأ: ${err.message}`);
+                    toast.error(`رسالة الخطأ التقنية: ${err.code}`);
                 }
             } else if (selectedPortal === 'company') {
                 if (!u || !p) {
