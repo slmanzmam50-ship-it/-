@@ -46,7 +46,7 @@ export default async function handler(req, res) {
                 const htmlMatch = html.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) ||
                                   html.match(/ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) ||
                                   html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
-                                  html.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+                                  html.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/);
                 if (htmlMatch) {
                     latitude = parseFloat(htmlMatch[1]);
                     longitude = parseFloat(htmlMatch[2]);
@@ -54,10 +54,11 @@ export default async function handler(req, res) {
             }
         }
 
-        if (latitude !== null && longitude !== null) {
+        // Sanity check to avoid returning Null Island or invalid coords
+        if (latitude !== null && longitude !== null && !isNaN(latitude) && !isNaN(longitude) && (latitude !== 0 || longitude !== 0)) {
             return res.status(200).json({ latitude, longitude, finalUrl });
         } else {
-            return res.status(422).json({ error: 'Could not extract coordinates', finalUrl });
+            return res.status(422).json({ error: 'Could not extract valid coordinates', finalUrl });
         }
     } catch (error) {
         console.error('Error resolving short URL:', error);
