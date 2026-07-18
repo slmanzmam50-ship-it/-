@@ -1,7 +1,7 @@
 import type { Branch, NavigationIntent, Category, ServiceRequest, CompanyAccount } from '../types';
 import { db, storage, auth, secondaryAuth } from './firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { collection, onSnapshot, query, where, orderBy, limit, getDocs, updateDoc, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, limit, getDocs, updateDoc, deleteDoc, doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const COLLECTION_NAME = 'branches';
@@ -282,13 +282,30 @@ export const addCategory = async (name: string, imageUrl?: string): Promise<Cate
     return newCat;
 };
 
-export const updateCategory = async (category: Category): Promise<void> => {
+export const updateCategory = async (category: Category, oldName?: string): Promise<void> => {
     const catRef = doc(db, CATEGORIES_COLLECTION, category.id);
     const updateData: any = { name: category.name };
     if (category.imageUrl !== undefined) {
         updateData.imageUrl = category.imageUrl;
     }
     await updateDoc(catRef, updateData);
+
+    // If name changed, update all branches that have the old name
+    if (oldName && oldName !== category.name) {
+        const branchesQuery = query(collection(db, COLLECTION_NAME), where("categories", "array-contains", oldName));
+        const snapshot = await getDocs(branchesQuery);
+        
+        if (!snapshot.empty) {
+            const batch = writeBatch(db);
+            snapshot.forEach((branchDoc) => {
+                const data = branchDoc.data();
+                const branchCats = data.categories || [];
+                const newCats = branchCats.map((c: string) => c === oldName ? category.name : c);
+                batch.update(branchDoc.ref, { categories: newCats });
+            });
+            await batch.commit();
+        }
+    }
 };
 
 export const deleteCategory = async (id: string): Promise<void> => {

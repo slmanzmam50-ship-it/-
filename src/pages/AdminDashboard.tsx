@@ -229,16 +229,19 @@ const AdminDashboard: React.FC = () => {
 
     const handleUpdateCategory = async (id: string) => {
         try {
+            const oldCat = categories.find(c => c.id === id);
+            const oldName = oldCat ? oldCat.name : undefined;
+
             let finalImageUrl = categoryEditImageUrl;
             if (categoryEditFile) {
-                toast.loading('جاري التحديث ورفع الصورة...', { id: 'catUpload' });
+                toast.loading('جاري رفع الصورة...', { id: 'catUpload' });
                 finalImageUrl = await uploadImage(categoryEditFile, 'categories');
-                toast.success('تم رفع الصورة بنجاح', { id: 'catUpload' });
+                toast.success('تم الرفع بنجاح', { id: 'catUpload' });
             }
-            await updateCategory({ id, name: categoryEditName, imageUrl: finalImageUrl });
+            await updateCategory({ id, name: categoryEditName, imageUrl: finalImageUrl }, oldName);
             setEditingCategoryId(null);
             setCategoryEditFile(null);
-            toast.success('تم تحديث القسم');
+            toast.success('تم التحديث');
         } catch (error: any) {
             toast.error('فشل التحديث', { id: 'catUpload' });
         }
