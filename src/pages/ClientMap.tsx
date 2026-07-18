@@ -358,7 +358,11 @@ const formatDuration = (mins: number, lang: Language): string => {
     const h = Math.floor(mins / 60);
     const m = mins % 60;
     if (m === 0) return `${h} ${lang === 'ar' ? 'ساعة' : 'hr'}`;
-    return `${h} ${lang === 'ar' ? 'ساعة' : 'hr'} ${lang === 'ar' ? 'و' : 'and'} ${m} ${lang === 'ar' ? 'د' : 'm'}`;
+    if (lang === 'ar') {
+        // Use RLM (Right-to-Left Mark) to force proper Arabic rendering (Hours then minutes in RTL flow)
+        return `\u200F${h} ساعة و ${m} دقيقة\u200F`;
+    }
+    return `${h} hr and ${m} m`;
 };
 
 // ============================================================
@@ -1929,7 +1933,11 @@ const ClientMap: React.FC = () => {
                             {lang === 'ar' ? 'أقرب الفروع إليك' : 'Nearest Branches'}
                         </h3>
                         <div className="bottom-sheet-content">
-                            {sortedBranches.slice(0, 10).map((branch) => {
+                            {[...filteredBranches].sort((a, b) => {
+                                const distA = calculateDistance(userLoc[0], userLoc[1], a.latitude, a.longitude);
+                                const distB = calculateDistance(userLoc[0], userLoc[1], b.latitude, b.longitude);
+                                return distA - distB;
+                            }).slice(0, 10).map((branch) => {
                                 const dist = calculateDistance(userLoc[0], userLoc[1], branch.latitude, branch.longitude);
                                 const estMins = Math.ceil(dist / 0.66); // Roughly 40km/h in city
                                 const isOpen = isCurrentlyOpen(branch);
