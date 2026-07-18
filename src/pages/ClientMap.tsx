@@ -940,18 +940,7 @@ const ClientMap: React.FC = () => {
         }
     };
 
-    const tryLowAccuracy = () => {
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                locateAndCenter([pos.coords.latitude, pos.coords.longitude]);
-            },
-            () => {
-                // Phase 3: IP fallback
-                tryIPFallback();
-            },
-            { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 }
-        );
-    };
+    // Removed tryLowAccuracy to speed up geolocation
 
     const handleLocateMe = () => {
         setIsLocatingLoc(true);
@@ -977,10 +966,10 @@ const ClientMap: React.FC = () => {
                     );
                     return;
                 }
-                // Phase 2: retry with low accuracy
-                tryLowAccuracy();
+                // Phase 2: immediate IP fallback for speed
+                tryIPFallback();
             },
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
         );
     };
 

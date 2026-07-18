@@ -142,7 +142,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                     // B. Fallback to general coordinate patterns in HTML
                     const coordMatch = html.match(/ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) ||
                                        html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
-                                       html.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+                                       html.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/);
 
                     if (coordMatch) {
                         const resolvedLat = parseFloat(coordMatch[1]);
@@ -162,13 +162,17 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                               resolvedUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
                                               resolvedUrl.match(/[?&/](?:q|query|loc|place|dir|ll|cbll|addr)=?(-?\d+\.\d+)[,\s/|;]+(-?\d+\.\d+)/);
                         if (resolvedMatch) {
-                            setFormData(prev => ({
-                                ...prev,
-                                latitude: parseFloat(resolvedMatch[1]),
-                                longitude: parseFloat(resolvedMatch[2])
-                            }));
-                            if (!silent) toast.success("تم تحديد الموقع بنجاح! ✅", { id: "extract-link" });
-                            return;
+                            const lat = parseFloat(resolvedMatch[1]);
+                            const lng = parseFloat(resolvedMatch[2]);
+                            if (lat !== 0 && lng !== 0 && !isNaN(lat) && !isNaN(lng)) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    latitude: lat,
+                                    longitude: lng
+                                }));
+                                if (!silent) toast.success("تم تحديد الموقع بنجاح! ✅", { id: "extract-link" });
+                                return;
+                            }
                         }
                     }
 
