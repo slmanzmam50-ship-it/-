@@ -44,9 +44,10 @@ export default async function handler(req, res) {
             } else {
                 // 3. Try parsing coordinates from HTML
                 const htmlMatch = html.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) ||
-                                  html.match(/ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) ||
-                                  html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
-                                  html.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/);
+                                  html.match(/ll=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/) ||
+                                  html.match(/@(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/) ||
+                                  html.match(/center=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/) ||
+                                  html.match(/markers=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/);
                 if (htmlMatch) {
                     latitude = parseFloat(htmlMatch[1]);
                     longitude = parseFloat(htmlMatch[2]);

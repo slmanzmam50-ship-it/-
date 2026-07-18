@@ -744,9 +744,10 @@ const ClientMap: React.FC = () => {
                     }
 
                     // B. Fallback coordinate matches
-                    const coordMatch = html.match(/ll=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) ||
-                                       html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
-                                       html.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/);
+                    const coordMatch = html.match(/ll=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/) ||
+                                       html.match(/@(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/) ||
+                                       html.match(/center=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/) ||
+                                       html.match(/markers=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/);
 
                     if (coordMatch) {
                         const resolvedLat = parseFloat(coordMatch[1]);
