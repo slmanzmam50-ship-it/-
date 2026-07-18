@@ -55,11 +55,33 @@ export default async function handler(req, res) {
             }
         }
 
-        // Sanity check to avoid returning Null Island or invalid coords
-        if (latitude !== null && longitude !== null && !isNaN(latitude) && !isNaN(longitude) && (latitude !== 0 || longitude !== 0)) {
-            return res.status(200).json({ latitude, longitude, finalUrl });
+        let placeName = null;
+        const placeMatch = finalUrl.match(/\/place\/([^/]+)/);
+        if (placeMatch) {
+            try {
+                placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+                // Remove plus codes like "FF8J+J8G " to improve search
+                placeName = placeName.replace(/^[A-Z0-9]{4}\+[A-Z0-9]{2,3}\s*/, '');
+            } catch (e) { }
+        }
+
+        // Sanity check to avoid returning Null Island or US default coordinates (Vercel is in US)
+        // Saudi Arabia/Middle East is roughly Lat: 15 to 35, Lng: 34 to 60.
+        // If it's outside this bounding box, it's likely a bot fallback to Washington DC.
+        let isValidLocation = false;
+        if (latitude !== null && longitude !== null && !isNaN(latitude) && !isNaN(longitude)) {
+            if (latitude !== 0 && longitude !== 0) {
+                // Check if it's in the Middle East bounding box
+                if (latitude > 10 && latitude < 40 && longitude > 30 && longitude < 65) {
+                    isValidLocation = true;
+                }
+            }
+        }
+
+        if (isValidLocation) {
+            return res.status(200).json({ latitude, longitude, finalUrl, placeName });
         } else {
-            return res.status(422).json({ error: 'Could not extract valid coordinates', finalUrl });
+            return res.status(422).json({ error: 'Could not extract valid local coordinates', finalUrl, placeName });
         }
     } catch (error) {
         console.error('Error resolving short URL:', error);

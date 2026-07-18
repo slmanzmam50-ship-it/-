@@ -88,12 +88,13 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         }
     };
 
-    const handleSearchAddress = async () => {
-        if (!mapInput.trim()) return;
+    const handleSearchAddress = async (searchQuery?: string) => {
+        const query = searchQuery || mapInput;
+        if (!query.trim()) return;
         setIsSearching(true);
         try {
             // Use OpenStreetMap Nominatim API (Free, no key required for low volume)
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(mapInput)}`);
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
             const data = await response.json();
             
             if (data && data.length > 0) {
@@ -124,7 +125,10 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
             const resolveLink = async () => {
                 // Phase 1: Try backend serverless resolver (100% reliable, bypasses CORS)
                 const resolvedViaBackend = await tryBackendResolve();
-                if (resolvedViaBackend) return;
+                if (resolvedViaBackend === true) return;
+
+                // If backend returned a placeName string, use it instead of the raw link for the search fallback
+                const searchString = typeof resolvedViaBackend === 'string' ? resolvedViaBackend : input;
 
                 // Phase 2: Client-side CORS proxy fallback
                 try {
@@ -179,14 +183,16 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
 
                     if (!silent) {
                         toast.dismiss("extract-link");
-                        toast.error("لم نتمكن من استخراج الإحداثيات تلقائياً. جاري البحث عن اسم المكان...");
-                        handleSearchAddress();
+                        toast.error("لم نتمكن من استخراج الإحداثيات مباشرة. جاري البحث عن اسم المكان...");
+                        if (typeof resolvedViaBackend === 'string') setMapInput(resolvedViaBackend);
+                        handleSearchAddress(searchString);
                     }
                 } catch {
                     if (!silent) {
                         toast.dismiss("extract-link");
                         toast.error("فشل الاتصال بخدمة تحليل الروابط. جاري البحث عن اسم المكان...");
-                        handleSearchAddress();
+                        if (typeof resolvedViaBackend === 'string') setMapInput(resolvedViaBackend);
+                        handleSearchAddress(searchString);
                     }
                 }
             };
@@ -203,6 +209,9 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                         setFormData(prev => ({ ...prev, latitude: data.latitude, longitude: data.longitude }));
                         if (!silent) toast.success("تم تحديد الموقع بنجاح عبر السيرفر! ✅", { id: "extract-link" });
                         return true;
+                    }
+                    if (data.placeName) {
+                        return data.placeName; // Return placeName to search it
                     }
                     return false;
                 } catch {
@@ -291,13 +300,13 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         // Pattern D: Google Maps short location code / place ID text
         if (!input.startsWith('http') && input.length > 5) {
             if (!silent) {
-                handleSearchAddress();
+                handleSearchAddress(input);
             }
             return;
         }
 
         // If nothing matches and NOT silent, trigger address search
-        if (!silent) handleSearchAddress();
+        if (!silent) handleSearchAddress(input);
     };
 
     // Automatic trigger on paste or change
