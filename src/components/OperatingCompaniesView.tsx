@@ -94,11 +94,12 @@ const MapAutoCenter: React.FC<{ branches: Branch[] }> = ({ branches }) => {
 };
 
 interface Props {
+    onBack: () => void;
     branches: Branch[];
     onAddNewBranch: (companyId: string) => void;
 }
 
-const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch }) => {
+const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onBack }) => {
     const [companies, setCompanies] = useState<OperatingCompany[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
     const [newCompanyName, setNewCompanyName] = useState('');
@@ -113,308 +114,99 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch }) =
 
     useEffect(() => {
         const unsubscribe = subscribeToOperatingCompanies(setCompanies);
-        return () => unsubscribe();
-    }, []);
-
-    useEffect(() => {
-        if (selectedCompanyId) {
-            setActiveTab('linked');
-            setBranchesToAdd([]);
-            setBranchSearch('');
-        }
-    }, [selectedCompanyId]);
-
-    const selectedCompany = companies.find(c => c.id === selectedCompanyId);
-    
-    const availableBranches = branches.filter(b => !(selectedCompany?.branchIds || []).includes(b.id));
-    const filteredAvailableBranches = availableBranches.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase()) || b.address.toLowerCase().includes(branchSearch.toLowerCase()));
-
-    const handleShare = async (branch: Branch) => {
-        const url = `${window.location.origin}/?branch=${branch.id}`;
-        const title = `فرع ${branch.name} - مراكز خدمة سلمان الخالدي`;
-        const text = `تفضل بزيارة فرع ${branch.name} الواقع في ${branch.address}. للوصول عبر الخريطة: ${url}`;
-        
-        try {
-            if (navigator.share) {
-                await navigator.share({ title, text, url });
-            } else {
-                await navigator.clipboard.writeText(text);
-                toast.success('تم نسخ الرابط');
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
-    const handleAddCompany = async () => {
-        if (!newCompanyName.trim()) return;
-        setIsUploading(true);
-        try {
-            let logoUrl = '';
-            if (newCompanyLogoFile) {
-                toast.loading('جاري رفع الشعار...', { id: 'logoUpload' });
-                logoUrl = await uploadImage(newCompanyLogoFile, 'companies');
-                toast.success('تم رفع الشعار بنجاح', { id: 'logoUpload' });
-            }
-
-            await addOperatingCompany({ name: newCompanyName.trim(), branchIds: [], logo: logoUrl });
-            setNewCompanyName('');
-            setNewCompanyLogoFile(null);
-            toast.success('تمت إضافة الشركة بنجاح');
-        } catch (e) {
-            console.error(e);
-            toast.error('حدث خطأ أثناء إضافة الشركة');
-        } finally {
-            setIsUploading(false);
-            toast.dismiss('logoUpload');
-        }
-    };
-
-    const handleDeleteCompany = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (window.confirm('هل أنت متأكد من حذف هذه الشركة التشغيلية؟ لن يتم حذف الفروع بل سيتم إزالة ارتباطها فقط.')) {
-            try {
-                await deleteOperatingCompany(id);
-                if (selectedCompanyId === id) setSelectedCompanyId(null);
-                toast.success('تم الحذف بنجاح');
-            } catch (error) {
-                toast.error('حدث خطأ أثناء الحذف');
-            }
-        }
-    };
-
-    const handleAddBranchesToCompany = async () => {
-        if (!selectedCompany || branchesToAdd.length === 0) return;
-
-        try {
-            await updateOperatingCompany({
-                ...selectedCompany,
-                branchIds: [...(selectedCompany.branchIds || []), ...branchesToAdd]
-            });
-            setBranchesToAdd([]);
-            setActiveTab('linked');
-            toast.success('تم ربط الفروع بالشركة بنجاح');
-        } catch (e) {
-            toast.error('حدث خطأ أثناء الربط');
-        }
-    };
-
-    const handleRemoveBranchFromCompany = async (branchId: string) => {
-        if (!selectedCompany) return;
-        if (window.confirm('هل أنت متأكد من إزالة هذا الفرع من الشركة؟ لن يتم حذفه من النظام الكلي.')) {
-            try {
-                await updateOperatingCompany({
-                    ...selectedCompany,
-                    branchIds: (selectedCompany.branchIds || []).filter(id => id !== branchId)
-                });
-                toast.success('تم إزالة الفرع من الشركة');
-            } catch (e) {
-                toast.error('حدث خطأ أثناء الإزالة');
-            }
-        }
-    };
-
-    const handleExportExcel = () => {
-        if (!selectedCompany || !selectedCompany.branchIds) {
-            toast.error('لا توجد فروع لتصديرها');
-            return;
-        }
-        
-        let companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
-        if (companyBranches.length === 0) {
-            toast.error('لا توجد فروع لتصديرها');
-            return;
-        }
-
-        companyBranches = companyBranches.sort((a, b) => (a.city || '').localeCompare(b.city || '', 'ar'));
-
-        const data = companyBranches.map((b, index) => ({
-            'م': index + 1,
-            'المدينة': b.city || 'أخرى',
-            'اسم الفرع': b.name,
-            'اسم المستلم': b.managerName || 'غير محدد',
-            'رقم الهاتف': b.phone || 'غير محدد',
-            'العنوان': b.address,
-            'موقع الفرع': `https://www.google.com/maps/search/?api=1&query=${b.latitude},${b.longitude}`
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(data);
-        ws['!dir'] = 'rtl';
-        ws['!cols'] = [{wch: 5}, {wch: 15}, {wch: 30}, {wch: 25}, {wch: 15}, {wch: 50}, {wch: 60}];
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "الفروع");
-        
-        XLSX.writeFile(wb, `فروع_${selectedCompany.name}.xlsx`);
-        toast.success('تم تصدير ملف إكسل بنجاح');
-    };
-
-    const handleExportWord = () => {
-        if (!selectedCompany || !selectedCompany.branchIds) {
-            toast.error('لا توجد فروع لتصديرها');
-            return;
-        }
-        
-        let companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
-        if (companyBranches.length === 0) {
-            toast.error('لا توجد فروع لتصديرها');
-            return;
-        }
-
-        companyBranches = companyBranches.sort((a, b) => (a.city || '').localeCompare(b.city || '', 'ar'));
-
-        const htmlContent = `
-            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head>
-                <meta charset="utf-8">
-                <title>فروع ${selectedCompany.name}</title>
-                <style>
-                    body { font-family: 'Arial', sans-serif; direction: rtl; }
-                    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-                    th, td { border: 1px solid #000; padding: 10px; text-align: right; }
-                    th { background-color: #f2f2f2; font-weight: bold; }
-                    h1 { color: #2563eb; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
-                    .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
-                    a { color: #2563eb; text-decoration: none; font-weight: bold; }
-                </style>
-            </head>
-            <body>
-                <h1>قائمة الفروع التابعة لشركة: ${selectedCompany.name}</h1>
-                <p>إجمالي عدد الفروع: <strong>${companyBranches.length}</strong></p>
-                <table>
-                    <tr>
-                        <th>م</th>
-                        <th>المدينة</th>
-                        <th>اسم الفرع</th>
-                        <th>اسم المستلم</th>
-                        <th>رقم الهاتف</th>
-                        <th>العنوان</th>
-                        <th>موقع الفرع</th>
-                    </tr>
-                    ${companyBranches.map((b, i) => `
-                        <tr>
-                            <td>${i + 1}</td>
-                            <td>${b.city || 'أخرى'}</td>
-                            <td>${b.name}</td>
-                            <td>${b.managerName || 'غير محدد'}</td>
-                            <td dir="ltr" style="text-align: right;">${b.phone || 'غير محدد'}</td>
-                            <td>${b.address}</td>
-                            <td><a href="https://www.google.com/maps/search/?api=1&query=${b.latitude},${b.longitude}">عرض في خرائط قوقل</a></td>
-                        </tr>
-                    `).join('')}
-                </table>
-                <div class="footer">تم التصدير من نظام إدارة الفروع</div>
-            </body>
-            </html>
-        `;
-
-        const blob = new Blob(['\ufeff', htmlContent], {
-            type: 'application/msword'
-        });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `فروع_${selectedCompany.name}.doc`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        toast.success('تم تصدير ملف وورد بنجاح');
-    };
-
-    const companyBranchesList = selectedCompany?.branchIds?.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[] || [];
-
-    return (
-        <div style={{
-            background: 'var(--surface-color)',
-            borderRadius: '24px',
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            position: 'relative',
-            direction: 'rtl'
-        }}>
-            {!selectedCompany ? (
-                // ==========================================
-                // GRID VIEW - ALL COMPANIES
-                // ==========================================
-                <div style={{ padding: '40px', height: '100%', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', marginTop: '20px', flexWrap: 'wrap', gap: '20px' }}>
-                        <div>
-                            <h2 style={{ margin: '0 0 8px', fontSize: '2.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '12px', borderRadius: '16px' }}>
-                                    <Building2 size={36} color="var(--primary-color)" />
-                                </div>
-                                إدارة الشركات التشغيلية
-                            </h2>
-                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
-                                اختر شركة لعرض خريطة فروعها، أو قم بإضافة شركة جديدة.
-                            </p>
+        return (
+        <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-color)', direction: 'rtl' }}>
+            {/* Sidebar */}
+            <div className="custom-scrollbar" style={{
+                width: '320px',
+                background: 'var(--surface-color)',
+                borderLeft: '1px solid var(--border-color)',
+                display: 'flex',
+                flexDirection: 'column',
+                flexShrink: 0,
+                zIndex: 50,
+                boxShadow: '-4px 0 20px rgba(0,0,0,0.05)',
+                overflowY: 'auto'
+            }}>
+                <div style={{ padding: '24px 16px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                    <button 
+                        onClick={onBack}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            padding: '8px 0',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontWeight: 800,
+                            color: 'var(--text-secondary)',
+                            marginBottom: '24px',
+                            transition: 'all 0.2s',
+                            fontSize: '15px'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.color = 'var(--primary-color)'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                    >
+                        <ArrowRight size={20} /> العودة للوحة التحكم
+                    </button>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                        <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary-color)', padding: '10px', borderRadius: '12px' }}>
+                            <Building2 size={24} />
                         </div>
+                        <h2 style={{ fontSize: '1.4rem', fontWeight: 900, margin: 0, color: 'var(--text-primary)' }}>إدارة الشركات</h2>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <input 
+                            type="text" 
+                            placeholder="اسم الشركة الجديدة..." 
+                            value={newCompanyName}
+                            onChange={e => setNewCompanyName(e.target.value)}
+                            style={{
+                                padding: '14px 16px',
+                                borderRadius: '12px',
+                                border: '1px solid var(--border-color)',
+                                background: 'var(--bg-color)',
+                                outline: 'none',
+                                color: 'var(--text-primary)',
+                                fontSize: '14px',
+                                fontWeight: 600
+                            }}
+                        />
                         
-                        <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '600px' }}>
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <input 
-                                    type="text" 
-                                    placeholder="اسم الشركة الجديدة..." 
-                                    value={newCompanyName}
-                                    onChange={e => setNewCompanyName(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '16px 20px',
-                                        borderRadius: '16px',
-                                        border: '1px solid var(--border-color)',
-                                        background: 'var(--bg-color)',
-                                        color: 'var(--text-primary)',
-                                        fontSize: '15px',
-                                        transition: 'all 0.2s',
-                                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
-                                    }}
-                                    onKeyDown={e => e.key === 'Enter' && handleAddCompany()}
-                                />
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        ref={fileInputRef}
-                                        style={{ display: 'none' }}
-                                        onChange={(e) => {
-                                            if (e.target.files && e.target.files[0]) {
-                                                setNewCompanyLogoFile(e.target.files[0]);
-                                            }
-                                        }}
-                                    />
-                                    <button 
-                                        onClick={() => fileInputRef.current?.click()}
-                                        style={{
-                                            background: newCompanyLogoFile ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-color)',
-                                            color: newCompanyLogoFile ? 'var(--success)' : 'var(--text-secondary)',
-                                            border: '1px dashed var(--border-color)',
-                                            padding: '8px 16px',
-                                            borderRadius: '12px',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            fontSize: '13px',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        <Upload size={16} />
-                                        {newCompanyLogoFile ? 'تم اختيار الشعار' : 'إرفاق شعار (اختياري)'}
-                                    </button>
-                                    {newCompanyLogoFile && (
-                                        <button 
-                                            onClick={() => setNewCompanyLogoFile(null)}
-                                            style={{ background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '4px' }}
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                                onClick={() => fileInputRef.current?.click()}
+                                style={{
+                                    background: newCompanyLogoFile ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                                    color: newCompanyLogoFile ? '#10b981' : 'var(--text-secondary)',
+                                    border: '1px dashed ' + (newCompanyLogoFile ? '#10b981' : 'var(--border-color)'),
+                                    borderRadius: '12px',
+                                    padding: '12px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.2s',
+                                    flex: 1
+                                }}
+                                title="إرفاق شعار"
+                            >
+                                <Upload size={18} />
+                            </button>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                                accept="image/png, image/jpeg, image/webp"
+                                onChange={e => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        setNewCompanyLogoFile(e.target.files[0]);
+                                    }
+                                }}
+                            />
                             <button 
                                 onClick={handleAddCompany}
                                 disabled={!newCompanyName.trim() || isUploading}
@@ -422,201 +214,174 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch }) =
                                     background: 'var(--primary-color)',
                                     color: 'white',
                                     border: 'none',
-                                    borderRadius: '16px',
-                                    padding: '0 32px',
-                                    height: '56px',
+                                    borderRadius: '12px',
+                                    padding: '0 24px',
                                     cursor: newCompanyName.trim() && !isUploading ? 'pointer' : 'not-allowed',
                                     opacity: newCompanyName.trim() && !isUploading ? 1 : 0.5,
                                     transition: 'all 0.2s',
-                                    boxShadow: newCompanyName.trim() ? '0 8px 16px rgba(59, 130, 246, 0.3)' : 'none',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '8px',
+                                    justifyContent: 'center',
+                                    gap: '6px',
                                     fontWeight: 'bold',
-                                    alignSelf: 'flex-start'
+                                    flex: 2
                                 }}
                             >
-                                {isUploading ? 'جاري...' : <><Plus size={20} /> إضافة</>}
+                                {isUploading ? <div style={{width: 18, height: 18, border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite'}} /> : <><Plus size={18} /> إضافة</>}
                             </button>
                         </div>
                     </div>
+                </div>
 
-                    <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
-                        gap: '24px',
-                        paddingBottom: '40px'
-                    }}>
-                        {companies.map(comp => (
+                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {companies.map(comp => {
+                        const isSelected = selectedCompanyId === comp.id;
+                        return (
                             <div 
                                 key={comp.id}
                                 onClick={() => setSelectedCompanyId(comp.id)}
                                 style={{
-                                    padding: '24px',
-                                    borderRadius: '20px',
-                                    background: 'var(--bg-color)',
-                                    border: '1px solid var(--border-color)',
+                                    padding: '16px',
+                                    borderRadius: '16px',
+                                    background: isSelected ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-color)',
+                                    border: `2px solid ${isSelected ? 'var(--primary-color)' : 'transparent'}`,
                                     cursor: 'pointer',
                                     display: 'flex',
-                                    flexDirection: 'column',
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    boxShadow: '0 4px 6px rgba(0,0,0,0.02)',
-                                    position: 'relative',
-                                    overflow: 'hidden'
+                                    alignItems: 'center',
+                                    transition: 'all 0.2s',
+                                    gap: '12px'
                                 }}
-                                className="hover-scale company-card"
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--primary-color)';
-                                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(59, 130, 246, 0.15)';
-                                    e.currentTarget.style.transform = 'translateY(-4px)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--border-color)';
-                                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.02)';
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                }}
+                                className="hover-scale"
                             >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                                    {comp.logo ? (
-                                        <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'white', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)' }}>
-                                            <img src={comp.logo} alt={comp.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                                        </div>
-                                    ) : (
-                                        <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '16px', borderRadius: '16px' }}>
-                                            <Building2 size={28} color="var(--primary-color)" />
-                                        </div>
-                                    )}
+                                {comp.logo ? (
+                                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'white', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }}>
+                                        <img src={comp.logo} alt={comp.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                    </div>
+                                ) : (
+                                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <Building2 size={20} color="var(--primary-color)" />
+                                    </div>
+                                )}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{comp.name}</div>
+                                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <MapPin size={12} /> {comp.branchIds?.length || 0} فرع
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={(e) => handleDeleteCompany(comp.id, e)}
+                                    style={{
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        border: 'none',
+                                        padding: '8px',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        color: 'var(--error)',
+                                        opacity: isSelected ? 1 : 0.4,
+                                        transition: 'all 0.2s',
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                                    onMouseLeave={e => e.currentTarget.style.opacity = isSelected ? '1' : '0.4'}
+                                    title="حذف الشركة"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        );
+                    })}
+                    {companies.length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--text-secondary)' }}>
+                            لا توجد شركات حتى الآن.
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div style={{ flex: 1, height: '100%', position: 'relative' }}>
+                <MapContainer 
+                    center={[24.7136, 46.6753]} 
+                    zoom={5} 
+                    style={{ height: '100%', width: '100%', background: '#1e293b', zIndex: 1 }}
+                    zoomControl={false}
+                >
+                    <TileLayer
+                        attribution='&copy; Google Maps'
+                        url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ar"
+                    />
+                    <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
+                    {(selectedCompany ? companyBranchesList : branches).map(branch => {
+                        const isOpen = isCurrentlyOpen(branch);
+                        return (
+                        <Marker 
+                            key={branch.id} 
+                            position={[branch.latitude || 24.7136, branch.longitude || 46.6753]}
+                            icon={createBranchIcon(branch, isOpen)}
+                        >
+                            <Popup>
+                                <div style={{ padding: '8px', textAlign: 'right', direction: 'rtl' }}>
+                                    <h4 style={{ margin: '0 0 4px', fontWeight: 800 }}>{branch.name}</h4>
+                                    <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#666' }}>{branch.address}</p>
                                     <button 
-                                        onClick={(e) => handleDeleteCompany(comp.id, e)}
-                                        style={{
-                                            background: 'rgba(239, 68, 68, 0.1)',
-                                            border: 'none',
-                                            padding: '8px',
-                                            borderRadius: '10px',
-                                            cursor: 'pointer',
-                                            color: 'var(--error)',
-                                            transition: 'all 0.2s',
-                                            opacity: 0.7
-                                        }}
-                                        onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                                        onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
-                                        title="حذف الشركة"
+                                        onClick={() => handleShare(branch)}
+                                        style={{ width: '100%', background: 'var(--primary-color)', color: 'white', border: 'none', padding: '6px', borderRadius: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}
                                     >
-                                        <Trash2 size={18} />
+                                        <Share2 size={14} /> مشاركة
                                     </button>
                                 </div>
-                                <h3 style={{ margin: '0 0 8px', fontSize: '1.4rem', fontWeight: 800 }}>{comp.name}</h3>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                                    <MapPin size={16} />
-                                    {comp.branchIds?.length || 0} فروع مرتبطة
-                                </div>
-                                <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: 700, fontSize: '14px' }}>
-                                    استعراض الفروع <ArrowRight size={16} />
-                                </div>
-                            </div>
-                        ))}
-                        {companies.length === 0 && (
-                            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '80px 20px', color: 'var(--text-secondary)' }}>
-                                <Building2 size={64} style={{ opacity: 0.2, marginBottom: '24px' }} />
-                                <h3 style={{ margin: '0 0 12px', fontSize: '1.5rem', color: 'var(--text-primary)' }}>لا توجد شركات مسجلة</h3>
-                                <p style={{ fontSize: '15px', margin: 0 }}>قم بإضافة شركة جديدة من الحقل بالأعلى لتبدأ بتنظيم فروعك.</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            ) : (
-                // ==========================================
-                // DETAILS VIEW - MAP & BRANCHES
-                // ==========================================
-                <div style={{ display: 'flex', width: '100%', height: '100%', position: 'relative', borderRadius: '24px', overflow: 'hidden' }}>
-                    
-                    {/* Map Background Layer */}
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
-                        <MapContainer 
-                            center={[24.7136, 46.6753]} 
-                            zoom={5} 
-                            style={{ height: '100%', width: '100%', background: '#1e293b', zIndex: 1 }}
-                            zoomControl={false}
-                        >
-                            <TileLayer
-                                attribution='&copy; Google Maps'
-                                url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ar"
-                            />
-                            {companyBranchesList.map(branch => {
-                                const isOpen = isCurrentlyOpen(branch);
-                                return (
-                                <Marker 
-                                    key={branch.id} 
-                                    position={[branch.latitude || 24.7136, branch.longitude || 46.6753]}
-                                    icon={createBranchIcon(branch, isOpen)}
-                                >
-                                    <Popup>
-                                        <div style={{ padding: '8px', textAlign: 'right', direction: 'rtl' }}>
-                                            <h4 style={{ margin: '0 0 4px', fontWeight: 800 }}>{branch.name}</h4>
-                                            <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{branch.address}</p>
-                                        </div>
-                                    </Popup>
-                                </Marker>
-                                );
-                            })}
-                            <MapAutoCenter branches={companyBranchesList} />
-                        </MapContainer>
-                    </div>
+                            </Popup>
+                        </Marker>
+                        );
+                    })}
+                    </MarkerClusterGroup>
+                    <MapAutoCenter branches={selectedCompany ? companyBranchesList : branches} />
+                </MapContainer>
 
-                    {/* Floating Sidebar (Right Side) */}
-                    <div className="glass" style={{
-                        width: '450px',
-                        height: 'calc(100% - 40px)',
-                        margin: '20px 20px 20px 0',
-                        background: 'rgba(255, 255, 255, 0.92)',
+                {/* Floating Sidebar for Selected Company */}
+                {selectedCompany && (
+                    <div className="glass animate-fade-in" style={{
+                        position: 'absolute',
+                        top: '20px',
+                        bottom: '20px',
+                        left: '20px',
+                        width: '420px',
+                        background: 'rgba(255, 255, 255, 0.95)',
                         backdropFilter: 'blur(20px)',
                         borderRadius: '24px',
                         zIndex: 10,
                         display: 'flex',
                         flexDirection: 'column',
                         boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-                        border: '1px solid rgba(255,255,255,0.2)',
+                        border: '1px solid rgba(255,255,255,0.4)',
                         overflow: 'hidden'
                     }}>
-                        {/* Header inside sidebar */}
-                        <div style={{ padding: '32px', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-                            <button 
-                                onClick={() => setSelectedCompanyId(null)}
-                                style={{
-                                    background: 'rgba(0,0,0,0.04)',
-                                    border: 'none',
-                                    padding: '8px 16px',
-                                    borderRadius: '12px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    fontWeight: 700,
-                                    color: 'var(--text-secondary)',
-                                    marginBottom: '24px',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.08)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-                            >
-                                <ArrowRight size={18} /> رجوع للشركات
-                            </button>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                                {selectedCompany.logo && (
-                                    <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: 'white', padding: '4px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                                        <img src={selectedCompany.logo} alt={selectedCompany.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                    </div>
-                                )}
-                                <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 900, color: '#1e293b' }}>
-                                    {selectedCompany.name}
-                                </h2>
+                        <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                    {selectedCompany.logo && (
+                                        <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'white', padding: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                                            <img src={selectedCompany.logo} alt={selectedCompany.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        </div>
+                                    )}
+                                    <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, color: '#1e293b' }}>
+                                        {selectedCompany.name}
+                                    </h2>
+                                </div>
+                                <button 
+                                    onClick={() => setSelectedCompanyId(null)}
+                                    style={{ background: 'rgba(0,0,0,0.05)', color: '#64748b', border: 'none', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#64748b'; }}
+                                    title="إغلاق النافذة"
+                                >
+                                    <X size={20} />
+                                </button>
                             </div>
                             
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
                                 <button 
                                     onClick={handleExportExcel}
-                                    style={{ flex: 1, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                    style={{ flex: 1, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
                                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)'}
                                     onMouseLeave={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
                                 >
@@ -624,7 +389,7 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch }) =
                                 </button>
                                 <button 
                                     onClick={handleExportWord}
-                                    style={{ flex: 1, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                    style={{ flex: 1, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
                                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
                                     onMouseLeave={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
                                 >
@@ -632,54 +397,61 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch }) =
                                 </button>
                             </div>
 
-                            {/* Tabs for branches */}
-                            <div style={{ display: 'flex', gap: '16px', background: 'rgba(0,0,0,0.04)', padding: '6px', borderRadius: '16px' }}>
+                            <div style={{ display: 'flex', gap: '12px', background: 'rgba(0,0,0,0.04)', padding: '6px', borderRadius: '16px' }}>
                                 <button 
                                     onClick={() => setActiveTab('linked')}
-                                    style={{ flex: 1, background: activeTab === 'linked' ? 'white' : 'transparent', color: activeTab === 'linked' ? '#1e293b' : '#64748b', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: activeTab === 'linked' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none' }}
+                                    style={{ flex: 1, background: activeTab === 'linked' ? 'white' : 'transparent', color: activeTab === 'linked' ? '#1e293b' : '#64748b', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: activeTab === 'linked' ? '0 4px 8px rgba(0,0,0,0.06)' : 'none' }}
                                 >
                                     الفروع ({companyBranchesList.length})
                                 </button>
                                 <button 
                                     onClick={() => setActiveTab('available')}
-                                    style={{ flex: 1, background: activeTab === 'available' ? 'white' : 'transparent', color: activeTab === 'available' ? '#1e293b' : '#64748b', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: activeTab === 'available' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                                    style={{ flex: 1, background: activeTab === 'available' ? 'white' : 'transparent', color: activeTab === 'available' ? '#1e293b' : '#64748b', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: activeTab === 'available' ? '0 4px 8px rgba(0,0,0,0.06)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                                 >
-                                    ربط المزيد
-                                    {branchesToAdd.length > 0 && <span style={{ background: '#3b82f6', color: 'white', padding: '2px 6px', borderRadius: '10px', fontSize: '11px' }}>{branchesToAdd.length}</span>}
+                                    إضافة المزيد
+                                    {branchesToAdd.length > 0 && <span style={{ background: '#3b82f6', color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '11px' }}>{branchesToAdd.length}</span>}
                                 </button>
                             </div>
                         </div>
 
-                        {/* Sidebar Content Scroll Area */}
-                        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }} className="custom-scrollbar">
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }} className="custom-scrollbar">
                             {activeTab === 'linked' && (
-                                <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     {companyBranchesList.map(branch => (
                                         <div key={branch.id} style={{ padding: '16px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.08)', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                                             <div>
-                                                <div style={{ fontWeight: 800, fontSize: '15px', color: '#1e293b', marginBottom: '4px' }}>{branch.name}</div>
-                                                <div style={{ fontSize: '13px', color: '#64748b' }}>{branch.city || extractCity(branch.address)}</div>
+                                                <div style={{ fontWeight: 800, fontSize: '14px', color: '#1e293b', marginBottom: '4px' }}>{branch.name}</div>
+                                                <div style={{ fontSize: '12px', color: '#64748b' }}>{branch.city || extractCity(branch.address)}</div>
                                             </div>
-                                            <button 
-                                                onClick={() => handleRemoveBranchFromCompany(branch.id)}
-                                                style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-                                                title="إزالة الفرع من الشركة"
-                                            >
-                                                <X size={16} />
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button 
+                                                    onClick={() => handleShare(branch)}
+                                                    style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: 'none', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                                                    title="مشاركة"
+                                                >
+                                                    <Share2 size={16} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleRemoveBranchFromCompany(branch.id)}
+                                                    style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                                                    title="إزالة الفرع من الشركة"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                     {companyBranchesList.length === 0 && (
-                                        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                                        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b', fontSize: '14px' }}>
                                             لا توجد فروع مرتبطة حالياً.
                                         </div>
                                     )}
                                     
                                     <button 
                                         onClick={() => onAddNewBranch(selectedCompany.id)}
-                                        style={{ marginTop: '16px', background: '#f8fafc', color: '#3b82f6', border: '1px dashed #cbd5e1', padding: '16px', borderRadius: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                        style={{ marginTop: '8px', background: '#f8fafc', color: '#3b82f6', border: '1px dashed #cbd5e1', padding: '16px', borderRadius: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
                                     >
-                                        <Plus size={18} /> إنشاء فرع جديد بالخريطة
+                                        <Plus size={18} /> إنشاء فرع جديد
                                     </button>
                                 </div>
                             )}
@@ -735,9 +507,8 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch }) =
                             )}
                         </div>
                     </div>
-
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

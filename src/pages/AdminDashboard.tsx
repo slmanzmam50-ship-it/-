@@ -720,6 +720,19 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
+    if (activeTab === 'companies-op') {
+        return (
+            <OperatingCompaniesView 
+                branches={branches}
+                onAddNewBranch={(companyId) => {
+                    setTargetOperatingCompanyId(companyId);
+                    setIsFormOpen(true);
+                }}
+                onBack={() => setActiveTab('branches')}
+            />
+        );
+    }
+
     return (
         <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-color)', direction: 'rtl' }}>
             {/* Sidebar */}
@@ -790,17 +803,9 @@ const AdminDashboard: React.FC = () => {
             {/* Main Content Area */}
             <div style={{ flex: 1, height: '100%', overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column' }} className="custom-scrollbar">
                 
-                {activeTab === 'companies-op' && (
-                    <OperatingCompaniesView 
-                        branches={branches}
-                        onAddNewBranch={(companyId) => {
-                            setTargetOperatingCompanyId(companyId);
-                            setIsFormOpen(true);
-                        }}
-                    />
-                )}
                 
-                <div style={{ display: activeTab !== 'companies-op' ? 'block' : 'none' }}>
+                
+                <div style={{ display: 'block' }}>
 
                 <button 
                     onClick={() => setIsAdminCreatingRequest(true)}
