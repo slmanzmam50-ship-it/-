@@ -248,8 +248,36 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleExportExcel = () => {
-        const headers = ["اسم الفرع", "العنوان", "رقم الجوال", "الحالة", "المدير", "الأقسام", "رابط قوقل ماب", "الإحداثيات"];
-        const rows = branches.map(b => [
+        const extractCity = (address: string): string => {
+            if (!address) return "أخرى";
+            const cities = [
+                "الدمام", "الخبر", "الظهران", "القطيف", "الجبيل", "الأحساء", "الاحساء", "الهفوف", 
+                "المبرز", "بقيق", "الخفجي", "رأس تنورة", "النعيرية", "حفر الباطن", "الرياض", 
+                "جدة", "مكة", "المدينة", "جازان", "جيزان", "نجران", "أبها", "ابها", "خميس مشيط", 
+                "تبوك", "عرعر", "حائل", "بريدة", "عنيزة", "الطائف", "ينبع", "الخرج"
+            ];
+            for (const city of cities) {
+                if (address.includes(city)) return city;
+            }
+            const parts = address.split(/[,،-]/);
+            if (parts.length > 1) {
+                const possibleCity = parts[parts.length - 2]?.replace(/\d+/, '').trim();
+                if (possibleCity && possibleCity.length > 2 && possibleCity.length < 15) return possibleCity;
+            }
+            return "أخرى";
+        };
+
+        const branchesWithCity = branches.map(b => ({
+            ...b,
+            extractedCity: extractCity(b.address)
+        }));
+
+        // Sort by city alphabetically
+        branchesWithCity.sort((a, b) => a.extractedCity.localeCompare(b.extractedCity, 'ar'));
+
+        const headers = ["المدينة", "اسم الفرع", "العنوان", "رقم الجوال", "الحالة", "المدير", "الأقسام", "رابط قوقل ماب", "الإحداثيات"];
+        const rows = branchesWithCity.map(b => [
+            b.extractedCity,
             b.name,
             b.address,
             b.phone,
@@ -265,6 +293,7 @@ const AdminDashboard: React.FC = () => {
         
         // Auto-size columns slightly
         const colWidths = [
+            { wch: 15 }, // City
             { wch: 25 }, // Name
             { wch: 40 }, // Address
             { wch: 15 }, // Phone
