@@ -15,7 +15,7 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
     const [companies, setCompanies] = useState<OperatingCompany[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
     const [newCompanyName, setNewCompanyName] = useState('');
-    const [branchToAdd, setBranchToAdd] = useState('');
+    const [branchesToAdd, setBranchesToAdd] = useState<string[]>([]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -34,6 +34,7 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
             setNewCompanyName('');
             toast.success('تمت إضافة الشركة بنجاح');
         } catch (e) {
+            console.error(e);
             toast.error('حدث خطأ أثناء إضافة الشركة');
         }
     };
@@ -51,20 +52,16 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
         }
     };
 
-    const handleAddBranchToCompany = async () => {
-        if (!selectedCompany || !branchToAdd) return;
-        if (selectedCompany.branchIds.includes(branchToAdd)) {
-            toast.error('الفرع مضاف مسبقاً لهذه الشركة');
-            return;
-        }
+    const handleAddBranchesToCompany = async () => {
+        if (!selectedCompany || branchesToAdd.length === 0) return;
 
         try {
             await updateOperatingCompany({
                 ...selectedCompany,
-                branchIds: [...(selectedCompany.branchIds || []), branchToAdd]
+                branchIds: [...(selectedCompany.branchIds || []), ...branchesToAdd]
             });
-            setBranchToAdd('');
-            toast.success('تم ربط الفرع بالشركة');
+            setBranchesToAdd([]);
+            toast.success('تم ربط الفروع بالشركة بنجاح');
         } catch (e) {
             toast.error('حدث خطأ أثناء الربط');
         }
@@ -251,41 +248,52 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
                             </div>
 
                             <div style={{ background: 'rgba(0,0,0,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '24px' }}>
-                                <h4 style={{ margin: '0 0 12px', fontSize: '14px' }}>ربط فرع موجود</h4>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <select 
-                                        value={branchToAdd}
-                                        onChange={(e) => setBranchToAdd(e.target.value)}
-                                        style={{
-                                            flex: 1,
-                                            padding: '10px 12px',
-                                            borderRadius: '8px',
-                                            border: '1px solid var(--border-color)',
-                                            background: 'var(--surface-color)',
-                                            color: 'var(--text-primary)',
-                                            fontSize: '14px'
-                                        }}
-                                    >
-                                        <option value="">-- اختر فرعاً للربط --</option>
+                                <h4 style={{ margin: '0 0 12px', fontSize: '14px' }}>ربط فروع موجودة</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{
+                                        maxHeight: '150px',
+                                        overflowY: 'auto',
+                                        background: 'var(--surface-color)',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '8px',
+                                        padding: '8px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '4px'
+                                    }}>
                                         {branches.filter(b => !(selectedCompany.branchIds || []).includes(b.id)).map(b => (
-                                            <option key={b.id} value={b.id}>{b.name} - {b.address}</option>
+                                            <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', cursor: 'pointer', borderRadius: '6px', background: branchesToAdd.includes(b.id) ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={branchesToAdd.includes(b.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) setBranchesToAdd([...branchesToAdd, b.id]);
+                                                        else setBranchesToAdd(branchesToAdd.filter(id => id !== b.id));
+                                                    }}
+                                                />
+                                                <span style={{ fontSize: '14px' }}>{b.name} <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>- {b.address}</span></span>
+                                            </label>
                                         ))}
-                                    </select>
+                                        {branches.filter(b => !(selectedCompany.branchIds || []).includes(b.id)).length === 0 && (
+                                            <span style={{ fontSize: '14px', color: 'var(--text-secondary)', padding: '8px', textAlign: 'center' }}>لا توجد فروع متاحة للربط</span>
+                                        )}
+                                    </div>
                                     <button 
-                                        onClick={handleAddBranchToCompany}
-                                        disabled={!branchToAdd}
+                                        onClick={handleAddBranchesToCompany}
+                                        disabled={branchesToAdd.length === 0}
                                         style={{
                                             background: 'var(--success)',
                                             color: 'white',
                                             border: 'none',
-                                            padding: '0 16px',
+                                            padding: '10px 16px',
                                             borderRadius: '8px',
                                             fontWeight: 700,
-                                            cursor: branchToAdd ? 'pointer' : 'not-allowed',
-                                            opacity: branchToAdd ? 1 : 0.5
+                                            cursor: branchesToAdd.length > 0 ? 'pointer' : 'not-allowed',
+                                            opacity: branchesToAdd.length > 0 ? 1 : 0.5,
+                                            alignSelf: 'flex-start'
                                         }}
                                     >
-                                        ربط
+                                        ربط الفروع المحددة ({branchesToAdd.length})
                                     </button>
                                 </div>
                             </div>
