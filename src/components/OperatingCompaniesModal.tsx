@@ -108,15 +108,15 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 10000,
-            padding: '24px'
+            padding: '16px' // small padding so it doesn't touch the absolute edges on huge monitors
         }}>
             <div className="glass animate-scale-up" style={{
                 background: 'var(--surface-color)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '24px',
                 width: '100%',
-                maxWidth: '960px',
-                height: '85vh',
+                maxWidth: '1800px', // extremely wide max width
+                height: 'calc(100vh - 32px)', // Almost full height
                 display: 'flex',
                 flexDirection: 'row',
                 overflow: 'hidden',
