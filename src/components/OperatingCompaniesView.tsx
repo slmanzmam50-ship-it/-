@@ -103,6 +103,7 @@ interface Props {
 const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onBack }) => {
     const [companies, setCompanies] = useState<OperatingCompany[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+    const [showManagementPanel, setShowManagementPanel] = useState(false);
     const [newCompanyName, setNewCompanyName] = useState('');
     const [newCompanyLogoFile, setNewCompanyLogoFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -451,7 +452,16 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
                         return (
                             <div 
                                 key={comp.id}
-                                onClick={() => setSelectedCompanyId(comp.id)}
+                                onClick={() => {
+                                    setSelectedCompanyId(comp.id);
+                                    if (selectedCompanyId !== comp.id) {
+                                        setShowManagementPanel(false);
+                                    }
+                                }}
+                                onDoubleClick={() => {
+                                    setSelectedCompanyId(comp.id);
+                                    setShowManagementPanel(true);
+                                }}
                                 style={{
                                     padding: '16px',
                                     borderRadius: '16px',
@@ -550,7 +560,7 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
                 </MapContainer>
 
                 {/* Floating Sidebar for Selected Company */}
-                {selectedCompany && (
+                {selectedCompany && showManagementPanel && (
                     <div className="glass animate-fade-in" style={{
                         position: 'absolute',
                         top: '20px',
@@ -580,7 +590,7 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
                                     </h2>
                                 </div>
                                 <button 
-                                    onClick={() => setSelectedCompanyId(null)}
+                                    onClick={() => setShowManagementPanel(false)}
                                     style={{ background: 'rgba(0,0,0,0.05)', color: '#64748b', border: 'none', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
                                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; }}
                                     onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#64748b'; }}
