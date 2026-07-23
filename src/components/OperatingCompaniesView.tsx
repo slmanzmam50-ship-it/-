@@ -114,7 +114,218 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
 
     useEffect(() => {
         const unsubscribe = subscribeToOperatingCompanies(setCompanies);
-        return (
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (selectedCompanyId) {
+            setActiveTab('linked');
+            setBranchesToAdd([]);
+            setBranchSearch('');
+        }
+    }, [selectedCompanyId]);
+
+    const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+    
+    const availableBranches = branches.filter(b => !(selectedCompany?.branchIds || []).includes(b.id));
+    const filteredAvailableBranches = availableBranches.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase()) || b.address.toLowerCase().includes(branchSearch.toLowerCase()));
+
+    const handleShare = async (branch: Branch) => {
+        const url = `${window.location.origin}/?branch=${branch.id}`;
+        const title = `فرع ${branch.name} - مراكز خدمة سلمان الخالدي`;
+        const text = `تفضل بزيارة فرع ${branch.name} الواقع في ${branch.address}. للوصول عبر الخريطة: ${url}`;
+        
+        try {
+            if (navigator.share) {
+                await navigator.share({ title, text, url });
+            } else {
+                await navigator.clipboard.writeText(text);
+                toast.success('تم نسخ الرابط');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleAddCompany = async () => {
+        if (!newCompanyName.trim()) return;
+        setIsUploading(true);
+        try {
+            let logoUrl = '';
+            if (newCompanyLogoFile) {
+                toast.loading('جاري رفع الشعار...', { id: 'logoUpload' });
+                logoUrl = await uploadImage(newCompanyLogoFile, 'companies');
+                toast.success('تم رفع الشعار بنجاح', { id: 'logoUpload' });
+            }
+
+            await addOperatingCompany({ name: newCompanyName.trim(), branchIds: [], logo: logoUrl });
+            setNewCompanyName('');
+            setNewCompanyLogoFile(null);
+            toast.success('تمت إضافة الشركة بنجاح');
+        } catch (e) {
+            console.error(e);
+            toast.error('حدث خطأ أثناء إضافة الشركة');
+        } finally {
+            setIsUploading(false);
+            toast.dismiss('logoUpload');
+        }
+    };
+
+    const handleDeleteCompany = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (window.confirm('هل أنت متأكد من حذف هذه الشركة التشغيلية؟ لن يتم حذف الفروع بل سيتم إزالة ارتباطها فقط.')) {
+            try {
+                await deleteOperatingCompany(id);
+                if (selectedCompanyId === id) setSelectedCompanyId(null);
+                toast.success('تم الحذف بنجاح');
+            } catch (error) {
+                toast.error('حدث خطأ أثناء الحذف');
+            }
+        }
+    };
+
+    const handleAddBranchesToCompany = async () => {
+        if (!selectedCompany || branchesToAdd.length === 0) return;
+
+        try {
+            await updateOperatingCompany({
+                ...selectedCompany,
+                branchIds: [...(selectedCompany.branchIds || []), ...branchesToAdd]
+            });
+            setBranchesToAdd([]);
+            setActiveTab('linked');
+            toast.success('تم ربط الفروع بالشركة بنجاح');
+        } catch (e) {
+            toast.error('حدث خطأ أثناء الربط');
+        }
+    };
+
+    const handleRemoveBranchFromCompany = async (branchId: string) => {
+        if (!selectedCompany) return;
+        if (window.confirm('هل أنت متأكد من إزالة هذا الفرع من الشركة؟ لن يتم حذفه من النظام الكلي.')) {
+            try {
+                await updateOperatingCompany({
+                    ...selectedCompany,
+                    branchIds: (selectedCompany.branchIds || []).filter(id => id !== branchId)
+                });
+                toast.success('تم إزالة الفرع من الشركة');
+            } catch (e) {
+                toast.error('حدث خطأ أثناء الإزالة');
+            }
+        }
+    };
+
+    const handleExportExcel = () => {
+        if (!selectedCompany || !selectedCompany.branchIds) {
+            toast.error('لا توجد فروع لتصديرها');
+            return;
+        }
+        
+        let companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
+        if (companyBranches.length === 0) {
+            toast.error('لا توجد فروع لتصديرها');
+            return;
+        }
+
+        companyBranches = companyBranches.sort((a, b) => (a.city || '').localeCompare(b.city || '', 'ar'));
+
+        const data = companyBranches.map((b, index) => ({
+            'م': index + 1,
+            'المدينة': b.city || 'أخرى',
+            'اسم الفرع': b.name,
+            'اسم المستلم': b.managerName || 'غير محدد',
+            'رقم الهاتف': b.phone || 'غير محدد',
+            'العنوان': b.address,
+            'موقع الفرع': `https://www.google.com/maps/search/?api=1&query=${b.latitude},${b.longitude}`
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        ws['!dir'] = 'rtl';
+        ws['!cols'] = [{wch: 5}, {wch: 15}, {wch: 30}, {wch: 25}, {wch: 15}, {wch: 50}, {wch: 60}];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "الفروع");
+        
+        XLSX.writeFile(wb, `فروع_${selectedCompany.name}.xlsx`);
+        toast.success('تم تصدير ملف إكسل بنجاح');
+    };
+
+    const handleExportWord = () => {
+        if (!selectedCompany || !selectedCompany.branchIds) {
+            toast.error('لا توجد فروع لتصديرها');
+            return;
+        }
+        
+        let companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
+        if (companyBranches.length === 0) {
+            toast.error('لا توجد فروع لتصديرها');
+            return;
+        }
+
+        companyBranches = companyBranches.sort((a, b) => (a.city || '').localeCompare(b.city || '', 'ar'));
+
+        const htmlContent = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head>
+                <meta charset="utf-8">
+                <title>فروع ${selectedCompany.name}</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; direction: rtl; }
+                    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+                    th, td { border: 1px solid #000; padding: 10px; text-align: right; }
+                    th { background-color: #f2f2f2; font-weight: bold; }
+                    h1 { color: #2563eb; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+                    .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+                    a { color: #2563eb; text-decoration: none; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <h1>قائمة الفروع التابعة لشركة: ${selectedCompany.name}</h1>
+                <p>إجمالي عدد الفروع: <strong>${companyBranches.length}</strong></p>
+                <table>
+                    <tr>
+                        <th>م</th>
+                        <th>المدينة</th>
+                        <th>اسم الفرع</th>
+                        <th>اسم المستلم</th>
+                        <th>رقم الهاتف</th>
+                        <th>العنوان</th>
+                        <th>موقع الفرع</th>
+                    </tr>
+                    ${companyBranches.map((b, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${b.city || 'أخرى'}</td>
+                            <td>${b.name}</td>
+                            <td>${b.managerName || 'غير محدد'}</td>
+                            <td dir="ltr" style="text-align: right;">${b.phone || 'غير محدد'}</td>
+                            <td>${b.address}</td>
+                            <td><a href="https://www.google.com/maps/search/?api=1&query=${b.latitude},${b.longitude}">عرض في خرائط قوقل</a></td>
+                        </tr>
+                    `).join('')}
+                </table>
+                <div class="footer">تم التصدير من نظام إدارة الفروع</div>
+            </body>
+            </html>
+        `;
+
+        const blob = new Blob(['\ufeff', htmlContent], {
+            type: 'application/msword'
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `فروع_${selectedCompany.name}.doc`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success('تم تصدير ملف وورد بنجاح');
+    };
+
+    const companyBranchesList = selectedCompany?.branchIds?.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[] || [];
+
+    return (
         <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-color)', direction: 'rtl' }}>
             {/* Sidebar */}
             <div className="custom-scrollbar" style={{
