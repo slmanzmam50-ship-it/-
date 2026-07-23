@@ -72,3 +72,11 @@ export interface CompanyAccount {
     email?: string; // Auto-generated for Firebase Auth
     hiddenBranchIds?: string[];
 }
+
+export interface OperatingCompany {
+    id: string;
+    name: string;
+    branchIds: string[];
+    createdAt: number;
+}
+

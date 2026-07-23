@@ -17,11 +17,13 @@ import {
     subscribeToServiceRequests,
     addServiceRequest,
     clearServiceRequestRatings,
-    deleteServiceRequestsByIds
+    deleteServiceRequestsByIds,
+    addBranchToOperatingCompany
 } from '../services/storage';
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown } from 'lucide-react';
+import OperatingCompaniesModal from '../components/OperatingCompaniesModal';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
 
@@ -62,6 +64,9 @@ const AdminDashboard: React.FC = () => {
     const [isAddingCompany, setIsAddingCompany] = useState(false);
     const [managingHiddenBranchCompany, setManagingHiddenBranchCompany] = useState<CompanyAccount | null>(null);
     const [tempHiddenBranchIds, setTempHiddenBranchIds] = useState<string[]>([]);
+
+    const [isOperatingCompaniesModalOpen, setIsOperatingCompaniesModalOpen] = useState(false);
+    const [targetOperatingCompanyId, setTargetOperatingCompanyId] = useState<string | undefined>(undefined);
 
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [requestSearch, setRequestSearch] = useState('');
@@ -169,7 +174,7 @@ const AdminDashboard: React.FC = () => {
         for (const city of cities) {
             if (address.includes(city)) return city;
         }
-        const parts = address.split(/[,،-]/);
+        const parts = address.split(/[,,,-]/);
         if (parts.length > 1) {
             const possibleCity = parts[parts.length - 2]?.replace(/\d+/, '').trim();
             if (possibleCity && possibleCity.length > 2 && possibleCity.length < 15) return possibleCity;
@@ -206,8 +211,12 @@ const AdminDashboard: React.FC = () => {
                     return; // Stop execution, don't close form
                 }
 
-                await addBranch(branchData);
-                toast.success('تم إضافة الفرع بنجاح ✅');
+                const newBranch = await addBranch(branchData);
+                if (targetOperatingCompanyId) {
+                    await addBranchToOperatingCompany(newBranch.id, targetOperatingCompanyId);
+                    setTargetOperatingCompanyId(undefined);
+                }
+                toast.success('تم إنشاء الفرع بنجاح');
             }
             setIsFormOpen(false);
             setEditingBranch(undefined);
@@ -874,6 +883,46 @@ const AdminDashboard: React.FC = () => {
                                     ))}
                                 </select>
                                 <ChevronDown size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button 
+                                    onClick={() => setIsOperatingCompaniesModalOpen(true)}
+                                    style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '8px', 
+                                        background: 'var(--surface-color)', 
+                                        color: 'var(--primary-color)', 
+                                        border: '1px solid var(--primary-color)', 
+                                        padding: '10px 16px', 
+                                        borderRadius: '10px', 
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                >
+                                    <Building2 size={18} /> 
+                                    <span>الشركات التشغيلية</span>
+                                </button>
+                                <button 
+                                    onClick={() => setIsFormOpen(true)}
+                                    style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '8px', 
+                                        background: 'var(--primary-color)', 
+                                        color: 'white', 
+                                        border: 'none', 
+                                        padding: '10px 16px', 
+                                        borderRadius: '10px', 
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                >
+                                    <Plus size={18} /> 
+                                    <span>{lang === 'ar' ? 'إضافة فرع' : 'Add Branch'}</span>
+                                </button>
                             </div>
                             <button 
                                 onClick={handleExportExcel} 
@@ -2080,7 +2129,18 @@ const AdminDashboard: React.FC = () => {
                     </div>
                 </div>
             )}
-            {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); }} categories={categories} existingBranches={branches} />}
+            {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); setTargetOperatingCompanyId(undefined); }} categories={categories} existingBranches={branches} />}
+
+            <OperatingCompaniesModal 
+                isOpen={isOperatingCompaniesModalOpen}
+                onClose={() => setIsOperatingCompaniesModalOpen(false)}
+                branches={branches}
+                onAddNewBranch={(companyId) => {
+                    setTargetOperatingCompanyId(companyId);
+                    setIsOperatingCompaniesModalOpen(false);
+                    setIsFormOpen(true);
+                }}
+            />
 
             {/* Manage Hidden Branches Modal */}
             {managingHiddenBranchCompany && (

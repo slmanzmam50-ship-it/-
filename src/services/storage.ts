@@ -1,4 +1,4 @@
-import type { Branch, NavigationIntent, Category, ServiceRequest, CompanyAccount } from '../types';
+import type { Branch, NavigationIntent, Category, ServiceRequest, CompanyAccount, OperatingCompany } from '../types';
 import { db, storage, auth, secondaryAuth } from './firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, where, orderBy, limit, getDocs, updateDoc, deleteDoc, doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
@@ -9,6 +9,7 @@ const CATEGORIES_COLLECTION = 'categories';
 const INTENTS_COLLECTION = 'active_navigators';
 const COMPANIES_COLLECTION = 'company_accounts';
 const REQUESTS_COLLECTION = 'service_requests';
+const OPERATING_COMPANIES_COLLECTION = 'operating_companies';
 
 // --- Security Utilities ---
 export const generateSecureId = (prefix: string = '', length: number = 20): string => {
@@ -483,6 +484,55 @@ export const updateCompany = async (updatedCompany: CompanyAccount): Promise<voi
     // Remove undefined values to avoid Firestore serialization errors
     Object.keys(dataToUpdate).forEach(key => (dataToUpdate as any)[key] === undefined && delete (dataToUpdate as any)[key]);
     await updateDoc(compRef, dataToUpdate);
+};
+
+// --- Operating Companies CRUD ---
+export const subscribeToOperatingCompanies = (callback: (companies: OperatingCompany[]) => void) => {
+    return onSnapshot(collection(db, OPERATING_COMPANIES_COLLECTION), (snapshot) => {
+        const companies: OperatingCompany[] = [];
+        snapshot.forEach((doc) => {
+            companies.push({ id: doc.id, ...doc.data() } as OperatingCompany);
+        });
+        callback(companies.sort((a, b) => b.createdAt - a.createdAt));
+    }, (error) => {
+        console.error("Error subscribing to operating companies:", error);
+        callback([]);
+    });
+};
+
+export const addOperatingCompany = async (company: Omit<OperatingCompany, 'id' | 'createdAt'>): Promise<OperatingCompany> => {
+    const id = generateSecureId('OP-', 16);
+    const newCompany: OperatingCompany = {
+        ...company,
+        id,
+        createdAt: Date.now()
+    };
+    await setDoc(doc(db, OPERATING_COMPANIES_COLLECTION, id), newCompany);
+    return newCompany;
+};
+
+export const deleteOperatingCompany = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, OPERATING_COMPANIES_COLLECTION, id));
+};
+
+export const updateOperatingCompany = async (updatedCompany: OperatingCompany): Promise<void> => {
+    const compRef = doc(db, OPERATING_COMPANIES_COLLECTION, updatedCompany.id);
+    const { id, ...dataToUpdate } = updatedCompany;
+    Object.keys(dataToUpdate).forEach(key => (dataToUpdate as any)[key] === undefined && delete (dataToUpdate as any)[key]);
+    await updateDoc(compRef, dataToUpdate);
+};
+
+export const addBranchToOperatingCompany = async (branchId: string, companyId: string): Promise<void> => {
+    const docSnap = await getDoc(doc(db, OPERATING_COMPANIES_COLLECTION, companyId));
+    if (docSnap.exists()) {
+        const opComp = docSnap.data() as OperatingCompany;
+        const branchIds = opComp.branchIds || [];
+        if (!branchIds.includes(branchId)) {
+            await updateDoc(doc(db, OPERATING_COMPANIES_COLLECTION, companyId), {
+                branchIds: [...branchIds, branchId]
+            });
+        }
+    }
 };
 
 // --- Service Requests CRUD ---
