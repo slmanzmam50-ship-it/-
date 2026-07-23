@@ -14,6 +14,12 @@ const customIcon = L.divIcon({
     iconAnchor: [10, 10]
 });
 
+const SAUDI_CITIES = [
+    "الرياض", "جدة", "مكة المكرمة", "المدينة المنورة", "الدمام", "الخبر", "الظهران", "القطيف", "الجبيل", 
+    "الأحساء", "الهفوف", "المبرز", "بقيق", "الخفجي", "رأس تنورة", "النعيرية", "حفر الباطن",
+    "الطائف", "ينبع", "تبوك", "بريدة", "عنيزة", "حائل", "أبها", "خميس مشيط", "نجران", "جازان", "عرعر", "الخرج"
+];
+
 const ChangeView = ({ center }: { center: [number, number] }) => {
     const map = useMap();
     useEffect(() => {
@@ -65,13 +71,16 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isFetchingImage, setIsFetchingImage] = useState(false);
+    const [isCustomCity, setIsCustomCity] = useState(false);
 
     useEffect(() => {
         if (branch) {
             // Handle legacy data: ensure categories is an array
             const legacyBranch = branch as any;
             const categories = branch.categories || (legacyBranch.category ? [legacyBranch.category] : ['صيانة عامة']);
-            setFormData({ username: '', password: '', ...branch, categories });
+            const city = branch.city || '';
+            setIsCustomCity(!!city && !SAUDI_CITIES.includes(city));
+            setFormData({ username: '', password: '', ...branch, categories, city });
         }
     }, [branch]);
 
@@ -496,19 +505,30 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                                 placeholder="مثال: فرع الرياض - حي الياسمين"
                                 style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
                         </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>المدينة</label>
-                            <select required name="city" value={formData.city || ''} onChange={handleChange}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem' }}>المدينة</label>
+                            <select required={!isCustomCity} name="city" value={isCustomCity ? 'other' : (formData.city || '')} 
+                                onChange={(e) => {
+                                    if (e.target.value === 'other') {
+                                        setIsCustomCity(true);
+                                        setFormData(prev => ({ ...prev, city: '' }));
+                                    } else {
+                                        setIsCustomCity(false);
+                                        handleChange(e);
+                                    }
+                                }}
                                 style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none', appearance: 'none' }}>
                                 <option value="" disabled>اختر المدينة</option>
-                                {[
-                                    "الرياض", "جدة", "مكة المكرمة", "المدينة المنورة", "الدمام", "الخبر", "الظهران", "القطيف", "الجبيل", 
-                                    "الأحساء", "الهفوف", "المبرز", "بقيق", "الخفجي", "رأس تنورة", "النعيرية", "حفر الباطن",
-                                    "الطائف", "ينبع", "تبوك", "بريدة", "عنيزة", "حائل", "أبها", "خميس مشيط", "نجران", "جازان", "عرعر", "الخرج", "أخرى"
-                                ].map(city => (
+                                {SAUDI_CITIES.map(city => (
                                     <option key={city} value={city}>{city}</option>
                                 ))}
+                                <option value="other">أخرى (إضافة يدوية)</option>
                             </select>
+                            {isCustomCity && (
+                                <input required type="text" placeholder="اكتب اسم المدينة هنا..."
+                                    value={formData.city} onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                                    style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--primary-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none', marginTop: '0.5rem' }} />
+                            )}
                         </div>
                     </div>
 

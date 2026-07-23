@@ -1,9 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { X as CloseIcon, Plus, Building2, Trash2, X, FileText, FileSpreadsheet } from 'lucide-react';
+import { X as CloseIcon, Plus, Building2, Trash2, X, FileText, FileSpreadsheet, ArrowRight, MapPin } from 'lucide-react';
 import type { Branch, OperatingCompany } from '../types';
 import { subscribeToOperatingCompanies, addOperatingCompany, updateOperatingCompany, deleteOperatingCompany } from '../services/storage';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix typical React Leaflet icon issue
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+const customMarkerIcon = L.divIcon({
+    className: 'custom-dot-marker',
+    html: `<div style="position:relative;width:30px;height:30px;display:flex;align-items:center;justify-content:center;">
+            <div style="width:20px;height:20px;background:#3b82f6;border-radius:50%;border:3px solid white;box-shadow:0 0 8px rgba(0,0,0,0.5);position:relative;z-index:1;"></div>
+           </div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -15]
+});
+
+const MapAutoCenter: React.FC<{ branches: Branch[] }> = ({ branches }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (branches.length > 0) {
+            const lats = branches.map(b => b.latitude).filter(l => !isNaN(l) && l !== 0);
+            const lngs = branches.map(b => b.longitude).filter(l => !isNaN(l) && l !== 0);
+            if (lats.length > 0 && lngs.length > 0) {
+                const minLat = Math.min(...lats);
+                const maxLat = Math.max(...lats);
+                const minLng = Math.min(...lngs);
+                const maxLng = Math.max(...lngs);
+                
+                // Add a little padding to the bounds
+                const bounds = L.latLngBounds(
+                    [minLat - 0.05, minLng - 0.05],
+                    [maxLat + 0.05, maxLng + 0.05]
+                );
+                
+                // Use a short timeout to let the UI finish rendering the sidebar layout
+                setTimeout(() => {
+                    map.invalidateSize();
+                    map.fitBounds(bounds, { animate: true, duration: 1, padding: [50, 50] });
+                }, 100);
+            }
+        }
+    }, [branches, map]);
+    return null;
+};
 
 interface Props {
     isOpen: boolean;
@@ -209,6 +259,8 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
         toast.success('تم تصدير ملف وورد بنجاح');
     };
 
+    const companyBranchesList = selectedCompany?.branchIds?.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[] || [];
+
     return (
         <div style={{
             position: 'fixed',
@@ -219,17 +271,17 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 10000,
-            padding: '16px' // small padding so it doesn't touch the absolute edges on huge monitors
+            padding: '16px'
         }}>
             <div className="glass animate-scale-up" style={{
                 background: 'var(--surface-color)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '24px',
                 width: '100%',
-                maxWidth: '1800px', // extremely wide max width
-                height: 'calc(100vh - 32px)', // Almost full height
+                maxWidth: '1800px',
+                height: 'calc(100vh - 32px)',
                 display: 'flex',
-                flexDirection: 'row',
+                flexDirection: 'column',
                 overflow: 'hidden',
                 position: 'relative',
                 boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
@@ -260,368 +312,315 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
                     <CloseIcon size={20} />
                 </button>
 
-                {/* Sidebar */}
-                <div style={{
-                    width: '320px',
-                    borderLeft: '1px solid var(--border-color)',
-                    background: 'var(--bg-color)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    padding: '28px 24px',
-                    paddingTop: '80px',
-                    zIndex: 10
-                }}>
-                    <h3 style={{ margin: '0 0 24px', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '8px', borderRadius: '10px' }}>
-                            <Building2 size={24} color="var(--primary-color)" />
+                {!selectedCompany ? (
+                    // ==========================================
+                    // GRID VIEW - ALL COMPANIES
+                    // ==========================================
+                    <div style={{ padding: '40px', height: '100%', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', marginTop: '20px' }}>
+                            <div>
+                                <h2 style={{ margin: '0 0 8px', fontSize: '2.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                    <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '12px', borderRadius: '16px' }}>
+                                        <Building2 size={36} color="var(--primary-color)" />
+                                    </div>
+                                    إدارة الشركات التشغيلية
+                                </h2>
+                                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
+                                    اختر شركة لعرض خريطة فروعها، أو قم بإضافة شركة جديدة.
+                                </p>
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: '12px', width: '400px' }}>
+                                <input 
+                                    type="text" 
+                                    placeholder="اسم الشركة الجديدة..." 
+                                    value={newCompanyName}
+                                    onChange={e => setNewCompanyName(e.target.value)}
+                                    style={{
+                                        flex: 1,
+                                        padding: '16px 20px',
+                                        borderRadius: '16px',
+                                        border: '1px solid var(--border-color)',
+                                        background: 'var(--bg-color)',
+                                        color: 'var(--text-primary)',
+                                        fontSize: '15px',
+                                        transition: 'all 0.2s',
+                                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
+                                    }}
+                                    onKeyDown={e => e.key === 'Enter' && handleAddCompany()}
+                                />
+                                <button 
+                                    onClick={handleAddCompany}
+                                    disabled={!newCompanyName.trim()}
+                                    style={{
+                                        background: 'var(--primary-color)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '16px',
+                                        padding: '0 24px',
+                                        cursor: newCompanyName.trim() ? 'pointer' : 'not-allowed',
+                                        opacity: newCompanyName.trim() ? 1 : 0.5,
+                                        transition: 'all 0.2s',
+                                        boxShadow: newCompanyName.trim() ? '0 8px 16px rgba(59, 130, 246, 0.3)' : 'none',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        fontWeight: 'bold'
+                                    }}
+                                >
+                                    <Plus size={20} />
+                                    إضافة
+                                </button>
+                            </div>
                         </div>
-                        إدارة الشركات
-                    </h3>
 
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
-                        <input 
-                            type="text" 
-                            placeholder="اسم الشركة الجديدة..." 
-                            value={newCompanyName}
-                            onChange={e => setNewCompanyName(e.target.value)}
-                            style={{
-                                flex: 1,
-                                padding: '12px 16px',
-                                borderRadius: '12px',
-                                border: '1px solid var(--border-color)',
-                                background: 'var(--surface-color)',
-                                color: 'var(--text-primary)',
-                                fontSize: '14px',
-                                transition: 'all 0.2s',
-                                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
-                            }}
-                            onKeyDown={e => e.key === 'Enter' && handleAddCompany()}
-                        />
-                        <button 
-                            onClick={handleAddCompany}
-                            disabled={!newCompanyName.trim()}
-                            style={{
-                                background: 'var(--primary-color)',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '12px',
-                                padding: '0 16px',
-                                cursor: newCompanyName.trim() ? 'pointer' : 'not-allowed',
-                                opacity: newCompanyName.trim() ? 1 : 0.5,
-                                transition: 'all 0.2s',
-                                boxShadow: newCompanyName.trim() ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
-                            }}
-                        >
-                            <Plus size={20} />
-                        </button>
+                        <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+                            gap: '24px',
+                            paddingBottom: '40px'
+                        }}>
+                            {companies.map(comp => (
+                                <div 
+                                    key={comp.id}
+                                    onClick={() => setSelectedCompanyId(comp.id)}
+                                    style={{
+                                        padding: '24px',
+                                        borderRadius: '20px',
+                                        background: 'var(--bg-color)',
+                                        border: '1px solid var(--border-color)',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        boxShadow: '0 4px 6px rgba(0,0,0,0.02)',
+                                        position: 'relative',
+                                        overflow: 'hidden'
+                                    }}
+                                    className="hover-scale company-card"
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.borderColor = 'var(--primary-color)';
+                                        e.currentTarget.style.boxShadow = '0 12px 24px rgba(59, 130, 246, 0.15)';
+                                        e.currentTarget.style.transform = 'translateY(-4px)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.borderColor = 'var(--border-color)';
+                                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.02)';
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                        <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '12px', borderRadius: '12px' }}>
+                                            <Building2 size={24} color="var(--primary-color)" />
+                                        </div>
+                                        <button 
+                                            onClick={(e) => handleDeleteCompany(comp.id, e)}
+                                            style={{
+                                                background: 'rgba(239, 68, 68, 0.1)',
+                                                border: 'none',
+                                                padding: '8px',
+                                                borderRadius: '10px',
+                                                cursor: 'pointer',
+                                                color: 'var(--error)',
+                                                transition: 'all 0.2s',
+                                                opacity: 0.7
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                                            onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
+                                            title="حذف الشركة"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                    <h3 style={{ margin: '0 0 8px', fontSize: '1.4rem', fontWeight: 800 }}>{comp.name}</h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                                        <MapPin size={16} />
+                                        {comp.branchIds?.length || 0} فروع مرتبطة
+                                    </div>
+                                    <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: 700, fontSize: '14px' }}>
+                                        استعراض الفروع <ArrowRight size={16} />
+                                    </div>
+                                </div>
+                            ))}
+                            {companies.length === 0 && (
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '80px 20px', color: 'var(--text-secondary)' }}>
+                                    <Building2 size={64} style={{ opacity: 0.2, marginBottom: '24px' }} />
+                                    <h3 style={{ margin: '0 0 12px', fontSize: '1.5rem', color: 'var(--text-primary)' }}>لا توجد شركات مسجلة</h3>
+                                    <p style={{ fontSize: '15px', margin: 0 }}>قم بإضافة شركة جديدة من الحقل بالأعلى لتبدأ بتنظيم فروعك.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-
-                    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px' }} className="custom-scrollbar">
-                        {companies.map(comp => (
-                            <div 
-                                key={comp.id}
-                                onClick={() => setSelectedCompanyId(comp.id)}
-                                style={{
-                                    padding: '16px',
-                                    borderRadius: '14px',
-                                    background: selectedCompanyId === comp.id ? 'var(--primary-color)' : 'var(--surface-color)',
-                                    color: selectedCompanyId === comp.id ? 'white' : 'var(--text-primary)',
-                                    border: `1px solid ${selectedCompanyId === comp.id ? 'var(--primary-color)' : 'var(--border-color)'}`,
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    boxShadow: selectedCompanyId === comp.id ? '0 8px 16px rgba(59, 130, 246, 0.2)' : '0 2px 4px rgba(0,0,0,0.02)'
-                                }}
-                                className="hover-scale"
+                ) : (
+                    // ==========================================
+                    // DETAILS VIEW - MAP & BRANCHES
+                    // ==========================================
+                    <div style={{ display: 'flex', width: '100%', height: '100%', position: 'relative' }}>
+                        
+                        {/* Map Background Layer */}
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
+                            <MapContainer 
+                                center={[24.7136, 46.6753]} 
+                                zoom={5} 
+                                style={{ height: '100%', width: '100%', background: '#1e293b' }}
+                                zoomControl={false}
                             >
-                                <span style={{ fontWeight: 700, fontSize: '15px' }}>{comp.name}</span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <span style={{ 
-                                        fontSize: '12px', 
-                                        fontWeight: 600,
-                                        background: selectedCompanyId === comp.id ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)',
-                                        padding: '4px 8px',
-                                        borderRadius: '20px'
-                                    }}>
-                                        {comp.branchIds?.length || 0}
-                                    </span>
-                                    <button 
-                                        onClick={(e) => handleDeleteCompany(comp.id, e)}
-                                        style={{
-                                            background: 'transparent',
-                                            border: 'none',
-                                            padding: '4px',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: selectedCompanyId === comp.id ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)'
-                                        }}
-                                        title="حذف الشركة"
+                                <TileLayer
+                                    attribution='&copy; Google Maps'
+                                    url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ar"
+                                />
+                                {companyBranchesList.map(branch => (
+                                    <Marker 
+                                        key={branch.id} 
+                                        position={[branch.latitude || 24.7136, branch.longitude || 46.6753]}
+                                        icon={customMarkerIcon}
                                     >
-                                        <Trash2 size={16} />
+                                        <Popup>
+                                            <div style={{ padding: '8px', textAlign: 'right', direction: 'rtl' }}>
+                                                <h4 style={{ margin: '0 0 4px', fontWeight: 800 }}>{branch.name}</h4>
+                                                <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{branch.address}</p>
+                                            </div>
+                                        </Popup>
+                                    </Marker>
+                                ))}
+                                <MapAutoCenter branches={companyBranchesList} />
+                            </MapContainer>
+                        </div>
+
+                        {/* Floating Sidebar (Right Side) */}
+                        <div className="glass" style={{
+                            width: '450px',
+                            height: 'calc(100% - 40px)',
+                            margin: '20px 20px 20px 0',
+                            background: 'rgba(255, 255, 255, 0.92)',
+                            backdropFilter: 'blur(20px)',
+                            borderRadius: '24px',
+                            zIndex: 10,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            overflow: 'hidden'
+                        }}>
+                            {/* Header inside sidebar */}
+                            <div style={{ padding: '32px', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+                                <button 
+                                    onClick={() => setSelectedCompanyId(null)}
+                                    style={{
+                                        background: 'rgba(0,0,0,0.04)',
+                                        border: 'none',
+                                        padding: '8px 16px',
+                                        borderRadius: '12px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        fontWeight: 700,
+                                        color: 'var(--text-secondary)',
+                                        marginBottom: '24px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.08)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                                >
+                                    <ArrowRight size={18} /> رجوع للشركات
+                                </button>
+
+                                <h2 style={{ margin: '0 0 16px', fontSize: '2rem', fontWeight: 900, color: '#1e293b' }}>
+                                    {selectedCompany.name}
+                                </h2>
+                                
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                                    <button 
+                                        onClick={handleExportExcel}
+                                        style={{ flex: 1, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
+                                    >
+                                        <FileSpreadsheet size={18} /> إكسل
+                                    </button>
+                                    <button 
+                                        onClick={handleExportWord}
+                                        style={{ flex: 1, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+                                    >
+                                        <FileText size={18} /> وورد
+                                    </button>
+                                </div>
+
+                                {/* Tabs for branches */}
+                                <div style={{ display: 'flex', gap: '16px', background: 'rgba(0,0,0,0.04)', padding: '6px', borderRadius: '16px' }}>
+                                    <button 
+                                        onClick={() => setActiveTab('linked')}
+                                        style={{ flex: 1, background: activeTab === 'linked' ? 'white' : 'transparent', color: activeTab === 'linked' ? '#1e293b' : '#64748b', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: activeTab === 'linked' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none' }}
+                                    >
+                                        الفروع ({companyBranchesList.length})
+                                    </button>
+                                    <button 
+                                        onClick={() => setActiveTab('available')}
+                                        style={{ flex: 1, background: activeTab === 'available' ? 'white' : 'transparent', color: activeTab === 'available' ? '#1e293b' : '#64748b', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: activeTab === 'available' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                                    >
+                                        ربط المزيد
+                                        {branchesToAdd.length > 0 && <span style={{ background: '#3b82f6', color: 'white', padding: '2px 6px', borderRadius: '10px', fontSize: '11px' }}>{branchesToAdd.length}</span>}
                                     </button>
                                 </div>
                             </div>
-                        ))}
-                        {companies.length === 0 && (
-                            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)' }}>
-                                <Building2 size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
-                                <p style={{ fontSize: '14px', margin: 0 }}>لا توجد شركات حالياً. قم بإضافة شركة جديدة بالأعلى.</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
 
-                {/* Main Content */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface-color)', position: 'relative' }}>
-                    {selectedCompany ? (
-                        <>
-                            {/* Modern Header */}
-                            <div style={{ 
-                                padding: '32px 40px 0', 
-                                borderBottom: '1px solid var(--border-color)',
-                                background: 'linear-gradient(to bottom, rgba(59,130,246,0.05), transparent)'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-                                    <div>
-                                        <h2 style={{ margin: '0 0 8px', fontSize: '2rem', fontWeight: 900, background: 'linear-gradient(45deg, var(--primary-color), #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                            {selectedCompany.name}
-                                        </h2>
-                                        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '15px' }}>
-                                            إدارة جميع الفروع والعمليات المرتبطة بهذه الشركة
-                                        </p>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '12px' }}>
-                                        <button 
-                                            onClick={handleExportExcel}
-                                            style={{
-                                                background: 'rgba(16, 185, 129, 0.1)',
-                                                color: '#10b981',
-                                                border: '1px solid rgba(16, 185, 129, 0.2)',
-                                                padding: '12px',
-                                                borderRadius: '12px',
-                                                fontWeight: 700,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
-                                            }}
-                                            title="تصدير إلى Excel"
-                                        >
-                                            <FileSpreadsheet size={20} />
-                                        </button>
-                                        <button 
-                                            onClick={handleExportWord}
-                                            style={{
-                                                background: 'rgba(59, 130, 246, 0.1)',
-                                                color: 'var(--primary-color)',
-                                                border: '1px solid rgba(59, 130, 246, 0.2)',
-                                                padding: '12px',
-                                                borderRadius: '12px',
-                                                fontWeight: 700,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
-                                            }}
-                                            title="تصدير إلى Word"
-                                        >
-                                            <FileText size={20} />
-                                        </button>
-                                        <button 
-                                            onClick={() => onAddNewBranch(selectedCompany.id)}
-                                            style={{
-                                                background: 'var(--surface-color)',
-                                                color: 'var(--text-primary)',
-                                                border: '1px solid var(--border-color)',
-                                                padding: '12px 20px',
-                                                borderRadius: '12px',
-                                                fontWeight: 700,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '10px',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.borderColor = 'var(--primary-color)';
-                                                e.currentTarget.style.color = 'var(--primary-color)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.borderColor = 'var(--border-color)';
-                                                e.currentTarget.style.color = 'var(--text-primary)';
-                                            }}
-                                        >
-                                            <Plus size={18} />
-                                            إنشاء فرع جديد
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Custom Tabs */}
-                                <div style={{ display: 'flex', gap: '32px' }}>
-                                    <div 
-                                        onClick={() => setActiveTab('linked')}
-                                        style={{ 
-                                            paddingBottom: '16px', 
-                                            cursor: 'pointer',
-                                            fontWeight: activeTab === 'linked' ? 800 : 600,
-                                            color: activeTab === 'linked' ? 'var(--primary-color)' : 'var(--text-secondary)',
-                                            borderBottom: `3px solid ${activeTab === 'linked' ? 'var(--primary-color)' : 'transparent'}`,
-                                            transition: 'all 0.2s',
-                                            fontSize: '16px'
-                                        }}
-                                    >
-                                        الفروع المرتبطة ({(selectedCompany.branchIds || []).length})
-                                    </div>
-                                    <div 
-                                        onClick={() => setActiveTab('available')}
-                                        style={{ 
-                                            paddingBottom: '16px', 
-                                            cursor: 'pointer',
-                                            fontWeight: activeTab === 'available' ? 800 : 600,
-                                            color: activeTab === 'available' ? 'var(--primary-color)' : 'var(--text-secondary)',
-                                            borderBottom: `3px solid ${activeTab === 'available' ? 'var(--primary-color)' : 'transparent'}`,
-                                            transition: 'all 0.2s',
-                                            fontSize: '16px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px'
-                                        }}
-                                    >
-                                        ربط فروع إضافية
-                                        {branchesToAdd.length > 0 && (
-                                            <span style={{
-                                                background: 'var(--primary-color)',
-                                                color: 'white',
-                                                fontSize: '12px',
-                                                padding: '2px 8px',
-                                                borderRadius: '12px',
-                                                fontWeight: 800
-                                            }}>{branchesToAdd.length}</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Tab Content */}
-                            <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }} className="custom-scrollbar">
+                            {/* Sidebar Content Scroll Area */}
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }} className="custom-scrollbar">
                                 {activeTab === 'linked' && (
-                                    <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-                                        {selectedCompany.branchIds?.map(bId => {
-                                            const branch = branches.find(b => b.id === bId);
-                                            if (!branch) return null;
-                                            return (
-                                                <div key={branch.id} style={{
-                                                    padding: '20px',
-                                                    borderRadius: '16px',
-                                                    border: '1px solid var(--border-color)',
-                                                    background: 'var(--bg-color)',
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center',
-                                                    transition: 'all 0.2s',
-                                                }} className="hover-scale">
-                                                    <div>
-                                                        <div style={{ fontWeight: 800, fontSize: '16px', marginBottom: '6px' }}>{branch.name}</div>
-                                                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            {branch.address}
-                                                        </div>
-                                                    </div>
-                                                    <button 
-                                                        onClick={() => handleRemoveBranchFromCompany(branch.id)}
-                                                        style={{
-                                                            background: 'rgba(239, 68, 68, 0.1)',
-                                                            color: 'var(--error)',
-                                                            border: 'none',
-                                                            padding: '10px',
-                                                            borderRadius: '10px',
-                                                            cursor: 'pointer',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                        title="إزالة الفرع من الشركة"
-                                                    >
-                                                        <X size={18} />
-                                                    </button>
+                                    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {companyBranchesList.map(branch => (
+                                            <div key={branch.id} style={{ padding: '16px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.08)', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                                <div>
+                                                    <div style={{ fontWeight: 800, fontSize: '15px', color: '#1e293b', marginBottom: '4px' }}>{branch.name}</div>
+                                                    <div style={{ fontSize: '13px', color: '#64748b' }}>{branch.city || extractCity(branch.address)}</div>
                                                 </div>
-                                            );
-                                        })}
-                                        {(!selectedCompany.branchIds || selectedCompany.branchIds.length === 0) && (
-                                            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.02)', borderRadius: '16px', border: '1px dashed var(--border-color)' }}>
-                                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                                                    <Building2 size={32} style={{ opacity: 0.5 }} />
-                                                </div>
-                                                <h4 style={{ margin: '0 0 8px', fontSize: '1.2rem', color: 'var(--text-primary)' }}>لا توجد فروع مرتبطة</h4>
-                                                <p style={{ margin: 0, fontSize: '14px' }}>انتقل إلى تبويب "ربط فروع إضافية" لإضافة الفروع التابعة لهذه الشركة.</p>
+                                                <button 
+                                                    onClick={() => handleRemoveBranchFromCompany(branch.id)}
+                                                    style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                                                    title="إزالة الفرع من الشركة"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {companyBranchesList.length === 0 && (
+                                            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+                                                لا توجد فروع مرتبطة حالياً.
                                             </div>
                                         )}
+                                        
+                                        <button 
+                                            onClick={() => onAddNewBranch(selectedCompany.id)}
+                                            style={{ marginTop: '16px', background: '#f8fafc', color: '#3b82f6', border: '1px dashed #cbd5e1', padding: '16px', borderRadius: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                        >
+                                            <Plus size={18} /> إنشاء فرع جديد بالخريطة
+                                        </button>
                                     </div>
                                 )}
 
                                 {activeTab === 'available' && (
-                                    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+                                    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                             <input 
                                                 type="text" 
-                                                placeholder="ابحث عن فرع (بالاسم أو العنوان)..." 
+                                                placeholder="ابحث بالاسم أو المدينة..." 
                                                 value={branchSearch}
                                                 onChange={e => setBranchSearch(e.target.value)}
-                                                style={{
-                                                    flex: 1,
-                                                    padding: '14px 20px',
-                                                    borderRadius: '12px',
-                                                    border: '1px solid var(--border-color)',
-                                                    background: 'var(--bg-color)',
-                                                    color: 'var(--text-primary)',
-                                                    fontSize: '15px',
-                                                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
-                                                }}
+                                                style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'white', color: '#1e293b', outline: 'none' }}
                                             />
                                             <button 
                                                 onClick={handleAddBranchesToCompany}
                                                 disabled={branchesToAdd.length === 0}
-                                                style={{
-                                                    background: 'var(--success)',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    padding: '0 24px',
-                                                    borderRadius: '12px',
-                                                    fontWeight: 800,
-                                                    fontSize: '15px',
-                                                    cursor: branchesToAdd.length > 0 ? 'pointer' : 'not-allowed',
-                                                    opacity: branchesToAdd.length > 0 ? 1 : 0.5,
-                                                    transition: 'all 0.2s',
-                                                    boxShadow: branchesToAdd.length > 0 ? '0 8px 16px rgba(16, 185, 129, 0.3)' : 'none'
-                                                }}
+                                                style={{ width: '100%', background: '#10b981', color: 'white', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: branchesToAdd.length > 0 ? 'pointer' : 'not-allowed', opacity: branchesToAdd.length > 0 ? 1 : 0.5, transition: 'all 0.2s' }}
                                             >
                                                 تأكيد الربط ({branchesToAdd.length})
                                             </button>
                                         </div>
 
-                                        <div style={{ 
-                                            display: 'grid', 
-                                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-                                            gap: '12px',
-                                            paddingBottom: '20px'
-                                        }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
                                             {filteredAvailableBranches.map(b => {
                                                 const isSelected = branchesToAdd.includes(b.id);
                                                 return (
@@ -631,76 +630,44 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
                                                             if (isSelected) setBranchesToAdd(branchesToAdd.filter(id => id !== b.id));
                                                             else setBranchesToAdd([...branchesToAdd, b.id]);
                                                         }}
-                                                        style={{ 
-                                                            display: 'flex', 
-                                                            alignItems: 'center', 
-                                                            gap: '16px', 
-                                                            padding: '16px', 
-                                                            cursor: 'pointer', 
-                                                            borderRadius: '12px', 
-                                                            border: `2px solid ${isSelected ? 'var(--primary-color)' : 'var(--border-color)'}`,
-                                                            background: isSelected ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-color)',
-                                                            transition: 'all 0.2s'
-                                                        }}
+                                                        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px', cursor: 'pointer', borderRadius: '12px', border: `2px solid ${isSelected ? '#3b82f6' : 'rgba(0,0,0,0.05)'}`, background: isSelected ? 'rgba(59, 130, 246, 0.05)' : 'white', transition: 'all 0.2s' }}
                                                     >
-                                                        <div style={{
-                                                            width: '24px',
-                                                            height: '24px',
-                                                            borderRadius: '6px',
-                                                            border: `2px solid ${isSelected ? 'var(--primary-color)' : 'var(--text-secondary)'}`,
-                                                            background: isSelected ? 'var(--primary-color)' : 'transparent',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            transition: 'all 0.2s',
-                                                            flexShrink: 0
-                                                        }}>
-                                                            {isSelected && <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M1.5 5L5 8.5L12.5 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                                            </svg>}
+                                                        <div style={{ width: '20px', height: '20px', borderRadius: '6px', border: `2px solid ${isSelected ? '#3b82f6' : '#cbd5e1'}`, background: isSelected ? '#3b82f6' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            {isSelected && <svg width="12" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 5L5 8.5L12.5 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                                         </div>
                                                         <div>
-                                                            <div style={{ fontWeight: 700, fontSize: '15px', color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)', marginBottom: '4px' }}>{b.name}</div>
-                                                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{b.address}</div>
+                                                            <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>{b.name}</div>
+                                                            <div style={{ fontSize: '12px', color: '#64748b' }}>{b.city || extractCity(b.address)}</div>
                                                         </div>
                                                     </div>
                                                 );
                                             })}
                                             {filteredAvailableBranches.length === 0 && (
-                                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-                                                    لا توجد فروع متاحة بهذا الاسم
+                                                <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '14px' }}>
+                                                    لا توجد فروع مطابقة.
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 )}
                             </div>
-                        </>
-                    ) : (
-                        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'var(--text-secondary)', background: 'linear-gradient(to bottom right, var(--surface-color), var(--bg-color))' }}>
-                            <div style={{ 
-                                width: '120px', 
-                                height: '120px', 
-                                borderRadius: '50%', 
-                                background: 'rgba(59, 130, 246, 0.05)', 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center', 
-                                marginBottom: '24px',
-                                boxShadow: 'inset 0 0 40px rgba(59, 130, 246, 0.05)'
-                            }}>
-                                <Building2 size={48} color="var(--primary-color)" style={{ opacity: 0.5 }} />
-                            </div>
-                            <h3 style={{ margin: '0 0 12px', fontSize: '1.5rem', color: 'var(--text-primary)' }}>إدارة الشركات التشغيلية</h3>
-                            <p style={{ margin: 0, fontSize: '15px', maxWidth: '400px', textAlign: 'center', lineHeight: 1.6 }}>
-                                اختر شركة تشغيلية من القائمة الجانبية لإدارة الفروع التابعة لها، أو قم بإنشاء شركة جديدة للبدء في تنظيم الفروع.
-                            </p>
                         </div>
-                    )}
-                </div>
+
+                    </div>
+                )}
             </div>
         </div>
     );
+};
+
+// Helper inside the component or outside
+const extractCity = (address: string): string => {
+    if (!address) return "أخرى";
+    const cities = ["الرياض", "جدة", "مكة", "المدينة", "الدمام", "الخبر", "الظهران", "القطيف", "الجبيل", "الأحساء", "الطائف", "ينبع", "تبوك", "بريدة", "حائل", "أبها", "جازان"];
+    for (const city of cities) {
+        if (address.includes(city)) return city;
+    }
+    return "أخرى";
 };
 
 export default OperatingCompaniesModal;
