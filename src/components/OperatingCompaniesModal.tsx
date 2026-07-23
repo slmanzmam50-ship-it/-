@@ -114,12 +114,15 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
         const data = companyBranches.map((b, index) => ({
             'م': index + 1,
             'اسم الفرع': b.name,
-            'العنوان': b.address
+            'اسم المستلم': b.managerName || 'غير محدد',
+            'رقم الهاتف': b.phone || 'غير محدد',
+            'العنوان': b.address,
+            'موقع الفرع': b.mapUrl || 'غير متوفر'
         }));
 
         const ws = XLSX.utils.json_to_sheet(data);
         ws['!dir'] = 'rtl';
-        ws['!cols'] = [{wch: 5}, {wch: 40}, {wch: 60}];
+        ws['!cols'] = [{wch: 5}, {wch: 30}, {wch: 25}, {wch: 15}, {wch: 50}, {wch: 40}];
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "الفروع");
@@ -152,6 +155,7 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
                     th { background-color: #f2f2f2; font-weight: bold; }
                     h1 { color: #2563eb; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
                     .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+                    a { color: #2563eb; text-decoration: none; }
                 </style>
             </head>
             <body>
@@ -161,13 +165,19 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
                     <tr>
                         <th>م</th>
                         <th>اسم الفرع</th>
+                        <th>اسم المستلم</th>
+                        <th>رقم الهاتف</th>
                         <th>العنوان</th>
+                        <th>موقع الفرع</th>
                     </tr>
                     ${companyBranches.map((b, i) => `
                         <tr>
                             <td>${i + 1}</td>
                             <td>${b.name}</td>
+                            <td>${b.managerName || 'غير محدد'}</td>
+                            <td dir="ltr" style="text-align: right;">${b.phone || 'غير محدد'}</td>
                             <td>${b.address}</td>
+                            <td>${b.mapUrl ? `<a href="${b.mapUrl}">رابط الموقع</a>` : 'غير متوفر'}</td>
                         </tr>
                     `).join('')}
                 </table>
