@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X as CloseIcon, Plus, Building2, Trash2, X } from 'lucide-react';
+import { X as CloseIcon, Plus, Building2, Trash2, X, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import type { Branch, OperatingCompany } from '../types';
 import { subscribeToOperatingCompanies, addOperatingCompany, updateOperatingCompany, deleteOperatingCompany } from '../services/storage';
 import toast from 'react-hot-toast';
+import * as XLSX from 'xlsx';
 
 interface Props {
     isOpen: boolean;
@@ -96,6 +97,100 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
                 toast.error('حدث خطأ أثناء الإزالة');
             }
         }
+    };
+
+    const handleExportExcel = () => {
+        if (!selectedCompany || !selectedCompany.branchIds) {
+            toast.error('لا توجد فروع لتصديرها');
+            return;
+        }
+        
+        const companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
+        if (companyBranches.length === 0) {
+            toast.error('لا توجد فروع لتصديرها');
+            return;
+        }
+
+        const data = companyBranches.map((b, index) => ({
+            'م': index + 1,
+            'اسم الفرع': b.name,
+            'العنوان': b.address,
+            'المدينة': b.city || 'غير محدد'
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        ws['!dir'] = 'rtl';
+        ws['!cols'] = [{wch: 5}, {wch: 40}, {wch: 50}, {wch: 20}];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "الفروع");
+        
+        XLSX.writeFile(wb, `فروع_${selectedCompany.name}.xlsx`);
+        toast.success('تم تصدير ملف إكسل بنجاح');
+    };
+
+    const handleExportWord = () => {
+        if (!selectedCompany || !selectedCompany.branchIds) {
+            toast.error('لا توجد فروع لتصديرها');
+            return;
+        }
+        
+        const companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
+        if (companyBranches.length === 0) {
+            toast.error('لا توجد فروع لتصديرها');
+            return;
+        }
+
+        const htmlContent = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head>
+                <meta charset="utf-8">
+                <title>فروع ${selectedCompany.name}</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; direction: rtl; }
+                    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+                    th, td { border: 1px solid #000; padding: 10px; text-align: right; }
+                    th { background-color: #f2f2f2; font-weight: bold; }
+                    h1 { color: #2563eb; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+                    .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <h1>قائمة الفروع التابعة لشركة: ${selectedCompany.name}</h1>
+                <p>إجمالي عدد الفروع: <strong>${companyBranches.length}</strong></p>
+                <table>
+                    <tr>
+                        <th>م</th>
+                        <th>اسم الفرع</th>
+                        <th>العنوان</th>
+                        <th>المدينة</th>
+                    </tr>
+                    ${companyBranches.map((b, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${b.name}</td>
+                            <td>${b.address}</td>
+                            <td>${b.city || 'غير محدد'}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+                <div class="footer">تم التصدير من نظام إدارة الفروع</div>
+            </body>
+            </html>
+        `;
+
+        const blob = new Blob(['\ufeff', htmlContent], {
+            type: 'application/msword'
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `فروع_${selectedCompany.name}.doc`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success('تم تصدير ملف وورد بنجاح');
     };
 
     return (
@@ -283,34 +378,86 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
                                             إدارة جميع الفروع والعمليات المرتبطة بهذه الشركة
                                         </p>
                                     </div>
-                                    <button 
-                                        onClick={() => onAddNewBranch(selectedCompany.id)}
-                                        style={{
-                                            background: 'var(--surface-color)',
-                                            color: 'var(--text-primary)',
-                                            border: '1px solid var(--border-color)',
-                                            padding: '12px 20px',
-                                            borderRadius: '12px',
-                                            fontWeight: 700,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '10px',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s',
-                                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.borderColor = 'var(--primary-color)';
-                                            e.currentTarget.style.color = 'var(--primary-color)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.borderColor = 'var(--border-color)';
-                                            e.currentTarget.style.color = 'var(--text-primary)';
-                                        }}
-                                    >
-                                        <Plus size={18} />
-                                        إنشاء فرع جديد
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <button 
+                                            onClick={handleExportExcel}
+                                            style={{
+                                                background: 'rgba(16, 185, 129, 0.1)',
+                                                color: '#10b981',
+                                                border: '1px solid rgba(16, 185, 129, 0.2)',
+                                                padding: '12px',
+                                                borderRadius: '12px',
+                                                fontWeight: 700,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+                                            }}
+                                            title="تصدير إلى Excel"
+                                        >
+                                            <FileSpreadsheet size={20} />
+                                        </button>
+                                        <button 
+                                            onClick={handleExportWord}
+                                            style={{
+                                                background: 'rgba(59, 130, 246, 0.1)',
+                                                color: 'var(--primary-color)',
+                                                border: '1px solid rgba(59, 130, 246, 0.2)',
+                                                padding: '12px',
+                                                borderRadius: '12px',
+                                                fontWeight: 700,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
+                                            }}
+                                            title="تصدير إلى Word"
+                                        >
+                                            <FileText size={20} />
+                                        </button>
+                                        <button 
+                                            onClick={() => onAddNewBranch(selectedCompany.id)}
+                                            style={{
+                                                background: 'var(--surface-color)',
+                                                color: 'var(--text-primary)',
+                                                border: '1px solid var(--border-color)',
+                                                padding: '12px 20px',
+                                                borderRadius: '12px',
+                                                fontWeight: 700,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '10px',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.borderColor = 'var(--primary-color)';
+                                                e.currentTarget.style.color = 'var(--primary-color)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.borderColor = 'var(--border-color)';
+                                                e.currentTarget.style.color = 'var(--text-primary)';
+                                            }}
+                                        >
+                                            <Plus size={18} />
+                                            إنشاء فرع جديد
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Custom Tabs */}
