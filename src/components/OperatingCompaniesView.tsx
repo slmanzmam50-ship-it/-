@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Building2, Trash2, X, FileText, FileSpreadsheet, ArrowRight, MapPin, Upload } from 'lucide-react';
+import { Plus, Building2, Trash2, X, FileText, FileSpreadsheet, ArrowRight, MapPin, Upload, Share2 } from 'lucide-react';
 import type { Branch, OperatingCompany } from '../types';
 import { subscribeToOperatingCompanies, addOperatingCompany, updateOperatingCompany, deleteOperatingCompany, uploadImage } from '../services/storage';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -20,7 +21,7 @@ const createBranchIcon = (branch: Branch, isOpen: boolean) => {
     const statusColor = branch.status === 'تحت الصيانة' ? '#f97316' : (isOpen ? '#10b981' : '#ef4444');
     
     const placeholderSvg = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${statusColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; display: block;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${statusColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; display: block;">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
@@ -41,9 +42,9 @@ const createBranchIcon = (branch: Branch, isOpen: boolean) => {
     return L.divIcon({
         className: 'custom-branch-leaflet-icon',
         html: htmlContent,
-        iconSize: [46, 56],
-        iconAnchor: [23, 56],
-        popupAnchor: [0, -56]
+        iconSize: [36, 46],
+        iconAnchor: [18, 46],
+        popupAnchor: [0, -46]
     });
 };
 
@@ -127,6 +128,23 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch }) =
     
     const availableBranches = branches.filter(b => !(selectedCompany?.branchIds || []).includes(b.id));
     const filteredAvailableBranches = availableBranches.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase()) || b.address.toLowerCase().includes(branchSearch.toLowerCase()));
+
+    const handleShare = async (branch: Branch) => {
+        const url = `${window.location.origin}/?branch=${branch.id}`;
+        const title = `فرع ${branch.name} - مراكز خدمة سلمان الخالدي`;
+        const text = `تفضل بزيارة فرع ${branch.name} الواقع في ${branch.address}. للوصول عبر الخريطة: ${url}`;
+        
+        try {
+            if (navigator.share) {
+                await navigator.share({ title, text, url });
+            } else {
+                await navigator.clipboard.writeText(text);
+                toast.success('تم نسخ الرابط');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     const handleAddCompany = async () => {
         if (!newCompanyName.trim()) return;
