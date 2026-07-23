@@ -272,8 +272,12 @@ const AdminDashboard: React.FC = () => {
             extractedCity: extractCity(b.address)
         }));
 
-        // Sort by city alphabetically
-        branchesWithCity.sort((a, b) => a.extractedCity.localeCompare(b.extractedCity, 'ar'));
+        // Sort by city alphabetically, then by branch name naturally (3 before 33)
+        branchesWithCity.sort((a, b) => {
+            const cityCompare = a.extractedCity.localeCompare(b.extractedCity, 'ar');
+            if (cityCompare !== 0) return cityCompare;
+            return a.name.localeCompare(b.name, 'ar', { numeric: true });
+        });
 
         const headers = ["المدينة", "اسم الفرع", "العنوان", "رقم الجوال", "الحالة", "المدير", "الأقسام", "رابط قوقل ماب", "الإحداثيات"];
         const rows = branchesWithCity.map(b => [
