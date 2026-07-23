@@ -65,8 +65,7 @@ const AdminDashboard: React.FC = () => {
     const [managingHiddenBranchCompany, setManagingHiddenBranchCompany] = useState<CompanyAccount | null>(null);
     const [tempHiddenBranchIds, setTempHiddenBranchIds] = useState<string[]>([]);
 
-    
-    const [targetOperatingCompanyId, setTargetOperatingCompanyId] = useState<string | undefined>(undefined);
+        const [targetOperatingCompanyId, setTargetOperatingCompanyId] = useState<string | undefined>(undefined);
 
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [requestSearch, setRequestSearch] = useState('');
@@ -94,7 +93,634 @@ const AdminDashboard: React.FC = () => {
             const currentLang = (localStorage.getItem('lang') as 'ar' | 'en') || 'ar';
             if (currentLang !== lang) setLang(currentLang);
         }, 500);
-            return (
+        return () => clearInterval(checkLang);
+    }, [lang]);
+
+    useEffect(() => {
+        setIsLoading(true);
+        const unsubBranches = subscribeToBranches((data) => {
+            setBranches(data);
+            setIsLoading(false);
+        });
+        const unsubCats = subscribeToCategories(setCategories);
+        const unsubCompanies = subscribeToCompanies(setCompanies);
+        const unsubRequests = subscribeToServiceRequests(setRequests);
+        return () => {
+             unsubBranches();
+             unsubCats();
+             unsubCompanies();
+             unsubRequests();
+        };
+    }, []);
+
+    const stateRef = React.useRef({ activeTab, isFormOpen, isAddingCategory, editingCategoryId, isAddingCompany, managingHiddenBranchCompany, isAdminCreatingRequest });
+    stateRef.current = { activeTab, isFormOpen, isAddingCategory, editingCategoryId, isAddingCompany, managingHiddenBranchCompany, isAdminCreatingRequest };
+
+    const depth = (activeTab !== 'branches' ? 1 : 0) + 
+                  ((isFormOpen || isAddingCategory || editingCategoryId !== null || isAddingCompany || managingHiddenBranchCompany !== null || isAdminCreatingRequest) ? 1 : 0);
+    const prevDepth = React.useRef(0);
+    const isHardwareBack = React.useRef(false);
+    const ignoreNextPop = React.useRef(false);
+
+    useEffect(() => {
+        if (depth > prevDepth.current) {
+            window.history.pushState({ trap: depth }, '');
+        } else if (depth < prevDepth.current) {
+            if (isHardwareBack.current) {
+                isHardwareBack.current = false;
+            } else {
+                if (window.history.state?.trap) {
+                    ignoreNextPop.current = true;
+                    window.history.go(depth - prevDepth.current);
+                }
+            }
+        }
+        prevDepth.current = depth;
+    }, [depth]);
+
+    useEffect(() => {
+        const handlePopState = () => {
+            if (ignoreNextPop.current) {
+                ignoreNextPop.current = false;
+                return;
+            }
+            isHardwareBack.current = true;
+            const s = stateRef.current;
+            if (s.isFormOpen || s.isAddingCategory || s.editingCategoryId !== null || s.isAddingCompany || s.managingHiddenBranchCompany !== null || s.isAdminCreatingRequest) {
+                setIsFormOpen(false);
+                setIsAddingCategory(false);
+                setEditingCategoryId(null);
+                setIsAddingCompany(false);
+                setManagingHiddenBranchCompany(null);
+                setIsAdminCreatingRequest(false);
+            } else if (s.activeTab !== 'branches') {
+                setActiveTab('branches');
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    const extractCity = (address: string): string => {
+        if (!address) return "أخرى";
+        const cities = [
+            "الدمام", "الخبر", "الظهران", "القطيف", "الجبيل", "الأحساء", "الاحساء", "الهفوف", 
+            "المبرز", "بقيق", "الخفجي", "رأس تنورة", "النعيرية", "حفر الباطن", "الرياض", 
+            "جدة", "مكة", "المدينة", "جازان", "جيزان", "نجران", "أبها", "ابها", "خميس مشيط", 
+            "تبوك", "عرعر", "حائل", "بريدة", "عنيزة", "الطائف", "ينبع", "الخرج"
+        ];
+        for (const city of cities) {
+            if (address.includes(city)) return city;
+        }
+        const parts = address.split(/[,,,-]/);
+        if (parts.length > 1) {
+            const possibleCity = parts[parts.length - 2]?.replace(/\d+/, '').trim();
+            if (possibleCity && possibleCity.length > 2 && possibleCity.length < 15) return possibleCity;
+        }
+        return "أخرى";
+    };
+
+    const uniqueCities = Array.from(new Set(branches.map(b => b.city || extractCity(b.address)))).sort((a, b) => a.localeCompare(b, 'ar'));
+
+    const filteredBranches = branches.filter(b => {
+        const matchesSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              b.address.toLowerCase().includes(searchTerm.toLowerCase());
+        const branchCity = b.city || extractCity(b.address);
+        const matchesCity = filterCity === 'all' || branchCity === filterCity;
+        return matchesSearch && matchesCity;
+    });
+
+    const totalBranches = branches.length;
+    const openBranchesCount = branches.filter(b => b.status === 'مفتوح').length;
+
+    const handleSaveBranch = async (branchData: Omit<Branch, 'id'> | Branch) => {
+        try {
+            if ('id' in branchData) {
+                await updateBranch(branchData as Branch);
+                toast.success('تم تعديل الفرع بنجاح ✅');
+            } else {
+                // Check for duplicates
+                const isDuplicate = branches.some(b => 
+                    b.name.trim().toLowerCase() === branchData.name.trim().toLowerCase() ||
+                    (Math.abs(b.latitude - branchData.latitude) < 0.0001 && Math.abs(b.longitude - branchData.longitude) < 0.0001)
+                );
+
+                if (isDuplicate) {
+                    toast.error(lang === 'ar' ? 'هذا الفرع موجود مسبقاً (تطابق في الاسم أو الموقع) ❌' : 'This branch already exists ❌');
+                    return; // Stop execution, don't close form
+                }
+
+                const newBranch = await addBranch(branchData);
+                if (targetOperatingCompanyId) {
+                    await addBranchToOperatingCompany(newBranch.id, targetOperatingCompanyId);
+                    setTargetOperatingCompanyId(undefined);
+                }
+                toast.success('تم إنشاء الفرع بنجاح');
+            }
+            setIsFormOpen(false);
+            setEditingBranch(undefined);
+        } catch (error: any) {
+            toast.error('فشل في حفظ البيانات');
+        }
+    };
+
+    const handleDelete = async (id: string, name: string) => {
+        if (window.confirm(lang === 'ar' ? `هل أنت متأكد من حذف فرع "${name}"؟` : `Are you sure you want to delete branch "${name}"?`)) {
+            try {
+                await deleteBranch(id);
+                toast.success(lang === 'ar' ? 'تم حذف الفرع بنجاح' : 'Branch deleted successfully');
+            } catch (error: any) {
+                toast.error('حدث خطأ أثناء الحذف');
+            }
+        }
+    };
+
+    const handleAddCategory = async () => {
+        const name = newCategoryName.trim();
+        if (!name) return;
+        setIsAddingCategory(true);
+        try {
+            let finalImageUrl = newCategoryImageUrl;
+            if (newCategoryFile) {
+                toast.loading('جاري رفع الصورة...', { id: 'catUpload' });
+                finalImageUrl = await uploadImage(newCategoryFile, 'categories');
+                toast.success('تم رفع الصورة بنجاح', { id: 'catUpload' });
+            }
+            await addCategory(name, finalImageUrl);
+            setNewCategoryName('');
+            setNewCategoryImageUrl('');
+            setNewCategoryFile(null);
+            toast.success('تم إضافة القسم بنجاح');
+        } catch (error: any) {
+            toast.error('حدث خطأ أثناء إضافة القسم', { id: 'catUpload' });
+        } finally {
+            setIsAddingCategory(false);
+        }
+    };
+
+    const handleUpdateCategory = async (id: string) => {
+        try {
+            const oldCat = categories.find(c => c.id === id);
+            const oldName = oldCat ? oldCat.name : undefined;
+
+            let finalImageUrl = categoryEditImageUrl;
+            if (categoryEditFile) {
+                toast.loading('جاري رفع الصورة...', { id: 'catUpload' });
+                finalImageUrl = await uploadImage(categoryEditFile, 'categories');
+                toast.success('تم الرفع بنجاح', { id: 'catUpload' });
+            }
+            await updateCategory({ id, name: categoryEditName, imageUrl: finalImageUrl }, oldName);
+            setEditingCategoryId(null);
+            setCategoryEditFile(null);
+            toast.success('تم التحديث');
+        } catch (error: any) {
+            toast.error('فشل التحديث', { id: 'catUpload' });
+        }
+    };
+
+    const handleExportExcel = () => {
+        const branchesWithCity = filteredBranches.map(b => ({
+            ...b,
+            extractedCity: extractCity(b.address)
+        }));
+
+        // Sort by city alphabetically, then by branch name naturally (3 before 33)
+        branchesWithCity.sort((a, b) => {
+            const cityCompare = a.extractedCity.localeCompare(b.extractedCity, 'ar');
+            if (cityCompare !== 0) return cityCompare;
+            return a.name.localeCompare(b.name, 'ar', { numeric: true });
+        });
+
+        const headers = ["المدينة", "اسم الفرع", "العنوان", "رقم الجوال", "الحالة", "المدير", "الأقسام", "رابط قوقل ماب", "الإحداثيات"];
+        const rows = branchesWithCity.map(b => [
+            b.extractedCity,
+            b.name,
+            b.address,
+            b.phone,
+            b.status,
+            b.managerName || "",
+            b.categories?.join(" | ") || "",
+            b.mapUrl || "",
+            `${b.latitude}, ${b.longitude}`
+        ]);
+        
+        const worksheet = utils.aoa_to_sheet([headers, ...rows]);
+        worksheet['!dir'] = 'rtl'; // Right-to-left for Arabic
+        
+        // Auto-size columns slightly
+        const colWidths = [
+            { wch: 15 }, // City
+            { wch: 25 }, // Name
+            { wch: 40 }, // Address
+            { wch: 15 }, // Phone
+            { wch: 10 }, // Status
+            { wch: 20 }, // Manager
+            { wch: 30 }, // Categories
+            { wch: 45 }, // Map URL
+            { wch: 25 }  // Coordinates
+        ];
+        worksheet['!cols'] = colWidths;
+
+        const workbook = utils.book_new();
+        utils.book_append_sheet(workbook, worksheet, "الفروع");
+        
+        writeFile(workbook, `branches_${new Date().toISOString().split('T')[0]}.xlsx`);
+        toast.success(lang === 'ar' ? 'تم تصدير الإكسل بنجاح' : 'Excel exported successfully');
+    };
+
+    const handleDeleteCategory = async (id: string, name: string) => {
+        const category = categories.find(c => c.id === id);
+        if (!category) return;
+        if (branches.some(b => b.categories?.includes(category.name))) {
+            toast.error(lang === 'ar' ? 'لا يمكن حذف قسم مرتبط بفروع' : 'Cannot delete category linked to branches');
+            return;
+        }
+        if (window.confirm(lang === 'ar' ? `هل أنت متأكد من حذف تصنيف "${name}"؟` : `Are you sure you want to delete category "${name}"?`)) {
+            try {
+                await deleteCategory(id);
+                toast.success(lang === 'ar' ? 'تم حذف التصنيف بنجاح' : 'Category deleted successfully');
+            } catch (error: any) {
+                toast.error('فشل الحذف');
+            }
+        }
+    };
+
+
+
+    const getBranchCountByCategory = (catName: string) => branches.filter(b => b.categories?.includes(catName)).length;
+
+    // --- Companies helpers ---
+    const handleAddCompany = async () => {
+        const name = newCompanyName.trim();
+        const usernameVal = newCompanyUsername.trim();
+        const passwordVal = newCompanyPassword.trim();
+        
+        if (!name) {
+            toast.error('الرجاء إدخال اسم الشركة');
+            return;
+        }
+        if (!usernameVal || !passwordVal) {
+            toast.error('الرجاء إدخال اسم المستخدم وكلمة المرور للشركة');
+            return;
+        }
+
+        setIsAddingCompany(true);
+        try {
+            await addCompany({
+                name,
+                phone: newCompanyPhone.trim(),
+                managerName: newCompanyManager.trim(),
+                username: usernameVal,
+                password: passwordVal
+            });
+            setNewCompanyName('');
+            setNewCompanyPhone('');
+            setNewCompanyManager('');
+            setNewCompanyUsername('');
+            setNewCompanyPassword('');
+            toast.success('تم إضافة الشركة ببيانات الدخول بنجاح ✅');
+        } catch (error) {
+            console.error(error);
+            toast.error('حدث خطأ أثناء إضافة الشركة');
+        } finally {
+            setIsAddingCompany(false);
+        }
+    };
+
+    const handleDeleteCompany = async (id: string, name: string) => {
+        if (window.confirm(`هل أنت متأكد من حذف شركة "${name}"؟ جميع طلباتها ستظل محفوظة للإرشيف.`)) {
+            try {
+                await deleteCompany(id);
+                toast.success('تم حذف الشركة بنجاح');
+            } catch (error) {
+                console.error(error);
+                toast.error('فشل حذف الشركة');
+            }
+        }
+    };
+
+    const openManageHiddenBranchesModal = (company: CompanyAccount) => {
+        setManagingHiddenBranchCompany(company);
+        setTempHiddenBranchIds(company.hiddenBranchIds || []);
+    };
+
+    const handleSaveHiddenBranches = async () => {
+        if (!managingHiddenBranchCompany) return;
+        try {
+            const updated: CompanyAccount = {
+                ...managingHiddenBranchCompany,
+                hiddenBranchIds: tempHiddenBranchIds
+            };
+            await updateCompany(updated);
+            toast.success(`تم تحديث قائمة الفروع المخفية لشركة ${managingHiddenBranchCompany.name} بنجاح! 💾`);
+            setManagingHiddenBranchCompany(null);
+        } catch (error) {
+            console.error(error);
+            toast.error('حدث خطأ أثناء حفظ الفروع المخفية');
+        }
+    };
+
+    // --- Service Requests Excel Export ---
+    const handleExportRequestsExcel = () => {
+        const headers = ["رقم الطلب", "الشركة", "رقم اللوحة", "الخدمة المطلوبة", "الحالة", "تاريخ الإنشاء", "تاريخ التنفيذ", "الفرع المنفذ"];
+        const rows = requests.map(r => [
+            r.id,
+            r.companyName,
+            r.plateNumber,
+            r.serviceDescription,
+            r.status === 'active' ? 'نشط' : 'منفذ ومستلم',
+            new Date(r.createdAt).toLocaleString('ar-SA'),
+            r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : "",
+            r.branchName || ""
+        ]);
+
+        const worksheet = utils.aoa_to_sheet([headers, ...rows]);
+        worksheet['!dir'] = 'rtl';
+
+        const colWidths = [
+            { wch: 15 }, // ID
+            { wch: 25 }, // Company
+            { wch: 15 }, // Plate
+            { wch: 35 }, // Service
+            { wch: 15 }, // Status
+            { wch: 25 }, // Created At
+            { wch: 25 }, // Completed At
+            { wch: 25 }  // Executing Branch
+        ];
+        worksheet['!cols'] = colWidths;
+
+        const workbook = utils.book_new();
+        utils.book_append_sheet(workbook, worksheet, "الطلبات العام");
+
+        writeFile(workbook, `requests_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+        toast.success('تم تصدير سجل الطلبات بنجاح 📊');
+    };
+
+    const handleAdminCreateRequest = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const compId = adminSelectedCompanyId;
+        const pNum = adminPlateNumber.trim();
+        const sDesc = adminServiceDescription.trim();
+
+        if (!compId) {
+            toast.error('الرجاء اختيار الشركة أولاً');
+            return;
+        }
+        if (!pNum) {
+            toast.error('الرجاء إدخال رقم اللوحة');
+            return;
+        }
+        if (!sDesc) {
+            toast.error('الرجاء إدخال الخدمة المطلوبة');
+            return;
+        }
+        if (adminTargetBranchIds.length === 0) {
+            toast.error('الرجاء تحديد فرع واحد على الأقل أو اختيار "الكل"');
+            return;
+        }
+
+        const compObj = companies.find(c => c.id === compId);
+        if (!compObj) {
+            toast.error('الشركة المحددة غير موجودة');
+            return;
+        }
+
+        setIsAdminSubmittingRequest(true);
+        try {
+            const visibleBranches = branches.filter(b => !compObj.hiddenBranchIds?.includes(b.id));
+            const finalBranchIds = adminTargetBranchIds.includes('all')
+                ? visibleBranches.map(b => b.id)
+                : adminTargetBranchIds;
+
+            const newReq = await addServiceRequest({
+                companyId: compId,
+                companyName: compObj.name,
+                plateNumber: pNum,
+                serviceDescription: sDesc,
+                targetBranchIds: finalBranchIds,
+                companyHiddenBranchIds: compObj.hiddenBranchIds || []
+            });
+            toast.success(`تم إنشاء الطلب بنجاح للشركة ${compObj.name}! رقم الطلب: ${newReq.id} 🎉`);
+            setAdminSelectedCompanyId('');
+            setAdminPlateNumber('');
+            setAdminServiceDescription('');
+            setAdminTargetBranchIds(['all']);
+            setIsAdminCreatingRequest(false);
+        } catch (error) {
+            console.error(error);
+            toast.error('حدث خطأ أثناء إنشاء الطلب بالنيابة عن الشركة');
+        } finally {
+            setIsAdminSubmittingRequest(false);
+        }
+    };
+
+    const handleExportRatingsDoc = () => {
+        const ratedReqs = requests.filter(r => r.rating);
+        if (ratedReqs.length === 0) {
+            toast.error("لا توجد تقييمات لتصديرها حالياً.");
+            return;
+        }
+        
+        let htmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>تقرير التقييمات الشهري</title>
+        <style>
+            body { font-family: 'Arial', sans-serif; direction: rtl; text-align: right; }
+            h1 { text-align: center; color: #1e293b; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: right; }
+            th { background-color: #0f172a; color: white; }
+        </style>
+        </head>
+        <body>
+        <h1>مراكز خدمة سلمان زمام الخالدي</h1>
+        <h2>تقرير تقييمات العملاء والسائقين الشهري - تاريخ التصدير: ${new Date().toLocaleDateString('ar-SA')}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>رقم الطلب</th>
+                    <th>الشركة</th>
+                    <th>رقم اللوحة</th>
+                    <th>الفرع المنفذ</th>
+                    <th>التقييم</th>
+                    <th>تعليق السائق</th>
+                    <th>تاريخ التقييم</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        ratedReqs.forEach(r => {
+            htmlContent += `
+                <tr>
+                    <td>${r.id}</td>
+                    <td>${r.companyName}</td>
+                    <td>${r.plateNumber}</td>
+                    <td>${r.branchName || '-'}</td>
+                    <td>${'★'.repeat(r.rating || 0)}${'☆'.repeat(5 - (r.rating || 0))}</td>
+                    <td>${r.ratingComment || '-'}</td>
+                    <td>${r.ratedAt ? new Date(r.ratedAt).toLocaleDateString('ar-SA') : '-'}</td>
+                </tr>
+            `;
+        });
+        
+        htmlContent += `
+            </tbody>
+        </table>
+        </body>
+        </html>
+        `;
+        
+        const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `تقييمات_العملاء_${new Date().getMonth() + 1}_${new Date().getFullYear()}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setRatingsDownloaded(true);
+        toast.success("✅ تم تصدير ملف الوورد بنجاح! تم تفعيل زر الحذف الآن.");
+    };
+
+    const handleClearRatingsDb = async () => {
+        if (!ratingsDownloaded) {
+            toast.error("⚠️ يرجى تنزيل ملف الوورد وحفظ نسخة احتياطية أولاً قبل تأكيد الحذف!");
+            return;
+        }
+        const ratedReqs = requests.filter(r => r.rating);
+        if (ratedReqs.length === 0) {
+            toast.error("لا توجد تقييمات لحذفها.");
+            return;
+        }
+        
+        if (!window.confirm(`هل أنت متأكد من حذف وإفراغ جميع التقييمات الحالية (${ratedReqs.length} تقييم)؟ لن تتمكن من التراجع عن هذه الخطوة!`)) {
+            return;
+        }
+        
+        setIsClearingRatings(true);
+        try {
+            await clearServiceRequestRatings(ratedReqs.map(r => r.id));
+            toast.success("✅ تم حذف وإفراغ جميع التقييمات في قاعدة البيانات بنجاح!");
+            setRatingsDownloaded(false);
+        } catch (error) {
+            console.error(error);
+            toast.error("حدث خطأ أثناء حذف التقييمات.");
+        } finally {
+            setIsClearingRatings(false);
+        }
+    };
+
+    const getOldRequestsCount = () => {
+        const sixMonthsAgo = Date.now() - (6 * 30 * 24 * 60 * 60 * 1000);
+        return requests.filter(r => r.createdAt < sixMonthsAgo).length;
+    };
+
+    const handleExportOldRequestsDoc = () => {
+        const sixMonthsAgo = Date.now() - (6 * 30 * 24 * 60 * 60 * 1000);
+        const oldReqs = requests.filter(r => r.createdAt < sixMonthsAgo);
+        
+        if (oldReqs.length === 0) {
+            toast.error("لا توجد طلبات قديمة (أكبر من 6 أشهر) لتصديرها.");
+            return;
+        }
+        
+        let htmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>أرشيف الطلبات الدوري</title>
+        <style>
+            body { font-family: 'Arial', sans-serif; direction: rtl; text-align: right; }
+            h1 { text-align: center; color: #1e293b; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: right; font-size: 12px; }
+            th { background-color: #0f172a; color: white; }
+        </style>
+        </head>
+        <body>
+        <h1>مراكز خدمة سلمان زمام الخالدي</h1>
+        <h2>أرشيف طلبات صيانة الشركات (كل 6 أشهر) - تاريخ الأرشفة: ${new Date().toLocaleDateString('ar-SA')}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>رقم الطلب</th>
+                    <th>الشركة</th>
+                    <th>رقم اللوحة</th>
+                    <th>الخدمة المطلوبة</th>
+                    <th>الفرع المنفذ</th>
+                    <th>الحالة</th>
+                    <th>تاريخ الإنشاء</th>
+                    <th>تاريخ التنفيذ</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        oldReqs.forEach(r => {
+            htmlContent += `
+                <tr>
+                    <td>${r.id}</td>
+                    <td>${r.companyName}</td>
+                    <td>${r.plateNumber}</td>
+                    <td>${r.serviceDescription}</td>
+                    <td>${r.branchName || '-'}</td>
+                    <td>${r.status === 'completed' ? 'منفذ' : r.status === 'rejected' ? 'مرفوض' : r.status}</td>
+                    <td>${new Date(r.createdAt).toLocaleDateString('ar-SA')}</td>
+                    <td>${r.completedAt ? new Date(r.completedAt).toLocaleDateString('ar-SA') : '-'}</td>
+                </tr>
+            `;
+        });
+        
+        htmlContent += `
+            </tbody>
+        </table>
+        </body>
+        </html>
+        `;
+        
+        const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `أرشيف_طلبات_الشركات_${new Date().toLocaleDateString('ar-SA')}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setRequestsDownloaded(true);
+        toast.success("✅ تم تصدير أرشيف الطلبات الدوري بنجاح! تم تفعيل زر الحذف الآن.");
+    };
+
+    const handleClearOldRequestsDb = async () => {
+        if (!requestsDownloaded) {
+            toast.error("⚠️ يرجى تنزيل ملف الوورد وحفظ نسخة احتياطية أولاً قبل تأكيد الحذف!");
+            return;
+        }
+        const sixMonthsAgo = Date.now() - (6 * 30 * 24 * 60 * 60 * 1000);
+        const oldReqs = requests.filter(r => r.createdAt < sixMonthsAgo);
+        
+        if (oldReqs.length === 0) {
+            toast.error("لا توجد طلبات قديمة لحذفها.");
+            return;
+        }
+        
+        if (!window.confirm(`هل أنت متأكد من حذف وإفراغ جميع الطلبات القديمة (${oldReqs.length} طلب) بشكل نهائي؟ لن تتمكن من استرجاعها!`)) {
+            return;
+        }
+        
+        setIsClearingRequests(true);
+        try {
+            await deleteServiceRequestsByIds(oldReqs.map(r => r.id));
+            toast.success("✅ تم حذف جميع الطلبات التاريخية القديمة بنجاح من قاعدة البيانات!");
+            setRequestsDownloaded(false);
+        } catch (error) {
+            console.error(error);
+            toast.error("حدث خطأ أثناء تصفية الطلبات القديمة.");
+        } finally {
+            setIsClearingRequests(false);
+        }
+    };
+
+    return (
         <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-color)', direction: 'rtl' }}>
             {/* Sidebar */}
             <div style={{
@@ -1624,7 +2250,10 @@ const AdminDashboard: React.FC = () => {
                     </div>
                 </div>
             )}
-        </div></div></div>
+        </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
