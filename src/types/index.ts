@@ -77,7 +77,7 @@ export interface CompanyAccount {
 export interface OperatingCompany {
     id: string;
     name: string;
+    logo?: string;
     branchIds: string[];
     createdAt: number;
 }
-
