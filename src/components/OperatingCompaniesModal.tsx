@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X as CloseIcon, Plus, Building2, Trash2, X, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { X as CloseIcon, Plus, Building2, Trash2, X, FileText, FileSpreadsheet } from 'lucide-react';
 import type { Branch, OperatingCompany } from '../types';
 import { subscribeToOperatingCompanies, addOperatingCompany, updateOperatingCompany, deleteOperatingCompany } from '../services/storage';
 import toast from 'react-hot-toast';
@@ -114,13 +114,12 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
         const data = companyBranches.map((b, index) => ({
             'م': index + 1,
             'اسم الفرع': b.name,
-            'العنوان': b.address,
-            'المدينة': b.city || 'غير محدد'
+            'العنوان': b.address
         }));
 
         const ws = XLSX.utils.json_to_sheet(data);
         ws['!dir'] = 'rtl';
-        ws['!cols'] = [{wch: 5}, {wch: 40}, {wch: 50}, {wch: 20}];
+        ws['!cols'] = [{wch: 5}, {wch: 40}, {wch: 60}];
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "الفروع");
@@ -163,14 +162,12 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
                         <th>م</th>
                         <th>اسم الفرع</th>
                         <th>العنوان</th>
-                        <th>المدينة</th>
                     </tr>
                     ${companyBranches.map((b, i) => `
                         <tr>
                             <td>${i + 1}</td>
                             <td>${b.name}</td>
                             <td>${b.address}</td>
-                            <td>${b.city || 'غير محدد'}</td>
                         </tr>
                     `).join('')}
                 </table>
