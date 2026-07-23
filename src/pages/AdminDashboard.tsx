@@ -182,12 +182,13 @@ const AdminDashboard: React.FC = () => {
         return "أخرى";
     };
 
-    const uniqueCities = Array.from(new Set(branches.map(b => extractCity(b.address)))).sort((a, b) => a.localeCompare(b, 'ar'));
+    const uniqueCities = Array.from(new Set(branches.map(b => b.city || extractCity(b.address)))).sort((a, b) => a.localeCompare(b, 'ar'));
 
     const filteredBranches = branches.filter(b => {
         const matchesSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                               b.address.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCity = filterCity === 'all' || extractCity(b.address) === filterCity;
+        const branchCity = b.city || extractCity(b.address);
+        const matchesCity = filterCity === 'all' || branchCity === filterCity;
         return matchesSearch && matchesCity;
     });
 

@@ -16,6 +16,7 @@ export interface Branch {
     status: BranchStatus;
     workingHours: WorkingHours;
     address: string;
+    city?: string;
     phone: string;
     mapUrl?: string; // Original Google Maps link or source
     imageUrl?: string; // Photo of the branch

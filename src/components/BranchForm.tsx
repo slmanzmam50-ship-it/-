@@ -52,6 +52,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
         status: 'مفتوح',
         workingHours: { start: '08:00', end: '22:00' },
         address: '',
+        city: '',
         phone: '',
         mapUrl: '',
         managerName: '',
@@ -488,11 +489,27 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onSave, onClose, catego
                 </div>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>اسم الفرع</label>
-                        <input required type="text" name="name" value={formData.name} onChange={handleChange}
-                            placeholder="مثال: فرع الرياض - حي الياسمين"
-                            style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>اسم الفرع</label>
+                            <input required type="text" name="name" value={formData.name} onChange={handleChange}
+                                placeholder="مثال: فرع الرياض - حي الياسمين"
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>المدينة</label>
+                            <select required name="city" value={formData.city || ''} onChange={handleChange}
+                                style={{ width: '100%', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none', appearance: 'none' }}>
+                                <option value="" disabled>اختر المدينة</option>
+                                {[
+                                    "الرياض", "جدة", "مكة المكرمة", "المدينة المنورة", "الدمام", "الخبر", "الظهران", "القطيف", "الجبيل", 
+                                    "الأحساء", "الهفوف", "المبرز", "بقيق", "الخفجي", "رأس تنورة", "النعيرية", "حفر الباطن",
+                                    "الطائف", "ينبع", "تبوك", "بريدة", "عنيزة", "حائل", "أبها", "خميس مشيط", "نجران", "جازان", "عرعر", "الخرج", "أخرى"
+                                ].map(city => (
+                                    <option key={city} value={city}>{city}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {/* Intelligent Location Selection */}

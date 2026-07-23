@@ -105,14 +105,18 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
             return;
         }
         
-        const companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
+        let companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
         if (companyBranches.length === 0) {
             toast.error('لا توجد فروع لتصديرها');
             return;
         }
 
+        // Sort branches by city alphabetically
+        companyBranches = companyBranches.sort((a, b) => (a.city || '').localeCompare(b.city || '', 'ar'));
+
         const data = companyBranches.map((b, index) => ({
             'م': index + 1,
+            'المدينة': b.city || 'أخرى',
             'اسم الفرع': b.name,
             'اسم المستلم': b.managerName || 'غير محدد',
             'رقم الهاتف': b.phone || 'غير محدد',
@@ -122,7 +126,7 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
 
         const ws = XLSX.utils.json_to_sheet(data);
         ws['!dir'] = 'rtl';
-        ws['!cols'] = [{wch: 5}, {wch: 30}, {wch: 25}, {wch: 15}, {wch: 50}, {wch: 60}];
+        ws['!cols'] = [{wch: 5}, {wch: 15}, {wch: 30}, {wch: 25}, {wch: 15}, {wch: 50}, {wch: 60}];
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "الفروع");
@@ -137,11 +141,14 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
             return;
         }
         
-        const companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
+        let companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
         if (companyBranches.length === 0) {
             toast.error('لا توجد فروع لتصديرها');
             return;
         }
+
+        // Sort branches by city alphabetically
+        companyBranches = companyBranches.sort((a, b) => (a.city || '').localeCompare(b.city || '', 'ar'));
 
         const htmlContent = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -164,6 +171,7 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
                 <table>
                     <tr>
                         <th>م</th>
+                        <th>المدينة</th>
                         <th>اسم الفرع</th>
                         <th>اسم المستلم</th>
                         <th>رقم الهاتف</th>
@@ -173,6 +181,7 @@ const OperatingCompaniesModal: React.FC<Props> = ({ isOpen, onClose, branches, o
                     ${companyBranches.map((b, i) => `
                         <tr>
                             <td>${i + 1}</td>
+                            <td>${b.city || 'أخرى'}</td>
                             <td>${b.name}</td>
                             <td>${b.managerName || 'غير محدد'}</td>
                             <td dir="ltr" style="text-align: right;">${b.phone || 'غير محدد'}</td>
