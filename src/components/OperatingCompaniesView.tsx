@@ -5,6 +5,7 @@ import { subscribeToOperatingCompanies, addOperatingCompany, updateOperatingComp
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+// @ts-ignore
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';

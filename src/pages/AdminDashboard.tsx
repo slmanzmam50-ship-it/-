@@ -766,7 +766,7 @@ const AdminDashboard: React.FC = () => {
                     </button>
                     <button 
                         onClick={() => setActiveTab('companies-op')} 
-                        style={{ background: activeTab === 'companies-op' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'companies-op' ? 'white' : 'var(--text-secondary)', padding: '14px 16px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', textAlign: 'right' }}
+                        style={{ background: (activeTab as string) === 'companies-op' ? 'var(--primary-color)' : 'transparent', color: (activeTab as string) === 'companies-op' ? 'white' : 'var(--text-secondary)', padding: '14px 16px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', textAlign: 'right' }}
                     >
                         <Building2 size={20} /> الشركات التشغيلية
                     </button>
