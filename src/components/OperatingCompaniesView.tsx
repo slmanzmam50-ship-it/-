@@ -9,6 +9,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 // Fix typical React Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -563,7 +565,7 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
                 {selectedCompany && showManagementPanel && (
                     <div className="glass animate-fade-in" style={{
                         position: 'absolute',
-                        top: '20px',
+                        top: '80px',
                         bottom: '20px',
                         left: '20px',
                         width: '420px',
