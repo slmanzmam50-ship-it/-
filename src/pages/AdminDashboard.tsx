@@ -21,7 +21,7 @@ import {
 } from '../services/storage';
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings , PlusCircle} from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
 
@@ -31,6 +31,7 @@ const AdminDashboard: React.FC = () => {
     const [branches, setBranches] = useState<Branch[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterCity, setFilterCity] = useState('all');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingBranch, setEditingBranch] = useState<Branch | undefined>(undefined);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -158,10 +159,33 @@ const AdminDashboard: React.FC = () => {
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
-    const filteredBranches = branches.filter(b => 
-        b.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        b.address.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const extractCity = (address: string): string => {
+        if (!address) return "أخرى";
+        const cities = [
+            "الدمام", "الخبر", "الظهران", "القطيف", "الجبيل", "الأحساء", "الاحساء", "الهفوف", 
+            "المبرز", "بقيق", "الخفجي", "رأس تنورة", "النعيرية", "حفر الباطن", "الرياض", 
+            "جدة", "مكة", "المدينة", "جازان", "جيزان", "نجران", "أبها", "ابها", "خميس مشيط", 
+            "تبوك", "عرعر", "حائل", "بريدة", "عنيزة", "الطائف", "ينبع", "الخرج"
+        ];
+        for (const city of cities) {
+            if (address.includes(city)) return city;
+        }
+        const parts = address.split(/[,،-]/);
+        if (parts.length > 1) {
+            const possibleCity = parts[parts.length - 2]?.replace(/\d+/, '').trim();
+            if (possibleCity && possibleCity.length > 2 && possibleCity.length < 15) return possibleCity;
+        }
+        return "أخرى";
+    };
+
+    const uniqueCities = Array.from(new Set(branches.map(b => extractCity(b.address)))).sort((a, b) => a.localeCompare(b, 'ar'));
+
+    const filteredBranches = branches.filter(b => {
+        const matchesSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              b.address.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCity = filterCity === 'all' || extractCity(b.address) === filterCity;
+        return matchesSearch && matchesCity;
+    });
 
     const totalBranches = branches.length;
     const openBranchesCount = branches.filter(b => b.status === 'مفتوح').length;
@@ -248,26 +272,7 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleExportExcel = () => {
-        const extractCity = (address: string): string => {
-            if (!address) return "أخرى";
-            const cities = [
-                "الدمام", "الخبر", "الظهران", "القطيف", "الجبيل", "الأحساء", "الاحساء", "الهفوف", 
-                "المبرز", "بقيق", "الخفجي", "رأس تنورة", "النعيرية", "حفر الباطن", "الرياض", 
-                "جدة", "مكة", "المدينة", "جازان", "جيزان", "نجران", "أبها", "ابها", "خميس مشيط", 
-                "تبوك", "عرعر", "حائل", "بريدة", "عنيزة", "الطائف", "ينبع", "الخرج"
-            ];
-            for (const city of cities) {
-                if (address.includes(city)) return city;
-            }
-            const parts = address.split(/[,،-]/);
-            if (parts.length > 1) {
-                const possibleCity = parts[parts.length - 2]?.replace(/\d+/, '').trim();
-                if (possibleCity && possibleCity.length > 2 && possibleCity.length < 15) return possibleCity;
-            }
-            return "أخرى";
-        };
-
-        const branchesWithCity = branches.map(b => ({
+        const branchesWithCity = filteredBranches.map(b => ({
             ...b,
             extractedCity: extractCity(b.address)
         }));
@@ -891,6 +896,28 @@ const AdminDashboard: React.FC = () => {
                                         fontSize: '14px'
                                     }} 
                                 />
+                            </div>
+                            <div style={{ position: 'relative', flex: 0.5, minWidth: '150px' }}>
+                                <select
+                                    value={filterCity}
+                                    onChange={(e) => setFilterCity(e.target.value)}
+                                    style={{
+                                        padding: '12px', 
+                                        borderRadius: '10px', 
+                                        border: '1px solid var(--border-color)', 
+                                        width: '100%',
+                                        background: 'var(--surface-color)',
+                                        fontSize: '14px',
+                                        color: 'var(--text-primary)',
+                                        appearance: 'none'
+                                    }}
+                                >
+                                    <option value="all">كل المدن</option>
+                                    {uniqueCities.map(city => (
+                                        <option key={city} value={city}>{city}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                             </div>
                             <button 
                                 onClick={handleExportExcel} 
