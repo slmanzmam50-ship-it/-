@@ -45,7 +45,6 @@ const AdminDashboard: React.FC = () => {
     const [categoryEditImageUrl, setCategoryEditImageUrl] = useState('');
     const [categoryEditFile, setCategoryEditFile] = useState<File | null>(null);
     const [lang, setLang] = useState<'ar' | 'en'>(() => (localStorage.getItem('lang') as 'ar' | 'en') || 'ar');
-    const [isBatchFetching, setIsBatchFetching] = useState(false);
 
     // Settings tab states for data deletion and MS Word exports
     const [ratingsDownloaded, setRatingsDownloaded] = useState(false);
@@ -339,55 +338,6 @@ const AdminDashboard: React.FC = () => {
     };
 
 
-    const handleBatchFetchImages = async () => {
-        if (window.confirm(lang === 'ar' ? 'هل تريد جلب وتحديث صور الغلاف لجميع الفروع من قوقل ماب تلقائياً؟' : 'Do you want to automatically fetch and update cover images for all branches from Google Maps?')) {
-            setIsBatchFetching(true);
-            const toastId = toast.loading(lang === 'ar' ? 'جاري جلب وتحديث صور الفروع من قوقل ماب...' : 'Fetching and updating branch images from Google Maps...');
-            let updatedCount = 0;
-            let failedCount = 0;
-
-            const processBranch = async (b: Branch) => {
-                try {
-                    const queryVal = b.name + ' ' + (b.address || '');
-                    const apiUrl = `/api/get-google-photo?query=${encodeURIComponent(queryVal)}&lat=${b.latitude}&lng=${b.longitude}`;
-
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-                    const response = await fetch(apiUrl, { signal: controller.signal });
-                    clearTimeout(timeoutId);
-
-                    if (response.ok) {
-                        const blob = await response.blob();
-                        if (blob.type.startsWith('image/')) {
-                            const filename = `google_map_photo_${b.id}.jpg`;
-                            const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
-                            
-                            const finalImageUrl = await uploadImage(file, 'branches');
-                            await updateBranch({ ...b, imageUrl: finalImageUrl });
-                            updatedCount++;
-                            return;
-                        }
-                    }
-                    failedCount++;
-                } catch (e) {
-                    console.error(`Failed to fetch image for branch ${b.name}:`, e);
-                    failedCount++;
-                }
-            };
-
-            // Process all in parallel (fast and robust)
-            await Promise.all(branches.map(b => processBranch(b)));
-
-            toast.success(
-                lang === 'ar' 
-                    ? `اكتمل التحديث تلقائياً! تم تحديث ${updatedCount} فرع، وفشل ${failedCount} فرع.`
-                    : `Batch update complete! Updated ${updatedCount} branches, failed ${failedCount}.`, 
-                { id: toastId, duration: 6000 }
-            );
-            setIsBatchFetching(false);
-        }
-    };
 
     const getBranchCountByCategory = (catName: string) => branches.filter(b => b.categories?.includes(catName)).length;
 
@@ -879,40 +829,46 @@ const AdminDashboard: React.FC = () => {
                 <>
                     <div className="admin-header-row">
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>الفروع <span style={{ color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: 500 }}>({totalBranches})</span></h2>
-                        <div className="admin-actions">
-                            <div style={{ position: 'relative', flex: 1 }}>
+                        <div className="admin-actions" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <div style={{ position: 'relative', flex: '1 1 200px' }}>
                                 <Search style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }} size={16} color="var(--text-secondary)" />
                                 <input 
                                     type="text" 
-                                    placeholder="بحث في الفروع..." 
+                                    placeholder={lang === 'ar' ? "بحث في الفروع..." : "Search branches..."}
                                     value={searchTerm} 
                                     onChange={(e) => setSearchTerm(e.target.value)} 
                                     style={{ 
-                                        padding: '12px 40px 12px 12px', 
-                                        borderRadius: '10px', 
-                                        border: '1px solid var(--border-color)', 
-                                        width: '100%',
-                                        background: 'var(--surface-color)',
-                                        fontSize: '14px'
-                                    }} 
-                                />
-                            </div>
-                            <div style={{ position: 'relative', flex: 0.5, minWidth: '150px' }}>
-                                <select
-                                    value={filterCity}
-                                    onChange={(e) => setFilterCity(e.target.value)}
-                                    style={{
-                                        padding: '12px', 
-                                        borderRadius: '10px', 
+                                        padding: '10px 36px 10px 12px', 
+                                        borderRadius: '8px', 
                                         border: '1px solid var(--border-color)', 
                                         width: '100%',
                                         background: 'var(--surface-color)',
                                         fontSize: '14px',
                                         color: 'var(--text-primary)',
-                                        appearance: 'none'
+                                        height: '42px',
+                                        transition: 'all 0.3s ease'
+                                    }} 
+                                />
+                            </div>
+                            <div style={{ position: 'relative', flex: '1 1 150px' }}>
+                                <select
+                                    value={filterCity}
+                                    onChange={(e) => setFilterCity(e.target.value)}
+                                    style={{
+                                        padding: '10px 12px 10px 36px', 
+                                        borderRadius: '8px', 
+                                        border: '1px solid var(--border-color)', 
+                                        width: '100%',
+                                        background: 'var(--surface-color)',
+                                        fontSize: '14px',
+                                        color: 'var(--text-primary)',
+                                        appearance: 'none',
+                                        height: '42px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease'
                                     }}
                                 >
-                                    <option value="all">كل المدن</option>
+                                    <option value="all">{lang === 'ar' ? "كل المدن" : "All Cities"}</option>
                                     {uniqueCities.map(city => (
                                         <option key={city} value={city}>{city}</option>
                                     ))}
@@ -922,60 +878,50 @@ const AdminDashboard: React.FC = () => {
                             <button 
                                 onClick={handleExportExcel} 
                                 style={{ 
-                                    background: 'var(--surface-color)', 
-                                    color: 'var(--text-primary)', 
-                                    padding: '0.85rem 1.25rem', 
-                                    borderRadius: '10px', 
-                                    border: '1px solid var(--border-color)', 
+                                    background: '#10b981', // Green for Excel
+                                    color: 'white', 
+                                    padding: '0 1rem', 
+                                    height: '42px',
+                                    borderRadius: '8px', 
+                                    border: 'none', 
                                     fontWeight: 700, 
                                     cursor: 'pointer', 
                                     display: 'flex', 
                                     alignItems: 'center', 
+                                    justifyContent: 'center',
                                     gap: '0.5rem',
-                                    fontSize: '14px'
+                                    fontSize: '14px',
+                                    flexShrink: 0,
+                                    boxShadow: '0 4px 6px rgba(16, 185, 129, 0.2)',
+                                    transition: 'all 0.3s ease'
                                 }}
                             >
                                 <FileDown size={18} />
                                 <span className="mobile-hide">{lang === 'ar' ? 'تصدير إكسل' : 'Export Excel'}</span>
                             </button>
                             <button 
-                                onClick={handleBatchFetchImages} 
-                                disabled={isBatchFetching}
-                                style={{ 
-                                    background: 'var(--navy-surface)', 
-                                    color: 'white', 
-                                    padding: '0.85rem 1.25rem', 
-                                    borderRadius: '10px', 
-                                    border: '1px solid var(--border-color)', 
-                                    fontWeight: 700, 
-                                    cursor: isBatchFetching ? 'not-allowed' : 'pointer', 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '0.5rem',
-                                    fontSize: '14px'
-                                }}
-                            >
-                                {isBatchFetching ? <Loader2 className="animate-spin" size={18} /> : <ImageIcon size={18} />}
-                                <span>{lang === 'ar' ? 'تحديث الصور من قوقل' : 'Update Images from Google'}</span>
-                            </button>
-                            <button 
                                 onClick={() => setIsFormOpen(true)} 
                                 style={{ 
-                                    background: 'var(--primary-color)', 
+                                    background: 'var(--primary-color)', // Blue for Add
                                     color: 'white', 
-                                    padding: '0.85rem 1.25rem', 
-                                    borderRadius: '10px', 
+                                    padding: '0 1rem', 
+                                    height: '42px',
+                                    borderRadius: '8px', 
                                     border: 'none', 
                                     fontWeight: 700, 
                                     cursor: 'pointer', 
                                     display: 'flex', 
                                     alignItems: 'center', 
+                                    justifyContent: 'center',
                                     gap: '0.5rem',
-                                    fontSize: '14px'
+                                    fontSize: '14px',
+                                    flexShrink: 0,
+                                    boxShadow: '0 4px 6px rgba(59, 130, 246, 0.2)',
+                                    transition: 'all 0.3s ease'
                                 }}
                             >
                                 <Plus size={18} /> 
-                                <span>إضافة فرع</span>
+                                <span>{lang === 'ar' ? 'إضافة فرع' : 'Add Branch'}</span>
                             </button>
                         </div>
                     </div>
