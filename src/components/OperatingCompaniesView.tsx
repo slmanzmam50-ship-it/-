@@ -135,16 +135,30 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
     const filteredAvailableBranches = availableBranches.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase()) || b.address.toLowerCase().includes(branchSearch.toLowerCase()));
 
     const handleShare = async (branch: Branch) => {
-        const url = `${window.location.origin}/?branch=${branch.id}`;
-        const title = `فرع ${branch.name} - مراكز خدمة سلمان الخالدي`;
-        const text = `تفضل بزيارة فرع ${branch.name} الواقع في ${branch.address}. للوصول عبر الخريطة: ${url}`;
+        const mapsUrl = branch.mapUrl || `https://www.google.com/maps/search/?api=1&query=${branch.latitude},${branch.longitude}`;
+        
+        const lines = [
+            `🛠️ *${branch.name}*`,
+            `📍 *العنوان:* ${branch.address}`,
+            branch.phone ? `📞 *الجوال:* ${branch.phone}` : '',
+            branch.managerName ? `👤 *المسؤول:* ${branch.managerName}` : '',
+            branch.workingHours ? `⏰ *الدوام:* ${branch.workingHours.start} – ${branch.workingHours.end}` : '',
+            branch.categories && branch.categories.length > 0 ? `⚙️ *الخدمات:* ${branch.categories.join(' - ')}` : '',
+            `\nسلمان زمام الخالدي لخدمة السيارات`
+        ].filter(Boolean);
+
+        const shareData = {
+            title: branch.name,
+            text: lines.join('\n'),
+            url: mapsUrl
+        };
         
         try {
             if (navigator.share) {
-                await navigator.share({ title, text, url });
+                await navigator.share(shareData);
             } else {
-                await navigator.clipboard.writeText(text);
-                toast.success('تم نسخ الرابط');
+                await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+                toast.success('تم نسخ بيانات الفرع بنجاح!');
             }
         } catch (e) {
             console.error(e);
@@ -454,6 +468,7 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
                         return (
                             <div 
                                 key={comp.id}
+                                title="انقر مرتين لإدارة وتعديل الفروع"
                                 onClick={() => {
                                     setSelectedCompanyId(comp.id);
                                     if (selectedCompanyId !== comp.id) {
@@ -491,6 +506,7 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
                                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         <MapPin size={12} /> {comp.branchIds?.length || 0} فرع
                                     </div>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>(انقر مرتين لإدارة الفروع)</div>
                                 </div>
                                 <button 
                                     onClick={(e) => handleDeleteCompany(comp.id, e)}
