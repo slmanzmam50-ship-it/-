@@ -53,6 +53,8 @@ const AdminDashboard: React.FC = () => {
     const [requestsDownloaded, setRequestsDownloaded] = useState(false);
     const [isClearingRatings, setIsClearingRatings] = useState(false);
     const [isClearingRequests, setIsClearingRequests] = useState(false);
+    const [isExportBranchesModalOpen, setIsExportBranchesModalOpen] = useState(false);
+    const [isExportRequestsModalOpen, setIsExportRequestsModalOpen] = useState(false);
 
     // New corporate/request states
     const [companies, setCompanies] = useState<CompanyAccount[]>([]);
@@ -279,49 +281,42 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const handleExportExcel = () => {
-        const branchesWithCity = filteredBranches.map(b => ({
-            ...b,
-            extractedCity: extractCity(b.address)
-        }));
+    
+    const branchColumns: ColumnDef[] = [
+        { id: 'city', label: 'المدينة' },
+        { id: 'name', label: 'اسم الفرع' },
+        { id: 'address', label: 'العنوان' },
+        { id: 'phone', label: 'رقم الجوال' },
+        { id: 'status', label: 'الحالة' },
+        { id: 'manager', label: 'المدير' },
+        { id: 'categories', label: 'الأقسام' },
+        { id: 'mapUrl', label: 'رابط قوقل ماب' },
+        { id: 'coordinates', label: 'الإحداثيات' }
+    ];
 
-        // Sort by city alphabetically, then by branch name naturally (3 before 33)
-        branchesWithCity.sort((a, b) => {
-            const cityCompare = a.extractedCity.localeCompare(b.extractedCity, 'ar');
-            if (cityCompare !== 0) return cityCompare;
-            return a.name.localeCompare(b.name, 'ar', { numeric: true });
-        });
+    const branchesPreviewData = filteredBranches.map(b => ({
+        city: extractCity(b.address),
+        name: b.name,
+        address: b.address,
+        phone: b.phone || "",
+        status: b.status,
+        manager: b.managerName || "",
+        categories: b.categories?.join(" | ") || "",
+        mapUrl: b.mapUrl || "",
+        coordinates: `${b.latitude || ''}, ${b.longitude || ''}`
+    })).sort((a, b) => {
+        const cityCompare = a.city.localeCompare(b.city, 'ar');
+        if (cityCompare !== 0) return cityCompare;
+        return a.name.localeCompare(b.name, 'ar', { numeric: true });
+    });
 
-        const headers = ["المدينة", "اسم الفرع", "العنوان", "رقم الجوال", "الحالة", "المدير", "الأقسام", "رابط قوقل ماب", "الإحداثيات"];
-        const rows = branchesWithCity.map(b => [
-            b.extractedCity,
-            b.name,
-            b.address,
-            b.phone,
-            b.status,
-            b.managerName || "",
-            b.categories?.join(" | ") || "",
-            b.mapUrl || "",
-            `${b.latitude}, ${b.longitude}`
-        ]);
+    const handleConfirmExportBranches = (orderedVisibleColumns: ColumnDef[]) => {
+        const headers = orderedVisibleColumns.map(c => c.label);
+        const rows = branchesPreviewData.map(r => orderedVisibleColumns.map(c => (r as any)[c.id]));
         
         const worksheet = utils.aoa_to_sheet([headers, ...rows]);
-        worksheet['!dir'] = 'rtl'; // Right-to-left for Arabic
+        worksheet['!dir'] = 'rtl';
         
-        // Auto-size columns slightly
-        const colWidths = [
-            { wch: 15 }, // City
-            { wch: 25 }, // Name
-            { wch: 40 }, // Address
-            { wch: 15 }, // Phone
-            { wch: 10 }, // Status
-            { wch: 20 }, // Manager
-            { wch: 30 }, // Categories
-            { wch: 45 }, // Map URL
-            { wch: 25 }  // Coordinates
-        ];
-        worksheet['!cols'] = colWidths;
-
         const workbook = utils.book_new();
         utils.book_append_sheet(workbook, worksheet, "الفروع");
         
@@ -422,39 +417,39 @@ const AdminDashboard: React.FC = () => {
     };
 
     // --- Service Requests Excel Export ---
-    const handleExportRequestsExcel = () => {
-        const headers = ["رقم الطلب", "الشركة", "رقم اللوحة", "الخدمة المطلوبة", "الحالة", "تاريخ الإنشاء", "تاريخ التنفيذ", "الفرع المنفذ"];
-        const rows = requests.map(r => [
-            r.id,
-            r.companyName,
-            r.plateNumber,
-            r.serviceDescription,
-            r.status === 'active' ? 'نشط' : 'منفذ ومستلم',
-            new Date(r.createdAt).toLocaleString('ar-SA'),
-            r.completedAt ? new Date(r.completedAt).toLocaleString('ar-SA') : "",
-            r.branchName || ""
-        ]);
+    
+    const requestColumns: ColumnDef[] = [
+        { id: 'date', label: 'التاريخ' },
+        { id: 'clientName', label: 'اسم العميل' },
+        { id: 'clientPhone', label: 'جوال العميل' },
+        { id: 'branchName', label: 'اسم الفرع' },
+        { id: 'carType', label: 'نوع السيارة' },
+        { id: 'category', label: 'قسم الصيانة' },
+        { id: 'description', label: 'المشكلة' },
+        { id: 'status', label: 'الحالة' }
+    ];
 
+    const requestsPreviewData = requests.map(r => ({
+        date: new Date(r.createdAt).toLocaleDateString('ar-SA'),
+        clientName: r.clientName,
+        clientPhone: r.clientPhone,
+        branchName: r.branchName,
+        carType: r.carType || '',
+        category: r.category,
+        description: r.description,
+        status: r.status === 'pending' ? 'جديد' : (r.status === 'in-progress' ? 'جاري المعالجة' : 'مكتمل')
+    }));
+
+    const handleConfirmExportRequests = (orderedVisibleColumns: ColumnDef[]) => {
+        const headers = orderedVisibleColumns.map(c => c.label);
+        const rows = requestsPreviewData.map(r => orderedVisibleColumns.map(c => (r as any)[c.id]));
+        
         const worksheet = utils.aoa_to_sheet([headers, ...rows]);
         worksheet['!dir'] = 'rtl';
-
-        const colWidths = [
-            { wch: 15 }, // ID
-            { wch: 25 }, // Company
-            { wch: 15 }, // Plate
-            { wch: 35 }, // Service
-            { wch: 15 }, // Status
-            { wch: 25 }, // Created At
-            { wch: 25 }, // Completed At
-            { wch: 25 }  // Executing Branch
-        ];
-        worksheet['!cols'] = colWidths;
-
         const workbook = utils.book_new();
-        utils.book_append_sheet(workbook, worksheet, "الطلبات العام");
-
-        writeFile(workbook, `requests_report_${new Date().toISOString().split('T')[0]}.xlsx`);
-        toast.success('تم تصدير سجل الطلبات بنجاح 📊');
+        utils.book_append_sheet(workbook, worksheet, "الطلبات");
+        writeFile(workbook, `requests_${new Date().toISOString().split('T')[0]}.xlsx`);
+        toast.success(lang === 'ar' ? 'تم تصدير الطلبات بنجاح' : 'Requests exported successfully');
     };
 
     const handleAdminCreateRequest = async (e: React.FormEvent) => {
@@ -906,7 +901,7 @@ const AdminDashboard: React.FC = () => {
                                 </button>
                             </div>
                             <button 
-                                onClick={handleExportExcel} 
+                                onClick={() => setIsExportBranchesModalOpen(true)} 
                                 style={{ 
                                     background: '#10b981', // Green for Excel
                                     color: 'white', 
@@ -1367,7 +1362,7 @@ const AdminDashboard: React.FC = () => {
                                 <span>➕ إنشاء طلب لشركة</span>
                             </button>
                             <button 
-                                onClick={handleExportRequestsExcel} 
+                                onClick={() => setIsExportRequestsModalOpen(true)} 
                                 style={{ 
                                     background: 'var(--surface-color)', 
                                     color: 'var(--text-primary)', 
