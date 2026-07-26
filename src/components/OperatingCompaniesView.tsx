@@ -4,6 +4,8 @@ import type { Branch, OperatingCompany } from '../types';
 import { subscribeToOperatingCompanies, addOperatingCompany, updateOperatingCompany, deleteOperatingCompany, uploadImage } from '../services/storage';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
+import ExportPreviewModal from './ExportPreviewModal';
+import type { ColumnDef } from './ExportPreviewModal';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 // @ts-ignore
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -106,6 +108,7 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
     const [companies, setCompanies] = useState<OperatingCompany[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
     const [showManagementPanel, setShowManagementPanel] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [newCompanyName, setNewCompanyName] = useState('');
     const [newCompanyLogoFile, setNewCompanyLogoFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -620,7 +623,7 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
                             
                             <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
                                 <button 
-                                    onClick={handleExportExcel}
+                                    onClick={() => setIsExportModalOpen(true)}
                                     style={{ flex: 1, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
                                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)'}
                                     onMouseLeave={e => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
@@ -749,6 +752,15 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
                     </div>
                 )}
             </div>
+
+            <ExportPreviewModal 
+                isOpen={isExportModalOpen} 
+                onClose={() => setIsExportModalOpen(false)} 
+                title={selectedCompany?.name ? `فروع ${selectedCompany.name}` : 'الفروع'}
+                columns={branchColumns}
+                data={getPreviewData()}
+                onExport={handleConfirmExportExcel}
+            />
         </div>
     );
 };
