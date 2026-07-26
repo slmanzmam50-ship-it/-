@@ -23,6 +23,7 @@ import {
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
 import OperatingCompaniesView from '../components/OperatingCompaniesView';
+import ExportPreviewModal, { ColumnDef } from '../components/ExportPreviewModal';
 import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
@@ -420,24 +421,22 @@ const AdminDashboard: React.FC = () => {
     
     const requestColumns: ColumnDef[] = [
         { id: 'date', label: 'التاريخ' },
-        { id: 'clientName', label: 'اسم العميل' },
-        { id: 'clientPhone', label: 'جوال العميل' },
+        { id: 'id', label: 'رقم الطلب' },
+        { id: 'companyName', label: 'اسم الشركة' },
+        { id: 'plateNumber', label: 'رقم اللوحة' },
+        { id: 'serviceDescription', label: 'وصف الخدمة' },
         { id: 'branchName', label: 'اسم الفرع' },
-        { id: 'carType', label: 'نوع السيارة' },
-        { id: 'category', label: 'قسم الصيانة' },
-        { id: 'description', label: 'المشكلة' },
         { id: 'status', label: 'الحالة' }
     ];
 
     const requestsPreviewData = requests.map(r => ({
         date: new Date(r.createdAt).toLocaleDateString('ar-SA'),
-        clientName: r.clientName,
-        clientPhone: r.clientPhone,
-        branchName: r.branchName,
-        carType: r.carType || '',
-        category: r.category,
-        description: r.description,
-        status: r.status === 'pending' ? 'جديد' : (r.status === 'in-progress' ? 'جاري المعالجة' : 'مكتمل')
+        id: r.id,
+        companyName: r.companyName,
+        plateNumber: r.plateNumber,
+        serviceDescription: r.serviceDescription,
+        branchName: r.branchName || 'غير محدد',
+        status: r.status === 'active' ? 'نشط' : (r.status === 'completed' ? 'مكتمل' : (r.status === 'transferred' ? 'محول' : (r.status === 'partial' ? 'إنجاز جزئي' : 'مرفوض')))
     }));
 
     const handleConfirmExportRequests = (orderedVisibleColumns: ColumnDef[]) => {
