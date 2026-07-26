@@ -23,7 +23,8 @@ import {
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
 import OperatingCompaniesView from '../components/OperatingCompaniesView';
-import ExportPreviewModal, { ColumnDef } from '../components/ExportPreviewModal';
+import ExportPreviewModal from '../components/ExportPreviewModal';
+import type { ColumnDef } from '../components/ExportPreviewModal';
 import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
@@ -2251,6 +2252,25 @@ const AdminDashboard: React.FC = () => {
             )}
                 </div>
             </div>
+
+            {/* Export Modals */}
+            <ExportPreviewModal 
+                isOpen={isExportBranchesModalOpen} 
+                onClose={() => setIsExportBranchesModalOpen(false)} 
+                title="الفروع"
+                columns={branchColumns}
+                data={branchesPreviewData}
+                onExport={handleConfirmExportBranches}
+            />
+            
+            <ExportPreviewModal 
+                isOpen={isExportRequestsModalOpen} 
+                onClose={() => setIsExportRequestsModalOpen(false)} 
+                title="طلبات الصيانة"
+                columns={requestColumns}
+                data={requestsPreviewData}
+                onExport={handleConfirmExportRequests}
+            />
         </div>
     );
 };
