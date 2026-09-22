@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Users, Activity, Trash2, Edit2, Search, Filter, Download } from 'lucide-react';
+import { Users, Activity, Trash2, Edit2, Download } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
 import toast from 'react-hot-toast';

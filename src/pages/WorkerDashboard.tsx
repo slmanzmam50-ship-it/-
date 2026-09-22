@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Plus, DollarSign, Wallet, CheckCircle, XCircle, FileText, AlertCircle, TrendingUp, TrendingDown, Clock } from 'lucide-react';
+import { LogOut, Plus, Wallet, CheckCircle, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Worker, WorkerOperation, WorkerServiceType } from '../types';
-import { db } from '../config/firebase';
+import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { subscribeToWorkerOperationsByWorker, addWorkerOperation, updateWorkerOperation } from '../services/storage';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const serviceOptions: WorkerServiceType[] = ['غسيل', 'تغيير زيت', 'بنشر', 'ميكانيكا', 'كهرباء', 'تلميع', 'أخرى'];
 
@@ -126,17 +126,17 @@ const WorkerDashboard: React.FC = () => {
             if (resolution === 'approved') {
                 // Apply changes
                 const edits = operation.pendingEditRequest;
-                if (edits.price !== undefined) updatedOp.price = edits.price;
-                if (edits.paymentMethod !== undefined) updatedOp.paymentMethod = edits.paymentMethod;
-                if (edits.hasInvoice !== undefined) updatedOp.hasInvoice = edits.hasInvoice;
-                if (edits.tipAmount !== undefined) updatedOp.tipAmount = edits.tipAmount;
-                if (edits.expenseAmount !== undefined) updatedOp.expenseAmount = edits.expenseAmount;
-                if (edits.expenseReason !== undefined) updatedOp.expenseReason = edits.expenseReason;
+                if (edits && edits.price !== undefined) updatedOp.price = edits.price;
+                if (edits && edits.paymentMethod !== undefined) updatedOp.paymentMethod = edits.paymentMethod;
+                if (edits && edits.hasInvoice !== undefined) updatedOp.hasInvoice = edits.hasInvoice;
+                if (edits && edits.tipAmount !== undefined) updatedOp.tipAmount = edits.tipAmount;
+                if (edits && edits.expenseAmount !== undefined) updatedOp.expenseAmount = edits.expenseAmount;
+                if (edits && edits.expenseReason !== undefined) updatedOp.expenseReason = edits.expenseReason;
                 
-                updatedOp.pendingEditRequest.status = 'approved';
+                if (updatedOp.pendingEditRequest) updatedOp.pendingEditRequest.status = 'approved';
                 toast.success('تم قبول التعديل وتحديث العملية ✅');
             } else {
-                updatedOp.pendingEditRequest.status = 'rejected';
+                if (updatedOp.pendingEditRequest) updatedOp.pendingEditRequest.status = 'rejected';
                 toast.success('تم رفض التعديل ❌');
             }
             
