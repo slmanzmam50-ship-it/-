@@ -26,6 +26,40 @@ const WorkerDashboard: React.FC = () => {
     
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // PWA Install Banner
+    const [installPrompt, setInstallPrompt] = useState<any>(null);
+    const [showInstallBanner, setShowInstallBanner] = useState(false);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+
+    useEffect(() => {
+        // Already installed as PWA – no need to show banner
+        if (isStandalone) return;
+
+        const handler = (e: any) => {
+            e.preventDefault();
+            setInstallPrompt(e);
+            setShowInstallBanner(true);
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+
+        // For iOS: show manual instructions banner
+        if (isIos && !isStandalone) {
+            setShowInstallBanner(true);
+        }
+
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, [isStandalone, isIos]);
+
+    const handleInstallApp = async () => {
+        if (installPrompt) {
+            installPrompt.prompt();
+            await installPrompt.userChoice;
+            setInstallPrompt(null);
+        }
+        setShowInstallBanner(false);
+    };
+
     useEffect(() => {
         const workerId = localStorage.getItem('logged_worker_id');
         const token = localStorage.getItem('worker_session_token');
@@ -191,11 +225,36 @@ const WorkerDashboard: React.FC = () => {
                 </div>
                 <button 
                     onClick={handleLogout}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'rgba(239,68,68,0.1)', color: 'var(--error)', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700 }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'rgba(239,68,68,0.08)', color: 'var(--error)', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '12px' }}
                 >
-                    <LogOut size={18} /> تسجيل الخروج
+                    <LogOut size={14} />
                 </button>
             </div>
+
+            {/* PWA Install Banner */}
+            {showInstallBanner && (
+                <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.12) 100%)', border: '1.5px solid rgba(16,185,129,0.3)', borderRadius: '16px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '28px' }}>📲</span>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--success)' }}>ثبّت التطبيق على جوالك</div>
+                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                {isIos ? 'اضغط على زر المشاركة ثم "الإضافة للشاشة الرئيسية"' : 'افتح بدون متصفح لتجربة أفضل'}
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        {!isIos && installPrompt && (
+                            <button onClick={handleInstallApp} style={{ padding: '8px 16px', background: 'var(--success)', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 800, fontSize: '13px' }}>
+                                تثبيت
+                            </button>
+                        )}
+                        <button onClick={() => setShowInstallBanner(false)} style={{ padding: '8px 12px', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px' }}>
+                            تخطي
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {pendingRequests.length > 0 && (
                 <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid var(--accent-orange)', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem' }}>
