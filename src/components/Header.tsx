@@ -77,8 +77,30 @@ const Header: React.FC = () => {
 
     const isAr = lang === 'ar';
 
+    const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
+    const isLongPress = React.useRef(false);
+
+    const startLongPress = () => {
+        isLongPress.current = false;
+        longPressTimer.current = setTimeout(() => {
+            isLongPress.current = true;
+            navigate('/login');
+        }, 5000); // 5 seconds
+    };
+
+    const clearLongPress = () => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    };
+
     const handleLogoClick = (e: React.MouseEvent) => {
         e.preventDefault();
+        if (isLongPress.current) {
+            isLongPress.current = false;
+            return; // Ignore click if it was a long press
+        }
         if (localStorage.getItem('isAuthenticated') === 'true') {
             navigate('/admin');
         } else if (localStorage.getItem('logged_company_id')) {
@@ -103,7 +125,16 @@ const Header: React.FC = () => {
     return (
         <>
             <header className="glass app-header">
-                <div onClick={handleLogoClick} className="app-logo-link" style={{ cursor: 'pointer' }}>
+                <div 
+                    onClick={handleLogoClick}
+                    onMouseDown={startLongPress}
+                    onMouseUp={clearLongPress}
+                    onMouseLeave={clearLongPress}
+                    onTouchStart={startLongPress}
+                    onTouchEnd={clearLongPress}
+                    className="app-logo-link" 
+                    style={{ cursor: 'pointer', userSelect: 'none', WebkitUserSelect: 'none' }}
+                >
                     <img 
                         src="/logo.png" 
                         alt="Logo" 
