@@ -133,10 +133,10 @@ const WorkerDashboard: React.FC = () => {
                 if (edits && edits.expenseAmount !== undefined) updatedOp.expenseAmount = edits.expenseAmount;
                 if (edits && edits.expenseReason !== undefined) updatedOp.expenseReason = edits.expenseReason;
                 
-                if (updatedOp.pendingEditRequest) updatedOp.pendingEditRequest.status = 'approved';
+                if (updatedOp.pendingEditRequest) if (updatedOp.pendingEditRequest) updatedOp.pendingEditRequest.status = 'approved';
                 toast.success('تم قبول التعديل وتحديث العملية ✅');
             } else {
-                if (updatedOp.pendingEditRequest) updatedOp.pendingEditRequest.status = 'rejected';
+                if (updatedOp.pendingEditRequest) if (updatedOp.pendingEditRequest) updatedOp.pendingEditRequest.status = 'rejected';
                 toast.success('تم رفض التعديل ❌');
             }
             

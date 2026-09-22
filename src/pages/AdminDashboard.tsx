@@ -26,7 +26,7 @@ import OperatingCompaniesView from '../components/OperatingCompaniesView';
 import WorkersView from '../components/WorkersView';
 import ExportPreviewModal from '../components/ExportPreviewModal';
 import type { ColumnDef } from '../components/ExportPreviewModal';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown, Building2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown, Building2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
 
@@ -42,7 +42,7 @@ const AdminDashboard: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
-    const [activeTab, setActiveTab] = useState<'branches' | 'companies-op' | 'categories' | 'companies' | 'requests' | 'settings'>('branches');
+    const [activeTab, setActiveTab] = useState<'branches' | 'companies-op' | 'categories' | 'companies' | 'requests' | 'settings' | 'workers'>('branches');
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [categoryEditName, setCategoryEditName] = useState('');
     const [newCategoryImageUrl, setNewCategoryImageUrl] = useState('');
@@ -1304,6 +1304,11 @@ const AdminDashboard: React.FC = () => {
                 </div>
             )}
 
+            
+            {activeTab === 'workers' && (
+                <WorkersView branches={branches} />
+            )}
+            
             {activeTab === 'requests' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     {/* Filters & Export Header */}

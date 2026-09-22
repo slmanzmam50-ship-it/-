@@ -29,7 +29,7 @@ const Login: React.FC = () => {
     }
     
     // Portal selection state
-    const [selectedPortal, setSelectedPortal] = useState<'admin' | 'company' | 'branch' | null>(() => {
+    const [selectedPortal, setSelectedPortal] = useState<'admin' | 'company' | 'branch' | 'worker' | null>(() => {
         if (mode !== 'public') return mode;
         if (typeParam === 'company' || typeParam === 'branch' || typeParam === 'admin') return typeParam;
         return null;
@@ -58,6 +58,7 @@ const Login: React.FC = () => {
         const storedBranchId = localStorage.getItem('logged_branch_id');
         const storedWorkerId = localStorage.getItem('logged_worker_id');
         
+        const storedToken = localStorage.getItem('admin_token');
         if (storedToken && selectedPortal === 'admin') {
             navigate('/admin');
         } else if (storedCompanyId && selectedPortal === 'company') {
@@ -104,6 +105,22 @@ const Login: React.FC = () => {
                 } else {
                     setError('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
                     toast.error('اسم المستخدم أو كلمة المرور غير صحيحة ❌');
+                }
+            } else if (selectedPortal === 'worker') {
+                if (!u || !p) {
+                    toast.error('الرجاء إدخال اسم المستخدم وكلمة المرور');
+                    setIsLoading(false);
+                    return;
+                }
+                const result = await loginWorkerAccount(u, p);
+                if (result) {
+                    localStorage.setItem('logged_worker_id', result.id);
+                    localStorage.setItem('worker_session_token', result.token);
+                    toast.success(`مرحباً بك! تم تسجيل الدخول كـ ${result.name} 🎉`);
+                    navigate('/worker');
+                } else {
+                    setError('اسم المستخدم أو كلمة المرور غير صحيحة ⚠️');
+                    toast.error('اسم المستخدم أو كلمة المرور غير صحيحة ⚠️');
                 }
             } else if (selectedPortal === 'branch') {
                 if (!u || !p) {
@@ -284,13 +301,15 @@ const Login: React.FC = () => {
     const portalTitles = {
         admin: 'بوابة الإدارة العامة',
         company: 'بوابة حسابات الشركات',
-        branch: 'بوابة الفروع والورش'
+        branch: 'بوابة الفروع والورش',
+        worker: 'بوابة العمال'
     };
 
     const portalColors = {
         admin: 'var(--text-primary)',
         company: 'var(--primary-color)',
-        branch: 'var(--accent-orange)'
+        branch: 'var(--accent-orange)',
+        worker: 'var(--success)'
     };
 
     return (
