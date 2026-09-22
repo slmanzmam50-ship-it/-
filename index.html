@@ -21,6 +21,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Capture install prompt ASAP before React loads
+      window.__pwaInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__pwaInstallPrompt = e;
+        // Notify any listener that might be waiting
+        window.dispatchEvent(new CustomEvent('pwaPromptReady', { detail: e }));
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

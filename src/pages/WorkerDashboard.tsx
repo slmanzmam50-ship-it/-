@@ -27,28 +27,42 @@ const WorkerDashboard: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // PWA Install Banner
-    const [installPrompt, setInstallPrompt] = useState<any>(null);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
     const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-    // Show banner whenever the app is NOT running as installed PWA
+    const [installPrompt, setInstallPrompt] = useState<any>(() => (window as any).__pwaInstallPrompt || null);
+    // Show banner whenever not installed as PWA
     const [showInstallBanner, setShowInstallBanner] = useState(!isStandalone);
 
     useEffect(() => {
-        const handler = (e: any) => {
-            e.preventDefault();
-            setInstallPrompt(e); // save so we can call .prompt() on Android
+        // Already installed – hide banner
+        if (isStandalone) { setShowInstallBanner(false); return; }
+
+        // If prompt already captured before React mounted, use it
+        if ((window as any).__pwaInstallPrompt) {
+            setInstallPrompt((window as any).__pwaInstallPrompt);
+        }
+
+        // Also listen in case it fires later
+        const handler = (e: CustomEvent) => {
+            setInstallPrompt(e.detail);
         };
-        window.addEventListener('beforeinstallprompt', handler);
-        return () => window.removeEventListener('beforeinstallprompt', handler);
-    }, []);
+        window.addEventListener('pwaPromptReady', handler as EventListener);
+        return () => window.removeEventListener('pwaPromptReady', handler as EventListener);
+    }, [isStandalone]);
 
     const handleInstallApp = async () => {
         if (installPrompt) {
             installPrompt.prompt();
-            await installPrompt.userChoice;
+            const { outcome } = await installPrompt.userChoice;
+            if (outcome === 'accepted') {
+                setShowInstallBanner(false);
+                (window as any).__pwaInstallPrompt = null;
+            }
             setInstallPrompt(null);
+        } else {
+            // Fallback: guide user to browser menu
+            setShowInstallBanner(false);
         }
-        setShowInstallBanner(false);
     };
 
     useEffect(() => {
