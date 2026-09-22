@@ -60,8 +60,13 @@ function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const typeParam = urlParams.get('type') || urlParams.get('appMode');
     const hostname = window.location.hostname;
+    const isWorkerLoggedIn = !!localStorage.getItem('logged_worker_id');
     
-    if (typeParam === 'company' || hostname.startsWith('b2b.') || hostname.startsWith('company.') || hostname.includes('company') || hostname.includes('b2b')) {
+    if (typeParam === 'worker' || isWorkerLoggedIn || window.location.pathname.startsWith('/worker')) {
+      // Worker portal – opens directly on /worker
+      manifestFile = '/manifest-worker.json';
+      document.title = " ";
+    } else if (typeParam === 'company' || hostname.startsWith('b2b.') || hostname.startsWith('company.') || hostname.includes('company') || hostname.includes('b2b')) {
       manifestFile = '/manifest-company.json';
       document.title = "سلمان الخالدي - الشركات B2B";
     } else if (typeParam === 'branch' || hostname.startsWith('branch.') || hostname.startsWith('workshop.') || hostname.includes('branch') || hostname.includes('workshop')) {

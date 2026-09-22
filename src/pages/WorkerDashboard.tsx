@@ -31,7 +31,7 @@ const WorkerDashboard: React.FC = () => {
         const token = localStorage.getItem('worker_session_token');
         
         if (!workerId || !token) {
-            navigate('/login');
+            navigate('/login?type=worker');
             return;
         }
 
