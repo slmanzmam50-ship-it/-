@@ -28,28 +28,19 @@ const WorkerDashboard: React.FC = () => {
 
     // PWA Install Banner
     const [installPrompt, setInstallPrompt] = useState<any>(null);
-    const [showInstallBanner, setShowInstallBanner] = useState(false);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
     const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+    // Show banner whenever the app is NOT running as installed PWA
+    const [showInstallBanner, setShowInstallBanner] = useState(!isStandalone);
 
     useEffect(() => {
-        // Already installed as PWA – no need to show banner
-        if (isStandalone) return;
-
         const handler = (e: any) => {
             e.preventDefault();
-            setInstallPrompt(e);
-            setShowInstallBanner(true);
+            setInstallPrompt(e); // save so we can call .prompt() on Android
         };
         window.addEventListener('beforeinstallprompt', handler);
-
-        // For iOS: show manual instructions banner
-        if (isIos && !isStandalone) {
-            setShowInstallBanner(true);
-        }
-
         return () => window.removeEventListener('beforeinstallprompt', handler);
-    }, [isStandalone, isIos]);
+    }, []);
 
     const handleInstallApp = async () => {
         if (installPrompt) {
@@ -233,20 +224,24 @@ const WorkerDashboard: React.FC = () => {
 
             {/* PWA Install Banner */}
             {showInstallBanner && (
-                <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.12) 100%)', border: '1.5px solid rgba(16,185,129,0.3)', borderRadius: '16px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.12) 100%)', border: '1.5px solid rgba(16,185,129,0.3)', borderRadius: '16px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{ fontSize: '28px' }}>📲</span>
                         <div>
                             <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--success)' }}>ثبّت التطبيق على جوالك</div>
                             <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                                {isIos ? 'اضغط على زر المشاركة ثم "الإضافة للشاشة الرئيسية"' : 'افتح بدون متصفح لتجربة أفضل'}
+                                {isIos
+                                    ? 'اضغط على زر المشاركة ثم "الإضافة للشاشة الرئيسية" 🔼'
+                                    : installPrompt
+                                        ? 'اضغط تثبيت لفتح التطبيق بدون متصفح'
+                                        : 'من قائمة المتصفح ⋮ اختر "إضافة إلى الشاشة الرئيسية"'}
                             </div>
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                         {!isIos && installPrompt && (
                             <button onClick={handleInstallApp} style={{ padding: '8px 16px', background: 'var(--success)', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 800, fontSize: '13px' }}>
-                                تثبيت
+                                تثبيت ✓
                             </button>
                         )}
                         <button onClick={() => setShowInstallBanner(false)} style={{ padding: '8px 12px', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px' }}>
