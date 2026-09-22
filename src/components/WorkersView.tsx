@@ -282,7 +282,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ background: 'white', padding: '24px', borderRadius: '24px', width: '90%', maxWidth: '400px' }}>
                         <h3 style={{ margin: '0 0 16px' }}>اقتراح تعديل على ({editingOp.workerName})</h3>
-                        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>لا يتم تطبيق التعديل حتى يوافق العامل عليه.</p>
+                        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>قم بتعديل الإيراد أو الخرج للعملية وسيطبق فوراً.</p>
                         
                         <form onSubmit={handleProposeEdit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
