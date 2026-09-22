@@ -293,6 +293,40 @@ const Login: React.FC = () => {
                             مسح باركودات الخدمات بالكاميرا، تأكيد واستقبال طلبات الصيانة الموجهة.
                         </p>
                     </div>
+                    {/* Worker Portal Card */}
+                    <div
+                        onClick={() => setSelectedPortal('worker')}
+                        className="hover-scale tap-effect glass"
+                        style={{
+                            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.9) 100%)',
+                            border: '1.5px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '24px',
+                            padding: '32px 24px',
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            color: 'white',
+                            boxShadow: '0 12px 30px rgba(16, 185, 129, 0.2)',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                        }}
+                    >
+                        <div style={{
+                            background: 'rgba(255,255,255,0.15)',
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 20px',
+                            color: 'white'
+                        }}>
+                            <User size={32} />
+                        </div>
+                        <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800 }}>بوابة العمال</h3>
+                        <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.5' }}>
+                            تسجيل العمليات اليومية، متابعة الأرباح والرسوم البيانية للمنجزات.
+                        </p>
+                    </div>
                 </div>
             </div>
         );
@@ -327,6 +361,7 @@ const Login: React.FC = () => {
                     {selectedPortal === 'admin' && <Shield size={30} />}
                     {selectedPortal === 'company' && <Building2 size={30} />}
                     {selectedPortal === 'branch' && <Store size={30} />}
+                    {selectedPortal === 'worker' && <User size={30} />}
                 </div>
 
                 <h2 style={{ marginBottom: '4px', fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>تسجيل الدخول</h2>
