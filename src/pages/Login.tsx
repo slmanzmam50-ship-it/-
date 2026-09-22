@@ -31,7 +31,7 @@ const Login: React.FC = () => {
     // Portal selection state
     const [selectedPortal, setSelectedPortal] = useState<'admin' | 'company' | 'branch' | 'worker' | null>(() => {
         if (mode !== 'public') return mode;
-        if (typeParam === 'company' || typeParam === 'branch' || typeParam === 'admin') return typeParam;
+        if (typeParam === 'company' || typeParam === 'branch' || typeParam === 'admin' || typeParam === 'worker') return typeParam;
         return null;
     });
 
