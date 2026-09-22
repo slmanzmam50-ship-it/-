@@ -779,7 +779,7 @@ export const loginWorkerAccount = async (username: string, password: string): Pr
             const data = doc.data() as Worker;
             if (!data.isActive) return null;
             const token = generateSecureId('w-sess-', 32);
-            await setDoc(doc.ref, { lastLoginTime: Date.now() }, { merge: true });
+            // Removed lastLoginTime update to prevent permission-denied errors if Firebase Rules are strict
             
             // Note: In a real secure app we wouldn't store sessions in localStorage purely, but following this app's existing logic
             return { id: doc.id, token, name: data.name, branchId: data.branchId };
