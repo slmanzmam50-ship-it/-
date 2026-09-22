@@ -85,7 +85,7 @@ const Header: React.FC = () => {
         longPressTimer.current = setTimeout(() => {
             isLongPress.current = true;
             navigate('/login');
-        }, 5000); // 5 seconds
+        }, 3000); // 3 seconds
     };
 
     const clearLongPress = () => {
@@ -132,8 +132,15 @@ const Header: React.FC = () => {
                     onMouseLeave={clearLongPress}
                     onTouchStart={startLongPress}
                     onTouchEnd={clearLongPress}
+                    onTouchCancel={clearLongPress}
+                    onContextMenu={(e) => e.preventDefault()}
                     className="app-logo-link" 
-                    style={{ cursor: 'pointer', userSelect: 'none', WebkitUserSelect: 'none' }}
+                    style={{ 
+                        cursor: 'pointer', 
+                        userSelect: 'none', 
+                        WebkitUserSelect: 'none',
+                        WebkitTouchCallout: 'none'
+                    }}
                 >
                     <img 
                         src="/logo.png" 
