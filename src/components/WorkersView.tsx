@@ -21,7 +21,8 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [isAdding, setIsAdding] = useState(false);
 
     // Operations Filters
-    const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('month');
+    const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('today');
+    const [paymentFilter, setPaymentFilter] = useState<'all' | 'cash' | 'network'>('all');
     const [workerFilter, setWorkerFilter] = useState<string>('all');
     
     // Edit Modal State
@@ -123,6 +124,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const now = Date.now();
     const filteredOperations = operations.filter(op => {
         if (workerFilter !== 'all' && op.workerId !== workerFilter) return false;
+        if (paymentFilter !== 'all' && op.paymentMethod !== paymentFilter) return false;
         
         const diffDays = (now - op.createdAt) / (1000 * 60 * 60 * 24);
         if (dateFilter === 'today' && diffDays > 1) return false;
@@ -202,6 +204,11 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                             <option value="all">كل العمال</option>
                             {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                         </select>
+                        <select value={paymentFilter} onChange={e => setPaymentFilter(e.target.value as any)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
+                            <option value="all">الكل (كاش وشبكة)</option>
+                            <option value="cash">كاش فقط</option>
+                            <option value="network">شبكة فقط</option>
+                        </select>
                         <select value={dateFilter} onChange={e => setDateFilter(e.target.value as any)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
                             <option value="today">اليوم</option>
                             <option value="week">آخر أسبوع</option>
@@ -224,7 +231,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         <div style={{ fontSize: '24px', fontWeight: 900 }}>{totalExpenses} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
                     </div>
                     <div style={{ background: 'rgba(16,185,129,0.1)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.2)' }}>
-                        <div style={{ color: 'var(--success)', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>صافي الأرباح</div>
+                        <div style={{ color: 'var(--success)', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>المتبقي من الإيرادات</div>
                         <div style={{ fontSize: '24px', fontWeight: 900 }}>{totalNet} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
                     </div>
                 </div>
