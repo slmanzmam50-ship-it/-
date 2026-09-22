@@ -115,7 +115,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         ws['!dir'] = 'rtl';
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "العمليات");
-        XLSX.writeFile(wb, \`عمليات_العمال_\${new Date().toLocaleDateString()}.xlsx\`);
+        XLSX.writeFile(wb, `عمليات_العمال_${new Date().toLocaleDateString()}.xlsx`);
         toast.success('تم تصدير الإكسل بنجاح');
     };
 

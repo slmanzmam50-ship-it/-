@@ -173,7 +173,7 @@ const WorkerDashboard: React.FC = () => {
     const chartDataMap = new Map();
     currentMonthOps.forEach(op => {
         const day = new Date(op.createdAt).getDate();
-        if (!chartDataMap.has(day)) chartDataMap.set(day, { day: \`يوم \${day}\`, income: 0, expenses: 0 });
+        if (!chartDataMap.has(day)) chartDataMap.set(day, { day: `يوم ${day}`, income: 0, expenses: 0 });
         const d = chartDataMap.get(day);
         d.income += op.price;
         d.expenses += op.expenseAmount;
@@ -211,8 +211,8 @@ const WorkerDashboard: React.FC = () => {
                                     <div style={{ fontWeight: 700, marginBottom: '4px' }}>تعديل على عملية: {op.serviceType} (التاريخ: {new Date(op.createdAt).toLocaleDateString('ar-SA')})</div>
                                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                                         الإدارة تطلب تعديل:
-                                        {op.pendingEditRequest?.price !== undefined && \` السعر إلى \${op.pendingEditRequest.price} ريال\`}
-                                        {op.pendingEditRequest?.expenseAmount !== undefined && \` الخرج إلى \${op.pendingEditRequest.expenseAmount} ريال\`}
+                                        {op.pendingEditRequest?.price !== undefined && ` السعر إلى ${op.pendingEditRequest.price} ريال`}
+                                        {op.pendingEditRequest?.expenseAmount !== undefined && ` الخرج إلى ${op.pendingEditRequest.expenseAmount} ريال`}
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -264,15 +264,15 @@ const WorkerDashboard: React.FC = () => {
                                     <div style={{ flex: 1 }}>
                                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700, fontSize: '14px' }}>طريقة الدفع</label>
                                         <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button type="button" onClick={() => setPaymentMethod('cash')} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: \`1px solid \${paymentMethod === 'cash' ? 'var(--primary-color)' : 'var(--border-color)'}\`, background: paymentMethod === 'cash' ? 'var(--primary-light)' : 'transparent', color: paymentMethod === 'cash' ? 'var(--primary-color)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer' }}>كاش</button>
-                                            <button type="button" onClick={() => setPaymentMethod('network')} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: \`1px solid \${paymentMethod === 'network' ? 'var(--primary-color)' : 'var(--border-color)'}\`, background: paymentMethod === 'network' ? 'var(--primary-light)' : 'transparent', color: paymentMethod === 'network' ? 'var(--primary-color)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer' }}>شبكة</button>
+                                            <button type="button" onClick={() => setPaymentMethod('cash')} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${paymentMethod === 'cash' ? 'var(--primary-color)' : 'var(--border-color)'}`, background: paymentMethod === 'cash' ? 'var(--primary-light)' : 'transparent', color: paymentMethod === 'cash' ? 'var(--primary-color)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer' }}>كاش</button>
+                                            <button type="button" onClick={() => setPaymentMethod('network')} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${paymentMethod === 'network' ? 'var(--primary-color)' : 'var(--border-color)'}`, background: paymentMethod === 'network' ? 'var(--primary-light)' : 'transparent', color: paymentMethod === 'network' ? 'var(--primary-color)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer' }}>شبكة</button>
                                         </div>
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700, fontSize: '14px' }}>الفاتورة</label>
                                         <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button type="button" onClick={() => setHasInvoice(true)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: \`1px solid \${hasInvoice ? 'var(--success)' : 'var(--border-color)'}\`, background: hasInvoice ? 'rgba(16,185,129,0.1)' : 'transparent', color: hasInvoice ? 'var(--success)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer' }}>بفاتورة</button>
-                                            <button type="button" onClick={() => setHasInvoice(false)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: \`1px solid \${!hasInvoice ? 'var(--error)' : 'var(--border-color)'}\`, background: !hasInvoice ? 'rgba(239,68,68,0.1)' : 'transparent', color: !hasInvoice ? 'var(--error)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer' }}>بدون</button>
+                                            <button type="button" onClick={() => setHasInvoice(true)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${hasInvoice ? 'var(--success)' : 'var(--border-color)'}`, background: hasInvoice ? 'rgba(16,185,129,0.1)' : 'transparent', color: hasInvoice ? 'var(--success)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer' }}>بفاتورة</button>
+                                            <button type="button" onClick={() => setHasInvoice(false)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${!hasInvoice ? 'var(--error)' : 'var(--border-color)'}`, background: !hasInvoice ? 'rgba(239,68,68,0.1)' : 'transparent', color: !hasInvoice ? 'var(--error)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer' }}>بدون</button>
                                         </div>
                                     </div>
                                 </div>
