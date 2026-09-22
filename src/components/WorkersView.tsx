@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Activity, Trash2, Edit2, Download } from 'lucide-react';
+import { Users, Activity, Trash2, Edit2, Download, Share2 } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
 import toast from 'react-hot-toast';
@@ -136,6 +136,12 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const totalExpenses = filteredOperations.reduce((sum, op) => sum + op.expenseAmount, 0);
     const totalNet = totalIncome - totalExpenses;
 
+    const handleShareWorker = (w: Worker) => {
+        const shareText = `👋 مرحباً ${w.name}،\n\nإليك بيانات الدخول الخاصة بك لبوابة العمال:\n\n👤 اسم المستخدم: ${w.username}\n🔑 كلمة المرور: ${w.password}\n\nرابط الدخول:\n${window.location.origin}/login\n\n(اختر "بوابة العمال" وسجل دخولك)`;
+        const encodedText = encodeURIComponent(shareText);
+        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Workers Management */}
@@ -173,6 +179,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     <td style={{ padding: '12px' }}><code style={{ background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '4px' }}>{w.username}</code></td>
                                     <td style={{ padding: '12px' }}>{branches.find(b => b.id === w.branchId)?.name || 'غير محدد'}</td>
                                     <td style={{ padding: '12px' }}>
+                                        <button onClick={() => handleShareWorker(w)} style={{ padding: '6px', background: 'transparent', color: 'var(--success)', border: 'none', cursor: 'pointer', marginRight: '8px' }} title="مشاركة عبر الواتساب"><Share2 size={18} /></button>
                                         <button onClick={() => handleDeleteWorker(w.id)} style={{ padding: '6px', background: 'transparent', color: 'var(--error)', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
                                     </td>
                                 </tr>
