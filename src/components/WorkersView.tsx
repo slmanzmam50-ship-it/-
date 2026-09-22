@@ -245,7 +245,6 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                 <th style={{ padding: '12px', fontWeight: 700 }}>الخدمة</th>
                                 <th style={{ padding: '12px', fontWeight: 700 }}>الإيراد</th>
                                 <th style={{ padding: '12px', fontWeight: 700 }}>الخرج</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>حالة التعديل</th>
                                 <th style={{ padding: '12px', fontWeight: 700 }}>إجراء</th>
                             </tr>
                         </thead>
@@ -260,13 +259,6 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     <td style={{ padding: '12px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳' : '💵'}</td>
                                     <td style={{ padding: '12px', color: 'var(--success)', fontWeight: 700 }}>{op.price > 0 ? op.price : '-'}</td>
                                     <td style={{ padding: '12px', color: 'var(--error)', fontWeight: 700 }}>{op.expenseAmount > 0 ? op.expenseAmount : '-'}</td>
-                                    <td style={{ padding: '12px' }}>
-                                        {op.pendingEditRequest ? (
-                                            op.pendingEditRequest.status === 'pending' ? <span style={{ color: '#b45309', background: '#fef3c7', padding: '2px 8px', borderRadius: '12px', fontSize: '12px' }}>بانتظار العامل</span> :
-                                            op.pendingEditRequest.status === 'approved' ? <span style={{ color: 'var(--success)', fontSize: '12px' }}>تم القبول</span> :
-                                            <span style={{ color: 'var(--error)', fontSize: '12px' }}>مرفوض</span>
-                                        ) : '-'}
-                                    </td>
                                     <td style={{ padding: '12px' }}>
                                         <button onClick={() => { setEditingOp(op); setEditPrice(op.price.toString()); setEditExpense(op.expenseAmount.toString()); }} style={{ padding: '6px', background: 'transparent', color: 'var(--primary-color)', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>
                                     </td>
