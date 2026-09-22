@@ -150,9 +150,9 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                     <Users size={20} className="text-primary" /> إدارة العمال
                 </h3>
                 <form onSubmit={handleAddWorker} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-                    <input type="text" placeholder="الاسم" value={name} onChange={e => setName(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
-                    <input type="text" placeholder="اسم المستخدم" value={username} onChange={e => setUsername(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
-                    <input type="text" placeholder="الرقم السري" value={password} onChange={e => setPassword(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                    <input type="text" placeholder="الاسم (الظاهر للعملاء)" value={name} onChange={e => setName(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                    <input type="text" placeholder="معرّف الدخول (إنجليزي/أرقام)" value={username} onChange={e => setUsername(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                    <input type="text" placeholder="كلمة المرور" value={password} onChange={e => setPassword(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
                     <select value={branchId} onChange={e => setBranchId(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
                         <option value="">-- اختر الفرع --</option>
                         {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
