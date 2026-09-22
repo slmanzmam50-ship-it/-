@@ -993,3 +993,39 @@ button {
 .bottom-sheet-item:last-child {
     border-bottom: none;
 }
+
+
+/* Mobile Responsiveness for Admin Dashboard */
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+  .admin-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+    border-left: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 16px !important;
+  }
+  .admin-sidebar nav {
+    display: flex;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+  .admin-sidebar nav button {
+    flex: 1 1 calc(50% - 8px);
+    padding: 10px !important;
+    font-size: 13px !important;
+    justify-content: center;
+  }
+  .admin-main-content {
+    padding: 16px !important;
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+}

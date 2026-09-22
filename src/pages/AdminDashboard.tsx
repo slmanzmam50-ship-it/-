@@ -730,7 +730,7 @@ const AdminDashboard: React.FC = () => {
     }
 
     return (
-        <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-color)', direction: 'rtl' }}>
+        <div className="admin-layout" style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-color)', direction: 'rtl' }}>
             {/* Sidebar */}
             <div style={{
                 width: '280px',
@@ -803,7 +803,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Main Content Area */}
-            <div style={{ flex: 1, height: '100%', overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column' }} className="custom-scrollbar">
+            <div style={{ flex: 1, height: '100%', overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column' }} className="custom-scrollbar admin-main-content">
                 
                 
                 
