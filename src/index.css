@@ -927,8 +927,9 @@ button {
     left: 0;
     right: 0;
     height: 100%;
-    pointer-events: none;
+    pointer-events: auto;
     z-index: 1000;
+    background: rgba(0,0,0,0.2);
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -942,7 +943,8 @@ button {
     border-top-right-radius: 28px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
-    height: 60%;
+    max-height: 50%;
+    height: auto;
     pointer-events: auto;
     display: flex;
     flex-direction: column;

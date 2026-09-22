@@ -5,7 +5,7 @@ import { subscribeToOperatingCompanies, addOperatingCompany, updateOperatingComp
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import ExportPreviewModal from './ExportPreviewModal';
-import type { ColumnDef } from './ExportPreviewModal';
+
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 // @ts-ignore
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -236,40 +236,53 @@ const OperatingCompaniesView: React.FC<Props> = ({ branches, onAddNewBranch, onB
         }
     };
 
-    const handleExportExcel = () => {
-        if (!selectedCompany || !selectedCompany.branchIds) {
-            toast.error('لا توجد فروع لتصديرها');
-            return;
-        }
-        
+    
+    const branchColumns: import('./ExportPreviewModal').ColumnDef[] = [
+        { id: 'city', label: 'المدينة' },
+        { id: 'name', label: 'اسم الفرع' },
+        { id: 'managerName', label: 'اسم المسؤول' },
+        { id: 'phone', label: 'رقم التواصل' },
+        { id: 'address', label: 'العنوان' },
+        { id: 'mapUrl', label: 'رابط خرائط جوجل' }
+    ];
+
+    const getPreviewData = () => {
+        if (!selectedCompany || !selectedCompany.branchIds) return [];
         let companyBranches = selectedCompany.branchIds.map(id => branches.find(b => b.id === id)).filter(Boolean) as Branch[];
-        if (companyBranches.length === 0) {
-            toast.error('لا توجد فروع لتصديرها');
+        companyBranches = companyBranches.sort((a, b) => (a.city || '').localeCompare(b.city || '', 'ar'));
+        return companyBranches.map(b => ({
+            city: b.city || 'أخرى',
+            name: b.name,
+            managerName: b.managerName || 'غير محدد',
+            phone: b.phone || 'غير محدد',
+            address: b.address,
+            mapUrl: b.mapUrl || `https://www.google.com/maps/search/?api=1&query=${b.latitude},${b.longitude}`
+        }));
+    };
+
+    const handleConfirmExportExcel = (orderedVisibleColumns: import('./ExportPreviewModal').ColumnDef[]) => {
+        const previewData = getPreviewData();
+        if (previewData.length === 0) {
+            toast.error('لا يوجد فروع لتصديرها');
             return;
         }
 
-        companyBranches = companyBranches.sort((a, b) => (a.city || '').localeCompare(b.city || '', 'ar'));
+        const headers = ['م', ...orderedVisibleColumns.map(c => c.label)];
+        const data = previewData.map((b, index) => {
+            const row: any = { 'م': index + 1 };
+            orderedVisibleColumns.forEach(c => {
+                row[c.label] = (b as any)[c.id];
+            });
+            return row;
+        });
 
-        const data = companyBranches.map((b, index) => ({
-            'م': index + 1,
-            'المدينة': b.city || 'أخرى',
-            'اسم الفرع': b.name,
-            'اسم المستلم': b.managerName || 'غير محدد',
-            'رقم الهاتف': b.phone || 'غير محدد',
-            'العنوان': b.address,
-            'موقع الفرع': `https://www.google.com/maps/search/?api=1&query=${b.latitude},${b.longitude}`
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(data);
+        const ws = XLSX.utils.json_to_sheet(data, { header: headers });
         ws['!dir'] = 'rtl';
-        ws['!cols'] = [{wch: 5}, {wch: 15}, {wch: 30}, {wch: 25}, {wch: 15}, {wch: 50}, {wch: 60}];
-
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "الفروع");
-        
-        XLSX.writeFile(wb, `فروع_${selectedCompany.name}.xlsx`);
-        toast.success('تم تصدير ملف إكسل بنجاح');
-    };
+        XLSX.utils.book_append_sheet(wb, ws, "الفروع التابعة");
+        XLSX.writeFile(wb, `${selectedCompany?.name}_branches.xlsx`);
+        toast.success('تم تصدير الإكسل بنجاح');
+    };;
 
     const handleExportWord = () => {
         if (!selectedCompany || !selectedCompany.branchIds) {
