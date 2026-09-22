@@ -1,4 +1,4 @@
-import type { Branch, NavigationIntent, Category, ServiceRequest, CompanyAccount, OperatingCompany } from '../types';
+import type { Branch, NavigationIntent, Category, ServiceRequest, CompanyAccount, OperatingCompany, Worker, WorkerOperation } from '../types';
 import { db, storage, auth, secondaryAuth } from './firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, where, orderBy, limit, getDocs, updateDoc, deleteDoc, doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
@@ -766,3 +766,90 @@ export const deleteServiceRequestsByIds = async (ids: string[]): Promise<void> =
     await Promise.all(batchPromises);
 };
 
+
+
+// ==================== WORKER MANAGEMENT ==================== //
+
+export const loginWorkerAccount = async (username: string, password: string): Promise<{ id: string, token: string, name: string, branchId: string } | null> => {
+    try {
+        const q = query(collection(db, 'workers'), where('username', '==', username), where('password', '==', password));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            const data = doc.data() as Worker;
+            if (!data.isActive) return null;
+            const token = generateSecureId('w-sess-', 32);
+            await setDoc(doc.ref, { lastLoginTime: Date.now() }, { merge: true });
+            
+            // Note: In a real secure app we wouldn't store sessions in localStorage purely, but following this app's existing logic
+            return { id: doc.id, token, name: data.name, branchId: data.branchId };
+        }
+        return null;
+    } catch (e) {
+        console.error('Error logging in worker:', e);
+        return null;
+    }
+};
+
+export const subscribeToWorkers = (callback: (workers: Worker[]) => void) => {
+    const q = query(collection(db, 'workers'));
+    return onSnapshot(q, (snapshot) => {
+        const workers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Worker));
+        callback(workers);
+    });
+};
+
+export const addWorker = async (worker: Omit<Worker, 'id' | 'createdAt'>): Promise<Worker> => {
+    const newWorker: Worker = {
+        ...worker,
+        id: generateSecureId('wk-', 8),
+        createdAt: Date.now()
+    };
+    await setDoc(doc(db, 'workers', newWorker.id), newWorker);
+    return newWorker;
+};
+
+export const updateWorker = async (worker: Worker): Promise<void> => {
+    await setDoc(doc(db, 'workers', worker.id), worker, { merge: true });
+};
+
+export const deleteWorker = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'workers', id));
+};
+
+
+// ==================== WORKER OPERATIONS ==================== //
+
+export const subscribeToWorkerOperations = (callback: (operations: WorkerOperation[]) => void) => {
+    const q = query(collection(db, 'worker_operations'), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const operations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkerOperation));
+        callback(operations);
+    });
+};
+
+export const subscribeToWorkerOperationsByWorker = (workerId: string, callback: (operations: WorkerOperation[]) => void) => {
+    const q = query(collection(db, 'worker_operations'), where('workerId', '==', workerId), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const operations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkerOperation));
+        callback(operations);
+    });
+};
+
+export const addWorkerOperation = async (operation: Omit<WorkerOperation, 'id' | 'createdAt'>): Promise<WorkerOperation> => {
+    const newOp: WorkerOperation = {
+        ...operation,
+        id: generateSecureId('op-', 12),
+        createdAt: Date.now()
+    };
+    await setDoc(doc(db, 'worker_operations', newOp.id), newOp);
+    return newOp;
+};
+
+export const updateWorkerOperation = async (operation: WorkerOperation): Promise<void> => {
+    await setDoc(doc(db, 'worker_operations', operation.id), operation, { merge: true });
+};
+
+export const deleteWorkerOperation = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'worker_operations', id));
+};

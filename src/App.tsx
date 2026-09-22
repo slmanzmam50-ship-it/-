@@ -8,6 +8,7 @@ import CompanyInvoices from './pages/CompanyInvoices';
 import Login from './pages/Login';
 import CompanyDashboard from './pages/CompanyDashboard';
 import BranchPanel from './pages/BranchPanel';
+import WorkerDashboard from './pages/WorkerDashboard';
 import QrView from './pages/QrView';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
@@ -23,6 +24,10 @@ const PublicIndex = () => {
   }
   if (localStorage.getItem('logged_branch_id')) {
     return <Navigate to="/branch" replace />;
+  }
+  
+  if (localStorage.getItem('logged_worker_id')) {
+    return <Navigate to="/worker" replace />;
   }
   return <ClientMap />;
 };
@@ -159,6 +164,7 @@ function App() {
               <Route path="qr" element={<QrView />} />
               <Route path="company" element={<CompanyDashboard />} />
               <Route path="branch" element={<BranchPanel />} />
+              <Route path="worker" element={<WorkerDashboard />} />
               <Route element={<ProtectedRoute />}>
                 <Route path="admin" element={<AdminDashboard />} />
                 <Route path="admin/company-invoices/:companyId" element={<CompanyInvoices />} />

@@ -23,6 +23,7 @@ import {
 import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types';
 import BranchForm from '../components/BranchForm';
 import OperatingCompaniesView from '../components/OperatingCompaniesView';
+import WorkersView from '../components/WorkersView';
 import ExportPreviewModal from '../components/ExportPreviewModal';
 import type { ColumnDef } from '../components/ExportPreviewModal';
 import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown, Building2 } from 'lucide-react';
@@ -776,6 +777,12 @@ const AdminDashboard: React.FC = () => {
                         style={{ background: activeTab === 'companies' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'companies' ? 'white' : 'var(--text-secondary)', padding: '14px 16px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', textAlign: 'right' }}
                     >
                         <Building2 size={20} /> الشركات (طلبات)
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('workers')} 
+                        style={{ background: activeTab === 'workers' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'workers' ? 'white' : 'var(--text-secondary)', padding: '14px 16px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', textAlign: 'right' }}
+                    >
+                        <Users size={20} /> العمال
                     </button>
                     <button 
                         onClick={() => setActiveTab('requests')} 

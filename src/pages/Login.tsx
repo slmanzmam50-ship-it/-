@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, User, Building2, Store, ArrowRight, Shield, Loader2 } from 'lucide-react';
-import { loginCompanyAccount, loginBranchAccount } from '../services/storage';
+import { loginCompanyAccount, loginBranchAccount, loginWorkerAccount } from '../services/storage';
 import { auth } from '../services/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import toast from 'react-hot-toast';
@@ -54,16 +54,20 @@ const Login: React.FC = () => {
     // Auto-login redirection if session already exists
     useEffect(() => {
         const storedCompanyId = localStorage.getItem('logged_company_id');
+        
         const storedBranchId = localStorage.getItem('logged_branch_id');
-        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-
-        if (isAuthenticated && selectedPortal === 'admin') {
+        const storedWorkerId = localStorage.getItem('logged_worker_id');
+        
+        if (storedToken && selectedPortal === 'admin') {
             navigate('/admin');
         } else if (storedCompanyId && selectedPortal === 'company') {
             navigate('/company');
         } else if (storedBranchId && selectedPortal === 'branch') {
             navigate('/branch');
+        } else if (storedWorkerId && selectedPortal === 'worker') {
+            navigate('/worker');
         }
+    
     }, [selectedPortal, navigate]);
 
     const handleLogin = async (e: React.FormEvent) => {

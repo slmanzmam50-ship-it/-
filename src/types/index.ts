@@ -81,3 +81,44 @@ export interface OperatingCompany {
     branchIds: string[];
     createdAt: number;
 }
+
+
+export type WorkerServiceType = 'غسيل' | 'تغيير زيت' | 'بنشر' | 'ميكانيكا' | 'كهرباء' | 'تلميع' | 'أخرى';
+
+export interface Worker {
+    id: string;
+    name: string;
+    branchId: string;
+    username: string;
+    password?: string;
+    email?: string;
+    isActive: boolean;
+    createdAt: number;
+}
+
+export interface EditRequest {
+    requestedAt: number;
+    price?: number;
+    paymentMethod?: 'cash' | 'network';
+    hasInvoice?: boolean;
+    tipAmount?: number;
+    expenseAmount?: number;
+    expenseReason?: string;
+    status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface WorkerOperation {
+    id: string;
+    workerId: string;
+    workerName: string;
+    branchId: string;
+    serviceType: WorkerServiceType | string;
+    price: number;
+    paymentMethod: 'cash' | 'network';
+    hasInvoice: boolean;
+    tipAmount: number;
+    expenseAmount: number;
+    expenseReason?: string;
+    createdAt: number;
+    pendingEditRequest?: EditRequest;
+}
