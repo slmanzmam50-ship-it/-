@@ -119,8 +119,8 @@ const Login: React.FC = () => {
                     toast.success(`مرحباً بك! تم تسجيل الدخول كـ ${result.name} 🎉`);
                     navigate('/worker');
                 } else {
-                    setError('اسم المستخدم أو كلمة المرور غير صحيحة ⚠️');
-                    toast.error('اسم المستخدم أو كلمة المرور غير صحيحة ⚠️');
+                    setError('اسم المستخدم أو كلمة المرور غير صحيحة ⚠️  — تأكد من أن الحساب مفعّل من الإدارة');
+                    toast.error('فشل تسجيل الدخول — تحقق من البيانات');
                 }
             } else if (selectedPortal === 'branch') {
                 if (!u || !p) {
