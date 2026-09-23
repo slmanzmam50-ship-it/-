@@ -116,6 +116,7 @@ const Login: React.FC = () => {
                 if (result) {
                     localStorage.setItem('logged_worker_id', result.id);
                     localStorage.setItem('worker_session_token', result.token);
+                    localStorage.setItem('worker_device', 'true'); // Mark as worker device for iOS PWA
                     toast.success(`مرحباً بك! تم تسجيل الدخول كـ ${result.name} 🎉`);
                     navigate('/worker');
                 } else {
