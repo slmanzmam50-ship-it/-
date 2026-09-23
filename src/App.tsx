@@ -143,6 +143,7 @@ function App() {
             <Route path="/" element={<Layout />}>
               <Route index element={<CompanyDashboard />} />
               <Route path="login" element={<Login />} />
+              <Route path="worker-login" element={<Login />} />
               <Route path="company" element={<Navigate to="/" replace />} />
               <Route path="map" element={<ClientMap />} />
               <Route path="qr" element={<QrView />} />
@@ -158,6 +159,7 @@ function App() {
             <Route path="/" element={<Layout />}>
               <Route index element={<BranchPanel />} />
               <Route path="login" element={<Login />} />
+              <Route path="worker-login" element={<Login />} />
               <Route path="branch" element={<Navigate to="/" replace />} />
               <Route path="map" element={<ClientMap />} />
               <Route path="qr" element={<QrView />} />
@@ -174,6 +176,7 @@ function App() {
             <Route path="/" element={<Layout />}>
               <Route index element={<PublicIndex />} />
               <Route path="login" element={<Login />} />
+              <Route path="worker-login" element={<Login />} />
               <Route path="map" element={<ClientMap />} />
               <Route path="qr" element={<QrView />} />
               <Route path="company" element={<CompanyDashboard />} />

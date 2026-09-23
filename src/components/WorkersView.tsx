@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Users, Activity, Trash2, Edit2, Download, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
@@ -165,7 +165,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const expectedCash = totalIncome - totalNetwork - totalCredit - totalExpenses;
 
     const handleShareWorker = (w: Worker) => {
-        const shareText = `👋 مرحباً ${w.name}،\n\nإليك بيانات الدخول الخاصة بك لبوابة العمال:\n\n👤 اسم المستخدم: ${w.username}\n🔑 كلمة المرور: ${w.password}\n\nرابط الدخول:\n${window.location.origin}/login?type=worker`;
+        const shareText = `👋 مرحباً ${w.name}،\n\nإليك بيانات الدخول الخاصة بك لبوابة العمال:\n\n👤 اسم المستخدم: ${w.username}\n🔑 كلمة المرور: ${w.password}\n\nرابط الدخول:\n${window.location.origin}/worker-login`;
         const encodedText = encodeURIComponent(shareText);
         window.open(`https://wa.me/?text=${encodedText}`, '_blank');
     };

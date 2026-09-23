@@ -29,9 +29,12 @@ const Login: React.FC = () => {
     }
     
     // Portal selection state
+    const isWorkerLoginPath = window.location.pathname.includes('/worker-login');
+    const computedType = isWorkerLoginPath ? 'worker' : typeParam;
+
     const [selectedPortal, setSelectedPortal] = useState<'admin' | 'company' | 'branch' | 'worker' | null>(() => {
         if (mode !== 'public') return mode;
-        if (typeParam === 'company' || typeParam === 'branch' || typeParam === 'admin' || typeParam === 'worker') return typeParam;
+        if (computedType === 'company' || computedType === 'branch' || computedType === 'admin' || computedType === 'worker') return computedType;
         return null;
     });
 
@@ -44,13 +47,13 @@ const Login: React.FC = () => {
 
     // If query parameters or mode changes, update selected portal
     useEffect(() => {
-        if (typeParam === 'worker') localStorage.setItem('is_worker_device', 'true');
+        if (computedType === 'worker') localStorage.setItem('is_worker_device', 'true');
         if (mode !== 'public') {
             setSelectedPortal(mode);
-        } else if (typeParam === 'company' || typeParam === 'branch' || typeParam === 'admin') {
-            setSelectedPortal(typeParam);
+        } else if (computedType === 'company' || computedType === 'branch' || computedType === 'admin' || computedType === 'worker') {
+            setSelectedPortal(computedType);
         }
-    }, [typeParam, mode]);
+    }, [computedType, mode]);
 
     // Auto-login redirection if session already exists
     useEffect(() => {
