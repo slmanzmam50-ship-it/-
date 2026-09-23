@@ -34,7 +34,10 @@ const PublicIndex = () => {
 
 function App() {
   const [showSplash, setShowSplash] = useState(() => {
-    return !window.location.pathname.includes('/map');
+    const path = window.location.pathname;
+    // Skip splash for worker portal (speed) and map page
+    if (path.includes('/worker') || path.includes('/map')) return false;
+    return true;
   });
 
   useEffect(() => {

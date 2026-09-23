@@ -32,6 +32,21 @@ const WorkerDashboard: React.FC = () => {
     const [installPrompt, setInstallPrompt] = useState<any>(() => (window as any).__pwaInstallPrompt || null);
     const [showInstallBanner, setShowInstallBanner] = useState(!isStandalone);
 
+    // Force LIGHT theme for workers (they work in sunlight)
+    useEffect(() => {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        return () => {
+            // Restore original theme on unmount (when leaving worker page)
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            }
+        };
+    }, []);
+
     useEffect(() => {
         if (isStandalone) { setShowInstallBanner(false); return; }
 
