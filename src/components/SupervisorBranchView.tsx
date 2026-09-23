@@ -143,9 +143,9 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
                         
-                        <div style={{ background: 'rgba(59,130,246,0.1)', padding: '1rem', borderRadius: '12px' }}>
-                            <div style={{ color: 'var(--primary-color)', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>إجمالي الإيرادات (المبيعات)</div>
-                            <div style={{ fontSize: '20px', fontWeight: 900 }}>{totalIncome} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
+                        <div className="balance-card" style={{ background: 'rgba(59,130,246,0.1)', padding: '1rem', borderRadius: '12px' }}>
+                            <div className="balance-title" style={{ color: 'var(--primary-color)', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>إجمالي الإيرادات (المبيعات)</div>
+                            <div className="balance-value" style={{ fontSize: '20px', fontWeight: 900 }}>{totalIncome} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px' }}>
@@ -163,9 +163,9 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                             </div>
                         </div>
 
-                        <div style={{ background: 'rgba(16,185,129,0.1)', padding: '1rem', borderRadius: '12px', border: '2px solid rgba(16,185,129,0.5)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <div style={{ color: 'var(--success)', fontSize: '14px', fontWeight: 800, marginBottom: '4px' }}>الكاش المفترض في الدرج</div>
-                            <div style={{ fontSize: '28px', fontWeight: 900, color: 'var(--success)' }}>{expectedCash} <span style={{ fontSize: '14px', fontWeight: 700 }}>ريال</span></div>
+                        <div className="balance-card" style={{ background: 'rgba(16,185,129,0.1)', padding: '1rem', borderRadius: '12px', border: '2px solid rgba(16,185,129,0.5)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <div className="balance-title" style={{ color: 'var(--success)', fontSize: '14px', fontWeight: 800, marginBottom: '4px' }}>الكاش المفترض في الدرج</div>
+                            <div className="balance-value" style={{ fontSize: '28px', fontWeight: 900, color: 'var(--success)' }}>{expectedCash} <span style={{ fontSize: '14px', fontWeight: 700 }}>ريال</span></div>
                         </div>
 
                     </div>
