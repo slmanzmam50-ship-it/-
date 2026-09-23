@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Users, Activity, Trash2, Edit2, Download, Share2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Activity, Trash2, Edit2, Download, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
 import toast from 'react-hot-toast';
@@ -22,6 +22,8 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [branchId, setBranchId] = useState('');
     const [isAdding, setIsAdding] = useState(false);
 
+    const [isWorkersOpen, setIsWorkersOpen] = useState(false);
+    
     // Operations Filters
     const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'week' | 'month' | 'all' | 'custom'>('today');
     const [customDate, setCustomDate] = useState(new Date().toLocaleDateString('en-CA'));
@@ -193,10 +195,19 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Workers Management */}
             <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px' }}>
-                <h3 style={{ margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem', fontWeight: 800 }}>
-                    <Users size={20} className="text-primary" /> إدارة العمال
-                </h3>
-                <form onSubmit={handleAddWorker} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+                <div 
+                    onClick={() => setIsWorkersOpen(!isWorkersOpen)} 
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                >
+                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem', fontWeight: 800 }}>
+                        <Users size={20} className="text-primary" /> إدارة العمال
+                    </h3>
+                    {isWorkersOpen ? <ChevronUp size={20} className="text-secondary" /> : <ChevronDown size={20} className="text-secondary" />}
+                </div>
+
+                {isWorkersOpen && (
+                    <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                        <form onSubmit={handleAddWorker} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '24px' }}>
                     <input type="text" placeholder="الاسم (الظاهر للعملاء)" value={name} onChange={e => setName(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
                     <input type="text" placeholder="معرّف الدخول (إنجليزي/أرقام)" value={username} onChange={e => setUsername(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
                     <input type="text" placeholder="كلمة المرور" value={password} onChange={e => setPassword(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
@@ -237,6 +248,8 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         </tbody>
                     </table>
                 </div>
+                </div>
+                )}
             </div>
 
             {/* Operations Log */}
