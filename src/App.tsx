@@ -25,14 +25,16 @@ const PublicIndex = () => {
   if (localStorage.getItem('logged_branch_id')) {
     return <Navigate to="/branch" replace />;
   }
+  
   if (localStorage.getItem('logged_worker_id')) {
     return <Navigate to="/worker" replace />;
   }
-  // iOS PWA fix: if this device was previously used as a worker device,
-  // always redirect to worker login instead of showing the public map
-  if (localStorage.getItem('worker_device') === 'true') {
+
+  // If this device was previously used by a worker, default to worker login instead of map
+  if (localStorage.getItem('is_worker_device') === 'true') {
     return <Navigate to="/login?type=worker" replace />;
   }
+  
   return <ClientMap />;
 };
 

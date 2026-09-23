@@ -126,7 +126,6 @@ const WorkerDashboard: React.FC = () => {
     const handleLogout = () => {
         localStorage.removeItem('logged_worker_id');
         localStorage.removeItem('worker_session_token');
-        // worker_device flag stays so iOS knows to redirect back to worker login
         navigate('/login?type=worker');
     };
 

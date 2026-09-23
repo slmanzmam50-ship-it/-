@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 
 const Login: React.FC = () => {
     const [searchParams] = useSearchParams();
-    const typeParam = searchParams.get('type') as 'admin' | 'company' | 'branch';
+    const typeParam = searchParams.get('type') as 'admin' | 'company' | 'branch' | 'worker';
     
     // Subdomain / App Mode detection
     const hostname = window.location.hostname;
@@ -44,6 +44,7 @@ const Login: React.FC = () => {
 
     // If query parameters or mode changes, update selected portal
     useEffect(() => {
+        if (typeParam === 'worker') localStorage.setItem('is_worker_device', 'true');
         if (mode !== 'public') {
             setSelectedPortal(mode);
         } else if (typeParam === 'company' || typeParam === 'branch' || typeParam === 'admin') {
@@ -116,7 +117,7 @@ const Login: React.FC = () => {
                 if (result) {
                     localStorage.setItem('logged_worker_id', result.id);
                     localStorage.setItem('worker_session_token', result.token);
-                    localStorage.setItem('worker_device', 'true'); // Mark as worker device for iOS PWA
+                    localStorage.setItem('is_worker_device', 'true');
                     toast.success(`مرحباً بك! تم تسجيل الدخول كـ ${result.name} 🎉`);
                     navigate('/worker');
                 } else {
