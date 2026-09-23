@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Users, Activity, Trash2, Edit2, Download, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
@@ -192,14 +192,14 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Workers Management */}
-            <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px' }}>
+            <div className="glass responsive-pad" style={{ padding: '1rem', borderRadius: '16px' }}>
                 <div 
                     onClick={() => setIsWorkersOpen(!isWorkersOpen)} 
                     style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
                 >
-                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem', fontWeight: 800 }}>
+                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', fontWeight: 800 }}>
                         <Users size={20} className="text-primary" /> إدارة العمال
                     </h3>
                     {isWorkersOpen ? <ChevronUp size={20} className="text-secondary" /> : <ChevronDown size={20} className="text-secondary" />}
@@ -208,14 +208,14 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                 {isWorkersOpen && (
                     <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
                         <form onSubmit={handleAddWorker} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-                    <input type="text" placeholder="الاسم (الظاهر للعملاء)" value={name} onChange={e => setName(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
-                    <input type="text" placeholder="معرّف الدخول (إنجليزي/أرقام)" value={username} onChange={e => setUsername(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
-                    <input type="text" placeholder="كلمة المرور" value={password} onChange={e => setPassword(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
-                    <select value={branchId} onChange={e => setBranchId(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
+                    <input type="text" placeholder="الاسم (الظاهر للعملاء)" value={name} onChange={e => setName(e.target.value)} required style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                    <input type="text" placeholder="معرّف الدخول (إنجليزي/أرقام)" value={username} onChange={e => setUsername(e.target.value)} required style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                    <input type="text" placeholder="كلمة المرور" value={password} onChange={e => setPassword(e.target.value)} required style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                    <select value={branchId} onChange={e => setBranchId(e.target.value)} required style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
                         <option value="">-- اختر الفرع --</option>
                         {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
-                    <button type="submit" disabled={isAdding} style={{ padding: '12px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: isAdding ? 'not-allowed' : 'pointer' }}>
+                    <button type="submit" disabled={isAdding} style={{ padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: isAdding ? 'not-allowed' : 'pointer' }}>
                         إضافة عامل
                     </button>
                 </form>
@@ -224,21 +224,21 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                         <thead>
                             <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid var(--border-color)' }}>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>اسم العامل</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>اسم المستخدم</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>الفرع</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>الصلاحية</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>الإجراءات</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>اسم العامل</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>اسم المستخدم</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>الفرع</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>الصلاحية</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
                             {workers.map(w => (
                                 <tr key={w.id} style={{ borderBottom: '1px solid var(--border-color)', opacity: w.isActive === false ? 0.6 : 1 }}>
-                                    <td style={{ padding: '12px' }}>{w.name} {w.isActive === false && <span style={{ color: 'var(--error)', fontSize: '11px', marginRight: '6px', fontWeight: 700 }}>(مؤرشف)</span>}</td>
-                                    <td style={{ padding: '12px' }}><code style={{ background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '4px' }}>{w.username}</code></td>
-                                    <td style={{ padding: '12px' }}>{branches.find(b => b.id === w.branchId)?.name || 'غير محدد'}</td>
-                                    <td style={{ padding: '12px' }}>{w.role === 'supervisor' ? <span style={{ background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700 }}>مشرف فرع</span> : 'عامل'}<button onClick={() => updateWorkerRole(w)} style={{ marginRight: '8px', padding: '4px 8px', fontSize: '10px', borderRadius: '4px', background: 'transparent', border: '1px solid var(--border-color)', cursor: 'pointer' }}>ترقية/تنزيل</button></td>
-                                    <td style={{ padding: '12px' }}>
+                                    <td style={{ padding: '10px' }}>{w.name} {w.isActive === false && <span style={{ color: 'var(--error)', fontSize: '11px', marginRight: '6px', fontWeight: 700 }}>(مؤرشف)</span>}</td>
+                                    <td style={{ padding: '10px' }}><code style={{ background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '4px' }}>{w.username}</code></td>
+                                    <td style={{ padding: '10px' }}>{branches.find(b => b.id === w.branchId)?.name || 'غير محدد'}</td>
+                                    <td style={{ padding: '10px' }}>{w.role === 'supervisor' ? <span style={{ background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700 }}>مشرف فرع</span> : 'عامل'}<button onClick={() => updateWorkerRole(w)} style={{ marginRight: '8px', padding: '4px 8px', fontSize: '10px', borderRadius: '4px', background: 'transparent', border: '1px solid var(--border-color)', cursor: 'pointer' }}>ترقية/تنزيل</button></td>
+                                    <td style={{ padding: '10px' }}>
                                         {w.isActive !== false && <button onClick={() => handleShareWorker(w)} style={{ padding: '6px', background: 'transparent', color: 'var(--success)', border: 'none', cursor: 'pointer', marginRight: '8px' }} title="مشاركة عبر الواتساب"><Share2 size={18} /></button>}
                                         <button onClick={() => handleDeleteWorker(w.id)} style={{ padding: '6px', background: 'transparent', color: w.isActive === false ? 'var(--text-secondary)' : 'var(--error)', border: 'none', cursor: w.isActive === false ? 'not-allowed' : 'pointer' }} disabled={w.isActive === false} title={w.isActive === false ? 'مؤرشف مسبقاً' : 'أرشفة العامل'}><Trash2 size={18} /></button>
                                     </td>
@@ -253,9 +253,9 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
             </div>
 
             {/* Operations Log */}
-            <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px' }}>
+            <div className="glass responsive-pad" style={{ padding: '1rem', borderRadius: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem', fontWeight: 800 }}>
+                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', fontWeight: 800 }}>
                         <Activity size={20} className="text-primary" /> سجل العمليات
                     </h3>
                     
@@ -288,7 +288,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                 </div>
 
                 {/* الموازنة اليومية (Daily Balance) */}
-                <div style={{ background: 'rgba(59,130,246,0.05)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(59,130,246,0.1)', marginBottom: '24px' }}>
+                <div style={{ background: 'rgba(59,130,246,0.05)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(59,130,246,0.1)', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-color)' }}>الموازنة اليومية (تفصيل الإيرادات)</h4>
                         <button onClick={handleShareBalance} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
@@ -299,7 +299,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         
                         <div style={{ background: 'rgba(59,130,246,0.1)', padding: '1rem', borderRadius: '12px' }}>
                             <div style={{ color: 'var(--primary-color)', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>إجمالي الإيرادات (المبيعات)</div>
-                            <div style={{ fontSize: '24px', fontWeight: 900 }}>{totalIncome} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
+                            <div style={{ fontSize: '20px', fontWeight: 900 }}>{totalIncome} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px' }}>
@@ -329,26 +329,26 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                         <thead>
                             <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid var(--border-color)' }}>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>التاريخ</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>العامل</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>الخدمة</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>الإيراد</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>الخرج</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>إجراء</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>التاريخ</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>العامل</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>الخدمة</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>الإيراد</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>الخرج</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>إجراء</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredOperations.map(op => (
                                 <tr key={op.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '12px' }}>
+                                    <td style={{ padding: '10px' }}>
                                         <div style={{ fontSize: '13px', fontWeight: 600 }}>{new Date(op.createdAt).toLocaleDateString('ar-SA')}</div>
                                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(op.createdAt).toLocaleTimeString('ar-SA')}</div>
                                     </td>
-                                    <td style={{ padding: '12px', fontWeight: 700 }}>{op.workerName}</td>
-                                    <td style={{ padding: '12px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</td>
-                                    <td style={{ padding: '12px', color: 'var(--success)', fontWeight: 700 }}>{op.price > 0 ? op.price : '-'}</td>
-                                    <td style={{ padding: '12px', color: 'var(--error)', fontWeight: 700 }}>{op.expenseAmount > 0 ? op.expenseAmount : '-'}</td>
-                                    <td style={{ padding: '12px' }}>
+                                    <td style={{ padding: '10px', fontWeight: 700 }}>{op.workerName}</td>
+                                    <td style={{ padding: '10px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</td>
+                                    <td style={{ padding: '10px', color: 'var(--success)', fontWeight: 700 }}>{op.price > 0 ? op.price : '-'}</td>
+                                    <td style={{ padding: '10px', color: 'var(--error)', fontWeight: 700 }}>{op.expenseAmount > 0 ? op.expenseAmount : '-'}</td>
+                                    <td style={{ padding: '10px' }}>
                                         <button onClick={() => { setEditingOp(op); setEditPrice(op.price.toString()); setEditExpense(op.expenseAmount.toString()); }} style={{ padding: '6px', background: 'transparent', color: 'var(--primary-color)', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>
                                     </td>
                                 </tr>
@@ -368,16 +368,16 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         <form onSubmit={handleProposeEdit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>تعديل السعر (الإيراد)</label>
-                                <input type="number" value={editPrice} onChange={e => setEditPrice(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                <input type="number" value={editPrice} onChange={e => setEditPrice(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>تعديل المصروف (الخرج)</label>
-                                <input type="number" value={editExpense} onChange={e => setEditExpense(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                <input type="number" value={editExpense} onChange={e => setEditExpense(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
                             </div>
                             
                             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                                <button type="submit" style={{ flex: 1, padding: '12px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إرسال التعديل</button>
-                                <button type="button" onClick={() => setEditingOp(null)} style={{ flex: 1, padding: '12px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
+                                <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إرسال التعديل</button>
+                                <button type="button" onClick={() => setEditingOp(null)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
                             </div>
                         </form>
                     </div>

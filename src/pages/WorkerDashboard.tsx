@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Plus, Wallet, CheckCircle, AlertCircle, TrendingUp, TrendingDown, CreditCard, Coins, FileText, FileX, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -245,10 +245,10 @@ const WorkerDashboard: React.FC = () => {
 
     const pendingRequests = operations.filter(op => op.pendingEditRequest && op.pendingEditRequest.status === 'pending');
 
-    if (!worker) return <div style={{ padding: '2rem', textAlign: 'center' }}>جاري التحميل...</div>;
+    if (!worker) return <div style={{ padding: '1rem', textAlign: 'center' }}>جاري التحميل...</div>;
 
     return (
-        <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 800 }}>مرحباً، {worker.name} 👋</h1>
@@ -266,7 +266,7 @@ const WorkerDashboard: React.FC = () => {
             {showInstallBanner && (
                 <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.12) 100%)', border: '1.5px solid rgba(16,185,129,0.3)', borderRadius: '16px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '28px' }}>📲</span>
+                        <span style={{ fontSize: '24px' }}>📲</span>
                         <div>
                             <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--success)' }}>ثبّت التطبيق على جوالك</div>
                             <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -292,7 +292,7 @@ const WorkerDashboard: React.FC = () => {
             )}
 
             {pendingRequests.length > 0 && (
-                <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid var(--accent-orange)', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem' }}>
+                <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid var(--accent-orange)', borderRadius: '16px', padding: '1rem', marginBottom: '2rem' }}>
                     <h3 style={{ margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#b45309' }}>
                         <AlertCircle size={20} /> طلبات تعديل معلقة من الإدارة ({pendingRequests.length})
                     </h3>
@@ -334,7 +334,7 @@ const WorkerDashboard: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                 
                 {/* Form Section */}
-                <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                <div style={{ background: 'white', padding: '1rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                     <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                         <button 
                             onClick={() => setIsExpense(false)}
@@ -403,7 +403,7 @@ const WorkerDashboard: React.FC = () => {
                                 </div>
                             </>
                         ) : (
-                            <div style={{ background: 'rgba(239,68,68,0.05)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(239,68,68,0.2)' }}>
+                            <div style={{ background: 'rgba(239,68,68,0.05)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(239,68,68,0.2)' }}>
                                 <div style={{ marginBottom: '1rem' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700, fontSize: '14px', color: 'var(--error)' }}>المبلغ المصروف من الصندوق (ريال)</label>
                                     <input type="number" value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} placeholder="0" min="1" required style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.3)', outline: 'none', background: 'white' }} />
@@ -427,11 +427,11 @@ const WorkerDashboard: React.FC = () => {
                 {/* Stats Section */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                        <div style={{ background: 'white', padding: '1rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '14px' }}>
                                 <Wallet size={18} /> صافي الإيراد (هذا الشهر)
                             </div>
-                            <div style={{ fontSize: '28px', fontWeight: 900, color: 'var(--text-primary)' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-primary)' }}>
                                 {currentTotal} <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>ريال</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', fontSize: '13px', color: diff >= 0 ? 'var(--success)' : 'var(--error)', fontWeight: 700 }}>
@@ -439,17 +439,17 @@ const WorkerDashboard: React.FC = () => {
                                 {Math.abs(diff)} ريال {diff >= 0 ? 'زيادة عن الشهر الماضي' : 'نقص عن الشهر الماضي'}
                             </div>
                         </div>
-                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                        <div style={{ background: 'white', padding: '1rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '14px' }}>
                                 <CheckCircle size={18} /> عدد العمليات (هذا الشهر)
                             </div>
-                            <div style={{ fontSize: '28px', fontWeight: 900, color: 'var(--text-primary)' }}>
+                            <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-primary)' }}>
                                 {currentMonthOps.length} <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>عملية</span>
                             </div>
                         </div>
                     </div>
 
-                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', flex: 1, minHeight: '300px' }}>
+                    <div style={{ background: 'white', padding: '1rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', flex: 1, minHeight: '300px' }}>
                         <h3 style={{ margin: '0 0 1.5rem', fontSize: '16px', fontWeight: 800 }}>الأداء اليومي (هذا الشهر)</h3>
                         {chartData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="85%">

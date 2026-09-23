@@ -1029,3 +1029,11 @@ button {
     overflow-y: visible !important;
   }
 }
+
+@media (max-width: 768px) {
+  .responsive-pad { padding: 1rem !important; }
+  .responsive-gap { gap: 12px !important; }
+  .responsive-font { font-size: 1.2rem !important; }
+  .responsive-balance-val { font-size: 20px !important; }
+  .responsive-grid { grid-template-columns: 1fr !important; }
+}

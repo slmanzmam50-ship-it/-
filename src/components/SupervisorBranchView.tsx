@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Activity, Download, Share2 } from 'lucide-react';
 import type { WorkerOperation, Worker } from '../types';
 import { subscribeToWorkerOperations, subscribeToWorkers } from '../services/storage';
@@ -92,10 +92,10 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '24px' }}>
-            <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '24px' }}>
+            <div className="glass" style={{ padding: '1rem', borderRadius: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem', fontWeight: 800 }}>
+                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', fontWeight: 800 }}>
                         <Activity size={20} className="text-primary" /> جرد ومتابعة الفرع
                     </h3>
                     
@@ -128,7 +128,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                 </div>
 
                 {/* الموازنة اليومية (Daily Balance) */}
-                <div style={{ background: 'rgba(59,130,246,0.05)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(59,130,246,0.1)', marginBottom: '24px' }}>
+                <div style={{ background: 'rgba(59,130,246,0.05)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(59,130,246,0.1)', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-color)' }}>الموازنة اليومية للفرع</h4>
                         <button onClick={handleShareBalance} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
@@ -139,7 +139,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                         
                         <div style={{ background: 'rgba(59,130,246,0.1)', padding: '1rem', borderRadius: '12px' }}>
                             <div style={{ color: 'var(--primary-color)', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>إجمالي الإيرادات (المبيعات)</div>
-                            <div style={{ fontSize: '24px', fontWeight: 900 }}>{totalIncome} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
+                            <div style={{ fontSize: '20px', fontWeight: 900 }}>{totalIncome} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px' }}>
@@ -169,24 +169,24 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                         <thead>
                             <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid var(--border-color)' }}>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>التاريخ</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>العامل</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>الخدمة</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>الإيراد</th>
-                                <th style={{ padding: '12px', fontWeight: 700 }}>الخرج</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>التاريخ</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>العامل</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>الخدمة</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>الإيراد</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>الخرج</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredOperations.map(op => (
                                 <tr key={op.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '12px' }}>
+                                    <td style={{ padding: '10px' }}>
                                         <div style={{ fontSize: '13px', fontWeight: 600 }}>{new Date(op.createdAt).toLocaleDateString('ar-SA')}</div>
                                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(op.createdAt).toLocaleTimeString('ar-SA')}</div>
                                     </td>
-                                    <td style={{ padding: '12px', fontWeight: 700 }}>{op.workerName}</td>
-                                    <td style={{ padding: '12px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</td>
-                                    <td style={{ padding: '12px', color: 'var(--success)', fontWeight: 700 }}>{(op.price || 0) > 0 ? op.price : '-'}</td>
-                                    <td style={{ padding: '12px', color: 'var(--error)', fontWeight: 700 }}>{(op.expenseAmount || 0) > 0 ? op.expenseAmount : '-'}</td>
+                                    <td style={{ padding: '10px', fontWeight: 700 }}>{op.workerName}</td>
+                                    <td style={{ padding: '10px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</td>
+                                    <td style={{ padding: '10px', color: 'var(--success)', fontWeight: 700 }}>{(op.price || 0) > 0 ? op.price : '-'}</td>
+                                    <td style={{ padding: '10px', color: 'var(--error)', fontWeight: 700 }}>{(op.expenseAmount || 0) > 0 ? op.expenseAmount : '-'}</td>
                                 </tr>
                             ))}
                             {filteredOperations.length === 0 && <tr><td colSpan={5} style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>لا توجد عمليات لهذه الفترة</td></tr>}
