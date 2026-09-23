@@ -1,8 +1,9 @@
 {
-  "name": " ",
-  "short_name": " ",
-  "description": "Salman Zamam Al-Khalidi Service Centers for Auto Maintenance, Oil, and Tires",
+  "name": "سلمان الخالدي",
+  "short_name": "ZK",
+  "description": "مراكز خدمة سلمان زمام الخالدي لخدمة السيارات",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen", "minimal-ui"],
   "background_color": "#0f172a",

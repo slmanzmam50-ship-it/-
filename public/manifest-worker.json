@@ -1,8 +1,9 @@
 {
-  "name": " ",
-  "short_name": " ",
+  "name": "سلمان الخالدي",
+  "short_name": "ZK",
   "description": "مراكز خدمة سلمان زمام الخالدي - بوابة العمال",
   "start_url": "/worker",
+  "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen", "minimal-ui"],
   "background_color": "#0f172a",

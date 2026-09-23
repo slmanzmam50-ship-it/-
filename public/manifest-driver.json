@@ -1,9 +1,11 @@
 {
-  "name": " ",
-  "short_name": " ",
-  "description": "مراكز خدمة سلمان زمام الخالدي لخدمة السيارات - خريطة السائقين والعملاء",
+  "name": "سلمان الخالدي",
+  "short_name": "ZK",
+  "description": "مراكز خدمة سلمان زمام الخالدي لخدمة السيارات - خريطة الفروع",
   "start_url": "/map",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "icons": [
