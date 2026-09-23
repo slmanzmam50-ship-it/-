@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Activity, Trash2, Edit2, Download, Share2 } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
@@ -21,7 +21,8 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [isAdding, setIsAdding] = useState(false);
 
     // Operations Filters
-    const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('today');
+    const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'week' | 'month' | 'all' | 'custom'>('today');
+    const [customDate, setCustomDate] = useState(new Date().toLocaleDateString('en-CA'));
     const [paymentFilter, setPaymentFilter] = useState<'all' | 'cash' | 'network'>('all');
     const [workerFilter, setWorkerFilter] = useState<string>('all');
     
@@ -126,8 +127,17 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         if (workerFilter !== 'all' && op.workerId !== workerFilter) return false;
         if (paymentFilter !== 'all' && op.paymentMethod !== paymentFilter) return false;
         
+        const opDateStr = new Date(op.createdAt).toLocaleDateString('en-CA');
+        const todayStr = new Date().toLocaleDateString('en-CA');
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+
+        if (dateFilter === 'today' && opDateStr !== todayStr) return false;
+        if (dateFilter === 'yesterday' && opDateStr !== yesterdayStr) return false;
+        if (dateFilter === 'custom' && customDate && opDateStr !== customDate) return false;
+
         const diffDays = (now - op.createdAt) / (1000 * 60 * 60 * 24);
-        if (dateFilter === 'today' && diffDays > 1) return false;
         if (dateFilter === 'week' && diffDays > 7) return false;
         if (dateFilter === 'month' && diffDays > 30) return false;
         
@@ -142,6 +152,15 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
 
     const handleShareWorker = (w: Worker) => {
         const shareText = `👋 مرحباً ${w.name}،\n\nإليك بيانات الدخول الخاصة بك لبوابة العمال:\n\n👤 اسم المستخدم: ${w.username}\n🔑 كلمة المرور: ${w.password}\n\nرابط الدخول:\n${window.location.origin}/login?type=worker`;
+        const encodedText = encodeURIComponent(shareText);
+        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+    };
+
+    const handleShareBalance = () => {
+        let dateLabel = dateFilter === 'today' ? 'اليوم' : dateFilter === 'yesterday' ? 'الأمس' : dateFilter === 'custom' ? customDate : 'الفترة المحددة';
+        let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
+        
+        const shareText = `📊 جرد (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل: ${totalCredit} ريال\n📉 خرج: ${totalExpenses} ريال\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*`;
         const encodedText = encodeURIComponent(shareText);
         window.open(`https://wa.me/?text=${encodedText}`, '_blank');
     };
@@ -214,10 +233,15 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         </select>
                         <select value={dateFilter} onChange={e => setDateFilter(e.target.value as any)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
                             <option value="today">اليوم</option>
+                            <option value="yesterday">الأمس</option>
                             <option value="week">آخر أسبوع</option>
                             <option value="month">آخر شهر</option>
                             <option value="all">الكل</option>
+                            <option value="custom">تاريخ محدد...</option>
                         </select>
+                        {dateFilter === 'custom' && (
+                            <input type="date" value={customDate} onChange={e => setCustomDate(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                        )}
                         <button onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'var(--success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
                             <Download size={18} /> إكسل
                         </button>
@@ -226,7 +250,12 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
 
                 {/* الموازنة اليومية (Daily Balance) */}
                 <div style={{ background: 'rgba(59,130,246,0.05)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(59,130,246,0.1)', marginBottom: '24px' }}>
-                    <h4 style={{ margin: '0 0 16px', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-color)' }}>الموازنة اليومية (تفصيل الإيرادات)</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-color)' }}>الموازنة اليومية (تفصيل الإيرادات)</h4>
+                        <button onClick={handleShareBalance} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
+                            <Share2 size={16} /> مشاركة الجرد
+                        </button>
+                    </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
                         
                         <div style={{ background: 'rgba(59,130,246,0.1)', padding: '1rem', borderRadius: '12px' }}>
