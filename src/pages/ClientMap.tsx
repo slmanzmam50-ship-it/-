@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Navigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Language } from '../services/translations';
@@ -369,6 +369,11 @@ const formatDuration = (mins: number, lang: Language): string => {
 // MAIN COMPONENT
 // ============================================================
 const ClientMap: React.FC = () => {
+    const isWorkerDevice = localStorage.getItem('is_worker_device') === 'true';
+    const isCurrentlyWorker = localStorage.getItem('logged_worker_id') !== null;
+    if (isWorkerDevice || isCurrentlyWorker) {
+        return <Navigate to={isCurrentlyWorker ? '/worker' : '/login?type=worker'} replace />;
+    }
     const [rawBranches, setRawBranches] = useState<Branch[]>([]);
     const [requests, setRequests] = useState<ServiceRequest[]>([]);
     const [customLocInput, setCustomLocInput] = useState('');
