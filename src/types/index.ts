@@ -93,6 +93,7 @@ export interface Worker {
     password?: string;
     email?: string;
     isActive: boolean;
+    role?: 'worker' | 'supervisor';
     createdAt: number;
 }
 

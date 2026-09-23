@@ -821,10 +821,26 @@ export const deleteWorker = async (id: string): Promise<void> => {
 
 // ==================== WORKER OPERATIONS ==================== //
 
-export const subscribeToWorkerOperations = (callback: (operations: WorkerOperation[]) => void) => {
-    const q = query(collection(db, 'worker_operations'), orderBy('createdAt', 'desc'));
+export interface OperationFilters {
+    startTime?: number;
+    endTime?: number;
+    branchId?: string;
+}
+
+export const subscribeToWorkerOperations = (filters: OperationFilters | null, callback: (operations: WorkerOperation[]) => void) => {
+    const constraints: any[] = [];
+    
+    if (filters?.startTime) constraints.push(where('createdAt', '>=', filters.startTime));
+    if (filters?.endTime) constraints.push(where('createdAt', '<=', filters.endTime));
+    
+    constraints.push(orderBy('createdAt', 'desc'));
+    
+    const q = query(collection(db, 'worker_operations'), ...constraints);
     return onSnapshot(q, (snapshot) => {
-        const operations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkerOperation));
+        let operations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkerOperation));
+        if (filters?.branchId) {
+            operations = operations.filter(op => op.branchId === filters.branchId);
+        }
         callback(operations);
     });
 };

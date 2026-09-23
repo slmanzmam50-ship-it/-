@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Users, Activity, Trash2, Edit2, Download, Share2 } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
@@ -31,13 +31,38 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [editPrice, setEditPrice] = useState('');
     const [editExpense, setEditExpense] = useState('');
 
+    const [role, setRole] = useState<'worker' | 'supervisor'>('worker');
+
     useEffect(() => {
-        const unsubs = [
-            subscribeToWorkers(setWorkers),
-            subscribeToWorkerOperations(setOperations)
-        ];
-        return () => unsubs.forEach(f => f());
+        const unsub = subscribeToWorkers(setWorkers);
+        return () => unsub();
     }, []);
+
+    useEffect(() => {
+        let startTime: number | undefined;
+        let endTime: number | undefined;
+        const now = new Date();
+        
+        if (dateFilter === 'today') {
+            startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        } else if (dateFilter === 'yesterday') {
+            const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+            startTime = start.getTime();
+            endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - 1;
+        } else if (dateFilter === 'custom' && customDate) {
+            const [y, m, d] = customDate.split('-');
+            const start = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+            startTime = start.getTime();
+            endTime = new Date(parseInt(y), parseInt(m) - 1, parseInt(d) + 1).getTime() - 1;
+        } else if (dateFilter === 'week') {
+            startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7).getTime();
+        } else if (dateFilter === 'month') {
+            startTime = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()).getTime();
+        }
+
+        const unsub = subscribeToWorkerOperations({ startTime, endTime }, setOperations);
+        return () => unsub();
+    }, [dateFilter, customDate]);
 
     const handleAddWorker = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,10 +80,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         setIsAdding(true);
         try {
             await addWorker({
-                name, username, password, branchId, isActive: true
+                name, username, password, branchId, role, isActive: true
             });
             toast.success('تمت إضافة العامل بنجاح');
-            setName(''); setUsername(''); setPassword(''); setBranchId('');
+            setName(''); setUsername(''); setPassword(''); setBranchId(''); setRole('worker');
         } catch (error) {
             console.error(error);
             toast.error('فشل في إضافة العامل');
@@ -122,25 +147,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     };
 
     // Filter Operations
-    const now = Date.now();
+    
     const filteredOperations = operations.filter(op => {
         if (workerFilter !== 'all' && op.workerId !== workerFilter) return false;
         if (paymentFilter !== 'all' && op.paymentMethod !== paymentFilter) return false;
-        
-        const opDateStr = new Date(op.createdAt).toLocaleDateString('en-CA');
-        const todayStr = new Date().toLocaleDateString('en-CA');
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toLocaleDateString('en-CA');
-
-        if (dateFilter === 'today' && opDateStr !== todayStr) return false;
-        if (dateFilter === 'yesterday' && opDateStr !== yesterdayStr) return false;
-        if (dateFilter === 'custom' && customDate && opDateStr !== customDate) return false;
-
-        const diffDays = (now - op.createdAt) / (1000 * 60 * 60 * 24);
-        if (dateFilter === 'week' && diffDays > 7) return false;
-        if (dateFilter === 'month' && diffDays > 30) return false;
-        
         return true;
     });
 
@@ -192,6 +202,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                 <th style={{ padding: '12px', fontWeight: 700 }}>اسم العامل</th>
                                 <th style={{ padding: '12px', fontWeight: 700 }}>اسم المستخدم</th>
                                 <th style={{ padding: '12px', fontWeight: 700 }}>الفرع</th>
+                                <th style={{ padding: '12px', fontWeight: 700 }}>الصلاحية</th>
                                 <th style={{ padding: '12px', fontWeight: 700 }}>الإجراءات</th>
                             </tr>
                         </thead>
@@ -201,6 +212,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     <td style={{ padding: '12px' }}>{w.name} {w.isActive === false && <span style={{ color: 'var(--error)', fontSize: '11px', marginRight: '6px', fontWeight: 700 }}>(مؤرشف)</span>}</td>
                                     <td style={{ padding: '12px' }}><code style={{ background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '4px' }}>{w.username}</code></td>
                                     <td style={{ padding: '12px' }}>{branches.find(b => b.id === w.branchId)?.name || 'غير محدد'}</td>
+                                    <td style={{ padding: '12px' }}>{w.role === 'supervisor' ? <span style={{ background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700 }}>مشرف فرع</span> : 'عامل'}</td>
                                     <td style={{ padding: '12px' }}>
                                         {w.isActive !== false && <button onClick={() => handleShareWorker(w)} style={{ padding: '6px', background: 'transparent', color: 'var(--success)', border: 'none', cursor: 'pointer', marginRight: '8px' }} title="مشاركة عبر الواتساب"><Share2 size={18} /></button>}
                                         <button onClick={() => handleDeleteWorker(w.id)} style={{ padding: '6px', background: 'transparent', color: w.isActive === false ? 'var(--text-secondary)' : 'var(--error)', border: 'none', cursor: w.isActive === false ? 'not-allowed' : 'pointer' }} disabled={w.isActive === false} title={w.isActive === false ? 'مؤرشف مسبقاً' : 'أرشفة العامل'}><Trash2 size={18} /></button>

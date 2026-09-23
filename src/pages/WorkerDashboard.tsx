@@ -7,6 +7,7 @@ import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { subscribeToWorkerOperationsByWorker, addWorkerOperation, updateWorkerOperation } from '../services/storage';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import SupervisorBranchView from '../components/SupervisorBranchView';
 
 const WorkerDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -25,6 +26,7 @@ const WorkerDashboard: React.FC = () => {
     const [expenseReason, setExpenseReason] = useState<string>('');
     
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [activeTab, setActiveTab] = useState<'register' | 'branch'>('register');
 
     // PWA Install Banner
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
@@ -315,7 +317,21 @@ const WorkerDashboard: React.FC = () => {
                 </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+            {worker?.role === 'supervisor' && (
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--bg-color)', padding: '6px', borderRadius: '16px' }}>
+                    <button onClick={() => setActiveTab('register')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'register' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'register' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s' }}>
+                        تسجيل فواتيري
+                    </button>
+                    <button onClick={() => setActiveTab('branch')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'branch' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'branch' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s' }}>
+                        إدارة وموازنة الفرع
+                    </button>
+                </div>
+            )}
+
+            {activeTab === 'branch' && worker?.role === 'supervisor' ? (
+                <SupervisorBranchView branchId={worker.branchId} />
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                 
                 {/* Form Section */}
                 <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
@@ -452,6 +468,7 @@ const WorkerDashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
+            )}
         </div>
     );
 };
