@@ -4,6 +4,8 @@ import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
+import { db } from '../services/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface Props {
     branches: Branch[];
@@ -166,6 +168,18 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         window.open(`https://wa.me/?text=${encodedText}`, '_blank');
     };
 
+    const updateWorkerRole = async (w: Worker) => {
+        const newRole = w.role === 'supervisor' ? 'worker' : 'supervisor';
+        if (window.confirm('هل تريد تغيير صلاحية هذا العامل إلى: ' + (newRole === 'supervisor' ? 'مشرف فرع' : 'عامل عادي') + '؟')) {
+            try {
+                await setDoc(doc(db, 'workers', w.id), { role: newRole }, { merge: true });
+                toast.success('تم تحديث الصلاحية بنجاح');
+            } catch (e) {
+                toast.error('حدث خطأ أثناء التحديث');
+            }
+        }
+    };
+
     const handleShareBalance = () => {
         let dateLabel = dateFilter === 'today' ? 'اليوم' : dateFilter === 'yesterday' ? 'الأمس' : dateFilter === 'custom' ? customDate : 'الفترة المحددة';
         let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
@@ -212,7 +226,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     <td style={{ padding: '12px' }}>{w.name} {w.isActive === false && <span style={{ color: 'var(--error)', fontSize: '11px', marginRight: '6px', fontWeight: 700 }}>(مؤرشف)</span>}</td>
                                     <td style={{ padding: '12px' }}><code style={{ background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '4px' }}>{w.username}</code></td>
                                     <td style={{ padding: '12px' }}>{branches.find(b => b.id === w.branchId)?.name || 'غير محدد'}</td>
-                                    <td style={{ padding: '12px' }}>{w.role === 'supervisor' ? <span style={{ background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700 }}>مشرف فرع</span> : 'عامل'}</td>
+                                    <td style={{ padding: '12px' }}>{w.role === 'supervisor' ? <span style={{ background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700 }}>مشرف فرع</span> : 'عامل'}<button onClick={() => updateWorkerRole(w)} style={{ marginRight: '8px', padding: '4px 8px', fontSize: '10px', borderRadius: '4px', background: 'transparent', border: '1px solid var(--border-color)', cursor: 'pointer' }}>ترقية/تنزيل</button></td>
                                     <td style={{ padding: '12px' }}>
                                         {w.isActive !== false && <button onClick={() => handleShareWorker(w)} style={{ padding: '6px', background: 'transparent', color: 'var(--success)', border: 'none', cursor: 'pointer', marginRight: '8px' }} title="مشاركة عبر الواتساب"><Share2 size={18} /></button>}
                                         <button onClick={() => handleDeleteWorker(w.id)} style={{ padding: '6px', background: 'transparent', color: w.isActive === false ? 'var(--text-secondary)' : 'var(--error)', border: 'none', cursor: w.isActive === false ? 'not-allowed' : 'pointer' }} disabled={w.isActive === false} title={w.isActive === false ? 'مؤرشف مسبقاً' : 'أرشفة العامل'}><Trash2 size={18} /></button>
