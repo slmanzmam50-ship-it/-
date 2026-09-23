@@ -3,9 +3,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/worker(.*)", "destination": "/worker.html" },
+    { "source": "/login(.*)", "destination": "/worker.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -1,0 +1,36 @@
+﻿<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="manifest" href="/manifest-worker.json" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content=" " />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="description" content="البوابة الإلكترونية الرسمية لمراكز خدمة سلمان زمام الخالدي لخدمات السيارات والصيانة - تتبع فوري لمواقع الفروع وطلب صيانة الشركات" />
+    <meta property="og:title" content="شركة سلمان زمام الخالدي" />
+    <meta property="og:description" content="البوابة الإلكترونية الرسمية لإدارة وتتبع طلبات صيانة السيارات ومواقع الفروع" />
+    <meta property="og:image" content="/logo.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <title>شركة سلمان زمام الخالدي</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Capture install prompt ASAP before React loads
+      window.__pwaInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__pwaInstallPrompt = e;
+        // Notify any listener that might be waiting
+        window.dispatchEvent(new CustomEvent('pwaPromptReady', { detail: e }));
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
