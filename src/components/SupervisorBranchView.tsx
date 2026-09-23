@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, Download, Share2 } from 'lucide-react';
 import type { WorkerOperation, Worker } from '../types';
 import { subscribeToWorkerOperations, subscribeToWorkers } from '../services/storage';
@@ -86,7 +86,13 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
         let dateLabel = dateFilter === 'today' ? 'اليوم' : dateFilter === 'yesterday' ? 'الأمس' : dateFilter === 'custom' ? customDate : 'الفترة المحددة';
         let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
         
-        const shareText = `📊 جرد الفرع (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل: ${totalCredit} ريال\n📉 خرج: ${totalExpenses} ريال\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*`;
+        let expensesDetails = '';
+        const expensesList = filteredOperations.filter(op => op.expenseAmount > 0);
+        if (expensesList.length > 0) {
+            expensesDetails = '\n\n📋 تفاصيل الخرج:\n' + expensesList.map(op => `- ${op.expenseAmount} ريال (${op.expenseReason || 'بدون سبب'})`).join('\n');
+        }
+
+        const shareText = `📊 جرد الفرع (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل: ${totalCredit} ريال\n📉 إجمالي الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*`;
         const encodedText = encodeURIComponent(shareText);
         window.open(`https://wa.me/?text=${encodedText}`, '_blank');
     };
@@ -186,7 +192,10 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                                     <td style={{ padding: '10px', fontWeight: 700 }}>{op.workerName}</td>
                                     <td style={{ padding: '10px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</td>
                                     <td style={{ padding: '10px', color: 'var(--success)', fontWeight: 700 }}>{(op.price || 0) > 0 ? op.price : '-'}</td>
-                                    <td style={{ padding: '10px', color: 'var(--error)', fontWeight: 700 }}>{(op.expenseAmount || 0) > 0 ? op.expenseAmount : '-'}</td>
+                                    <td style={{ padding: '10px' }}>
+                                        <div style={{ color: 'var(--error)', fontWeight: 700 }}>{(op.expenseAmount || 0) > 0 ? op.expenseAmount : '-'}</div>
+                                        {(op.expenseAmount || 0) > 0 && op.expenseReason && <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({op.expenseReason})</div>}
+                                    </td>
                                 </tr>
                             ))}
                             {filteredOperations.length === 0 && <tr><td colSpan={5} style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>لا توجد عمليات لهذه الفترة</td></tr>}

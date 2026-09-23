@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Activity, Trash2, Edit2, Download, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
@@ -186,7 +186,13 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         let dateLabel = dateFilter === 'today' ? 'اليوم' : dateFilter === 'yesterday' ? 'الأمس' : dateFilter === 'custom' ? customDate : 'الفترة المحددة';
         let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
         
-        const shareText = `📊 جرد (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل: ${totalCredit} ريال\n📉 خرج: ${totalExpenses} ريال\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*`;
+        let expensesDetails = '';
+        const expensesList = filteredOperations.filter(op => op.expenseAmount > 0);
+        if (expensesList.length > 0) {
+            expensesDetails = '\n\n📋 تفاصيل الخرج:\n' + expensesList.map(op => `- ${op.expenseAmount} ريال (${op.expenseReason || 'بدون سبب'})`).join('\n');
+        }
+
+        const shareText = `📊 جرد (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل: ${totalCredit} ريال\n📉 إجمالي الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*`;
         const encodedText = encodeURIComponent(shareText);
         window.open(`https://wa.me/?text=${encodedText}`, '_blank');
     };
@@ -347,7 +353,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     <td style={{ padding: '10px', fontWeight: 700 }}>{op.workerName}</td>
                                     <td style={{ padding: '10px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</td>
                                     <td style={{ padding: '10px', color: 'var(--success)', fontWeight: 700 }}>{op.price > 0 ? op.price : '-'}</td>
-                                    <td style={{ padding: '10px', color: 'var(--error)', fontWeight: 700 }}>{op.expenseAmount > 0 ? op.expenseAmount : '-'}</td>
+                                    <td style={{ padding: '10px' }}>
+                                        <div style={{ color: 'var(--error)', fontWeight: 700 }}>{op.expenseAmount > 0 ? op.expenseAmount : '-'}</div>
+                                        {op.expenseAmount > 0 && op.expenseReason && <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({op.expenseReason})</div>}
+                                    </td>
                                     <td style={{ padding: '10px' }}>
                                         <button onClick={() => { setEditingOp(op); setEditPrice(op.price.toString()); setEditExpense(op.expenseAmount.toString()); }} style={{ padding: '6px', background: 'transparent', color: 'var(--primary-color)', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>
                                     </td>
