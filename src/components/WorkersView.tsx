@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Users, Activity, Trash2, Edit2, Download, Share2 } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
@@ -134,9 +134,11 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         return true;
     });
 
-    const totalIncome = filteredOperations.reduce((sum, op) => sum + op.price, 0);
-    const totalExpenses = filteredOperations.reduce((sum, op) => sum + op.expenseAmount, 0);
-    const totalNet = totalIncome - totalExpenses;
+    const totalIncome = filteredOperations.reduce((sum, op) => sum + (op.price || 0), 0);
+    const totalExpenses = filteredOperations.reduce((sum, op) => sum + (op.expenseAmount || 0), 0);
+    const totalNetwork = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'network' ? (op.price || 0) : 0), 0);
+    const totalCredit = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' ? (op.price || 0) : 0), 0);
+    const expectedCash = totalIncome - totalNetwork - totalCredit - totalExpenses;
 
     const handleShareWorker = (w: Worker) => {
         const shareText = `👋 مرحباً ${w.name}،\n\nإليك بيانات الدخول الخاصة بك لبوابة العمال:\n\n👤 اسم المستخدم: ${w.username}\n🔑 كلمة المرور: ${w.password}\n\nرابط الدخول:\n${window.location.origin}/login?type=worker`;
@@ -176,13 +178,13 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         </thead>
                         <tbody>
                             {workers.map(w => (
-                                <tr key={w.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '12px' }}>{w.name}</td>
+                                <tr key={w.id} style={{ borderBottom: '1px solid var(--border-color)', opacity: w.isActive === false ? 0.6 : 1 }}>
+                                    <td style={{ padding: '12px' }}>{w.name} {w.isActive === false && <span style={{ color: 'var(--error)', fontSize: '11px', marginRight: '6px', fontWeight: 700 }}>(مؤرشف)</span>}</td>
                                     <td style={{ padding: '12px' }}><code style={{ background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '4px' }}>{w.username}</code></td>
                                     <td style={{ padding: '12px' }}>{branches.find(b => b.id === w.branchId)?.name || 'غير محدد'}</td>
                                     <td style={{ padding: '12px' }}>
-                                        <button onClick={() => handleShareWorker(w)} style={{ padding: '6px', background: 'transparent', color: 'var(--success)', border: 'none', cursor: 'pointer', marginRight: '8px' }} title="مشاركة عبر الواتساب"><Share2 size={18} /></button>
-                                        <button onClick={() => handleDeleteWorker(w.id)} style={{ padding: '6px', background: 'transparent', color: 'var(--error)', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
+                                        {w.isActive !== false && <button onClick={() => handleShareWorker(w)} style={{ padding: '6px', background: 'transparent', color: 'var(--success)', border: 'none', cursor: 'pointer', marginRight: '8px' }} title="مشاركة عبر الواتساب"><Share2 size={18} /></button>}
+                                        <button onClick={() => handleDeleteWorker(w.id)} style={{ padding: '6px', background: 'transparent', color: w.isActive === false ? 'var(--text-secondary)' : 'var(--error)', border: 'none', cursor: w.isActive === false ? 'not-allowed' : 'pointer' }} disabled={w.isActive === false} title={w.isActive === false ? 'مؤرشف مسبقاً' : 'أرشفة العامل'}><Trash2 size={18} /></button>
                                     </td>
                                 </tr>
                             ))}
@@ -202,12 +204,13 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                         <select value={workerFilter} onChange={e => setWorkerFilter(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
                             <option value="all">كل العمال</option>
-                            {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                            {workers.map(w => <option key={w.id} value={w.id}>{w.name} {!w.isActive && '(�����)'}</option>)}
                         </select>
                         <select value={paymentFilter} onChange={e => setPaymentFilter(e.target.value as any)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
-                            <option value="all">الكل (كاش وشبكة)</option>
+                            <option value="all">الكل</option>
                             <option value="cash">كاش فقط</option>
                             <option value="network">شبكة فقط</option>
+                            <option value="credit">آجل فقط</option>
                         </select>
                         <select value={dateFilter} onChange={e => setDateFilter(e.target.value as any)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
                             <option value="today">اليوم</option>
@@ -221,18 +224,36 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-                    <div style={{ background: 'rgba(59,130,246,0.1)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
-                        <div style={{ color: 'var(--primary-color)', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>إجمالي الإيرادات</div>
-                        <div style={{ fontSize: '24px', fontWeight: 900 }}>{totalIncome} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
-                    </div>
-                    <div style={{ background: 'rgba(239,68,68,0.1)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
-                        <div style={{ color: 'var(--error)', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>إجمالي المصروفات (الخرج)</div>
-                        <div style={{ fontSize: '24px', fontWeight: 900 }}>{totalExpenses} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
-                    </div>
-                    <div style={{ background: 'rgba(16,185,129,0.1)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.2)' }}>
-                        <div style={{ color: 'var(--success)', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>المتبقي من الإيرادات</div>
-                        <div style={{ fontSize: '24px', fontWeight: 900 }}>{totalNet} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
+                {/* الموازنة اليومية (Daily Balance) */}
+                <div style={{ background: 'rgba(59,130,246,0.05)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(59,130,246,0.1)', marginBottom: '24px' }}>
+                    <h4 style={{ margin: '0 0 16px', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-color)' }}>الموازنة اليومية (تفصيل الإيرادات)</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+                        
+                        <div style={{ background: 'rgba(59,130,246,0.1)', padding: '1rem', borderRadius: '12px' }}>
+                            <div style={{ color: 'var(--primary-color)', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>إجمالي الإيرادات (المبيعات)</div>
+                            <div style={{ fontSize: '24px', fontWeight: 900 }}>{totalIncome} <span style={{ fontSize: '14px', fontWeight: 400 }}>ريال</span></div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
+                                <span>الشبكة:</span>
+                                <span style={{ color: 'var(--primary-color)' }}>{totalNetwork} ريال</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
+                                <span>الآجل:</span>
+                                <span style={{ color: 'var(--accent-orange)' }}>{totalCredit} ريال</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
+                                <span>إجمالي الخرج:</span>
+                                <span style={{ color: 'var(--error)' }}>{totalExpenses} ريال</span>
+                            </div>
+                        </div>
+
+                        <div style={{ background: 'rgba(16,185,129,0.1)', padding: '1rem', borderRadius: '12px', border: '2px solid rgba(16,185,129,0.5)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <div style={{ color: 'var(--success)', fontSize: '14px', fontWeight: 800, marginBottom: '4px' }}>الكاش المفترض في الدرج</div>
+                            <div style={{ fontSize: '28px', fontWeight: 900, color: 'var(--success)' }}>{expectedCash} <span style={{ fontSize: '14px', fontWeight: 700 }}>ريال</span></div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -256,7 +277,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(op.createdAt).toLocaleTimeString('ar-SA')}</div>
                                     </td>
                                     <td style={{ padding: '12px', fontWeight: 700 }}>{op.workerName}</td>
-                                    <td style={{ padding: '12px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳' : '💵'}</td>
+                                    <td style={{ padding: '12px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</td>
                                     <td style={{ padding: '12px', color: 'var(--success)', fontWeight: 700 }}>{op.price > 0 ? op.price : '-'}</td>
                                     <td style={{ padding: '12px', color: 'var(--error)', fontWeight: 700 }}>{op.expenseAmount > 0 ? op.expenseAmount : '-'}</td>
                                     <td style={{ padding: '12px' }}>

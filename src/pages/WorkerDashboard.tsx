@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Plus, Wallet, CheckCircle, AlertCircle, TrendingUp, TrendingDown, CreditCard, Coins, FileText, FileX } from 'lucide-react';
+import { LogOut, Plus, Wallet, CheckCircle, AlertCircle, TrendingUp, TrendingDown, CreditCard, Coins, FileText, FileX, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Worker, WorkerOperation } from '../types';
 import { db } from '../services/firebase';
@@ -16,7 +16,7 @@ const WorkerDashboard: React.FC = () => {
     // Form state
     const [serviceType, setServiceType] = useState<string>('');
     const [price, setPrice] = useState<string>('');
-    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'network'>('cash');
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'network' | 'credit'>('cash');
     const [hasInvoice, setHasInvoice] = useState<boolean>(true);
     const [tipAmount, setTipAmount] = useState<string>('');
     
@@ -353,12 +353,16 @@ const WorkerDashboard: React.FC = () => {
                                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 700, fontSize: '14px' }}>طريقة الدفع</label>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <button type="button" onClick={() => setPaymentMethod('cash')} style={{ flex: 1, padding: '10px', borderRadius: '12px', border: `1px solid ${paymentMethod === 'cash' ? 'var(--success)' : 'var(--border-color)'}`, background: paymentMethod === 'cash' ? 'rgba(16,185,129,0.1)' : 'transparent', color: paymentMethod === 'cash' ? 'var(--success)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                                <Coins size={24} />
-                                                <span>كاش</span>
+                                                <Coins size={20} />
+                                                <span style={{ fontSize: '12px' }}>كاش</span>
                                             </button>
                                             <button type="button" onClick={() => setPaymentMethod('network')} style={{ flex: 1, padding: '10px', borderRadius: '12px', border: `1px solid ${paymentMethod === 'network' ? 'var(--primary-color)' : 'var(--border-color)'}`, background: paymentMethod === 'network' ? 'rgba(59,130,246,0.1)' : 'transparent', color: paymentMethod === 'network' ? 'var(--primary-color)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                                <CreditCard size={24} />
-                                                <span>شبكة</span>
+                                                <CreditCard size={20} />
+                                                <span style={{ fontSize: '12px' }}>شبكة</span>
+                                            </button>
+                                            <button type="button" onClick={() => setPaymentMethod('credit')} style={{ flex: 1, padding: '10px', borderRadius: '12px', border: `1px solid ${paymentMethod === 'credit' ? 'var(--accent-orange)' : 'var(--border-color)'}`, background: paymentMethod === 'credit' ? 'rgba(245,158,11,0.1)' : 'transparent', color: paymentMethod === 'credit' ? 'var(--accent-orange)' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                                <BookOpen size={20} />
+                                                <span style={{ fontSize: '12px' }}>آجل</span>
                                             </button>
                                         </div>
                                     </div>

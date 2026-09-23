@@ -99,7 +99,7 @@ export interface Worker {
 export interface EditRequest {
     requestedAt: number;
     price?: number;
-    paymentMethod?: 'cash' | 'network';
+    paymentMethod?: 'cash' | 'network' | 'credit';
     hasInvoice?: boolean;
     tipAmount?: number;
     expenseAmount?: number;
@@ -114,7 +114,7 @@ export interface WorkerOperation {
     branchId: string;
     serviceType: WorkerServiceType | string;
     price: number;
-    paymentMethod: 'cash' | 'network';
+    paymentMethod?: 'cash' | 'network' | 'credit';
     hasInvoice: boolean;
     tipAmount: number;
     expenseAmount: number;

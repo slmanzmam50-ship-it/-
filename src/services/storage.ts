@@ -814,7 +814,8 @@ export const updateWorker = async (worker: Worker): Promise<void> => {
 };
 
 export const deleteWorker = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'workers', id));
+    // Soft delete: keep the worker in DB for historical revenue tracking, but mark inactive
+    await setDoc(doc(db, 'workers', id), { isActive: false }, { merge: true });
 };
 
 
