@@ -217,7 +217,10 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(op.createdAt).toLocaleTimeString('ar-SA')}</div>
                                     </td>
                                     <td style={{ padding: '10px', fontWeight: 700 }}>{op.workerName}</td>
-                                    <td style={{ padding: '10px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</td>
+                                    <td style={{ padding: '10px' }}>
+                                        <div>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</div>
+                                        {op.addedByAdmin && <div style={{ display: 'inline-block', marginTop: '4px', padding: '2px 6px', background: 'var(--primary-color)', color: 'white', fontSize: '10px', borderRadius: '4px', fontWeight: 700 }}>🛡️ إضافة الإدارة</div>}
+                                    </td>
                                     <td style={{ padding: '10px', color: 'var(--success)', fontWeight: 700 }}>{(op.price || 0) > 0 ? op.price : '-'}</td>
                                     <td style={{ padding: '10px' }}>
                                         <div style={{ color: 'var(--error)', fontWeight: 700 }}>{(op.expenseAmount || 0) > 0 ? op.expenseAmount : '-'}</div>

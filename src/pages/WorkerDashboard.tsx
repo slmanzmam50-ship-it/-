@@ -428,7 +428,8 @@ const WorkerDashboard: React.FC = () => {
                                             {new Date(op.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                                         </td>
                                         <td style={{ padding: '8px', fontSize: '13px' }}>
-                                            {op.serviceType} {op.paymentMethod === 'network' ? '💳' : (op.paymentMethod === 'credit' ? '📝' : '💵')}
+                                            <div>{op.serviceType} {op.paymentMethod === 'network' ? '💳' : (op.paymentMethod === 'credit' ? '📝' : '💵')}</div>
+                                            {op.addedByAdmin && <div style={{ display: 'inline-block', marginTop: '2px', padding: '2px 4px', background: 'var(--primary-color)', color: 'white', fontSize: '10px', borderRadius: '4px', fontWeight: 700 }}>🛡️ إضافة الإدارة</div>}
                                             {op.expenseAmount > 0 && op.expenseReason && <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({op.expenseReason})</div>}
                                         </td>
                                         <td style={{ padding: '8px', fontSize: '13px', fontWeight: 700, color: op.expenseAmount > 0 ? 'var(--error)' : 'var(--success)' }}>

@@ -123,4 +123,5 @@ export interface WorkerOperation {
     createdAt: number;
     pendingEditRequest?: EditRequest;
     paidAmount?: number;
+    addedByAdmin?: boolean;
 }

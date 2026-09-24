@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Activity, Trash2, Edit2, Download, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
-import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';
+import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation, addWorkerOperation } from '../services/storage';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { db } from '../services/firebase';
@@ -38,6 +38,9 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [editPaymentMethod, setEditPaymentMethod] = useState<'cash'|'network'|'credit'>('cash');
     const [editHasInvoice, setEditHasInvoice] = useState(false);
     const [editExpenseReason, setEditExpenseReason] = useState('');
+
+    const [isAddingOp, setIsAddingOp] = useState(false);
+    const [newOpData, setNewOpData] = useState({ workerId: '', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: false, expenseAmount: '', expenseReason: '' });
 
     const [role, setRole] = useState<'worker' | 'supervisor'>('worker');
 
@@ -191,6 +194,38 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         }
     };
 
+    const handleAddOpSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newOpData.workerId || !newOpData.serviceType) {
+            toast.error('يرجى تعبئة الحقول المطلوبة');
+            return;
+        }
+        const worker = workers.find(w => w.id === newOpData.workerId);
+        if (!worker) return;
+
+        try {
+            await addWorkerOperation({
+                workerId: worker.id,
+                workerName: worker.name,
+                branchId: worker.branchId,
+                serviceType: newOpData.serviceType,
+                price: Number(newOpData.price) || 0,
+                paymentMethod: newOpData.paymentMethod,
+                hasInvoice: newOpData.hasInvoice,
+                expenseAmount: Number(newOpData.expenseAmount) || 0,
+                expenseReason: newOpData.expenseReason,
+                tipAmount: 0,
+                addedByAdmin: true
+            });
+            toast.success('تم إضافة العملية بنجاح');
+            setIsAddingOp(false);
+            setNewOpData({ workerId: '', price: '', serviceType: '', paymentMethod: 'cash', hasInvoice: false, expenseAmount: '', expenseReason: '' });
+        } catch (err) {
+            console.error(err);
+            toast.error('حدث خطأ أثناء الإضافة');
+        }
+    };
+
     const handleShareBalance = () => {
         let dateLabel = dateFilter === 'today' ? 'اليوم' : dateFilter === 'yesterday' ? 'الأمس' : dateFilter === 'custom' ? customDate : 'الفترة المحددة';
         let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
@@ -273,8 +308,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                     <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', fontWeight: 800 }}>
                         <Activity size={20} className="text-primary" /> سجل العمليات
                     </h3>
-                    
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <button onClick={() => setIsAddingOp(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 800 }}>
+                            + إضافة عملية لعامل
+                        </button>
                         <select value={workerFilter} onChange={e => setWorkerFilter(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
                             <option value="all">كل العمال</option>
                             {workers.map(w => <option key={w.id} value={w.id}>{w.name} {!w.isActive && '(�����)'}</option>)}
@@ -360,7 +397,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(op.createdAt).toLocaleTimeString('ar-SA')}</div>
                                     </td>
                                     <td style={{ padding: '10px', fontWeight: 700 }}>{op.workerName}</td>
-                                    <td style={{ padding: '10px' }}>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</td>
+                                    <td style={{ padding: '10px' }}>
+                                        <div>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</div>
+                                        {op.addedByAdmin && <div style={{ display: 'inline-block', marginTop: '4px', padding: '2px 6px', background: 'var(--primary-color)', color: 'white', fontSize: '10px', borderRadius: '4px', fontWeight: 700 }}>🛡️ إضافة الإدارة</div>}
+                                    </td>
                                     <td style={{ padding: '10px', color: 'var(--success)', fontWeight: 700 }}>{op.price > 0 ? op.price : '-'}</td>
                                     <td style={{ padding: '10px' }}>
                                         <div style={{ color: 'var(--error)', fontWeight: 700 }}>{op.expenseAmount > 0 ? op.expenseAmount : '-'}</div>
@@ -418,6 +458,62 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                                 <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>حفظ التعديل</button>
                                 <button type="button" onClick={() => setEditingOp(null)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Operation Modal */}
+            {isAddingOp && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ background: 'white', padding: '24px', borderRadius: '24px', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <h3 style={{ margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>+ إضافة عملية لعامل (بواسطة الإدارة)</h3>
+                        <form onSubmit={handleAddOpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>العامل</label>
+                                <select value={newOpData.workerId} onChange={e => setNewOpData({...newOpData, workerId: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
+                                    <option value="">-- اختر العامل --</option>
+                                    {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>الخدمة (البيان)</label>
+                                <input type="text" value={newOpData.serviceType} onChange={e => setNewOpData({...newOpData, serviceType: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '16px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>طريقة الدفع</label>
+                                    <select value={newOpData.paymentMethod} onChange={e => setNewOpData({...newOpData, paymentMethod: e.target.value as any})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
+                                        <option value="cash">كاش</option>
+                                        <option value="network">شبكة</option>
+                                        <option value="credit">آجل</option>
+                                    </select>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>المبلغ (الإيراد)</label>
+                                    <input type="number" value={newOpData.price} onChange={e => setNewOpData({...newOpData, price: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <input type="checkbox" checked={newOpData.hasInvoice} onChange={e => setNewOpData({...newOpData, hasInvoice: e.target.checked})} id="hasInvoiceAdd" style={{ width: '18px', height: '18px' }} />
+                                <label htmlFor="hasInvoiceAdd" style={{ fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>يوجد فاتورة</label>
+                            </div>
+                            <div style={{ display: 'flex', gap: '16px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>مصروف / خرج</label>
+                                    <input type="number" value={newOpData.expenseAmount} onChange={e => setNewOpData({...newOpData, expenseAmount: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                </div>
+                                {Number(newOpData.expenseAmount) > 0 && (
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>سبب الخرج</label>
+                                        <input type="text" value={newOpData.expenseReason} onChange={e => setNewOpData({...newOpData, expenseReason: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                                <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>تسجيل العملية</button>
+                                <button type="button" onClick={() => setIsAddingOp(false)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
                             </div>
                         </form>
                     </div>
