@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Plus, Wallet, CheckCircle, AlertCircle, TrendingUp, TrendingDown, CreditCard, Coins, FileText, FileX, BookOpen } from 'lucide-react';
+import { LogOut, Plus, Wallet, CheckCircle, TrendingUp, TrendingDown, CreditCard, Coins, FileText, FileX, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Worker, WorkerOperation } from '../types';
 import { db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { subscribeToWorkerOperationsByWorker, addWorkerOperation, updateWorkerOperation } from '../services/storage';
+import { subscribeToWorkerOperationsByWorker, addWorkerOperation } from '../services/storage';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import SupervisorBranchView from '../components/SupervisorBranchView';
 
@@ -180,39 +180,6 @@ const WorkerDashboard: React.FC = () => {
         }
     };
 
-    const handleResolveEdit = async (operation: WorkerOperation, resolution: 'approved' | 'rejected') => {
-        if (!operation.pendingEditRequest) return;
-        
-        try {
-            const updatedOp = { ...operation };
-            
-            if (resolution === 'approved') {
-                // Apply changes
-                const edits = operation.pendingEditRequest;
-                if (edits && edits.price !== undefined) updatedOp.price = edits.price;
-                if (edits && edits.paymentMethod !== undefined) updatedOp.paymentMethod = edits.paymentMethod;
-                if (edits && edits.hasInvoice !== undefined) updatedOp.hasInvoice = edits.hasInvoice;
-                if (edits && edits.tipAmount !== undefined) updatedOp.tipAmount = edits.tipAmount;
-                if (edits && edits.expenseAmount !== undefined) updatedOp.expenseAmount = edits.expenseAmount;
-                if (edits && edits.expenseReason !== undefined) updatedOp.expenseReason = edits.expenseReason;
-                
-                if (updatedOp.pendingEditRequest) if (updatedOp.pendingEditRequest) updatedOp.pendingEditRequest.status = 'approved';
-                toast.success('تم قبول التعديل وتحديث العملية ✅');
-            } else {
-                if (updatedOp.pendingEditRequest) if (updatedOp.pendingEditRequest) updatedOp.pendingEditRequest.status = 'rejected';
-                toast.success('تم رفض التعديل ❌');
-            }
-            
-            // Remove the pending request entirely after resolving, or keep it as history. Let's just remove it for clean UI
-            delete updatedOp.pendingEditRequest;
-            
-            await updateWorkerOperation(updatedOp);
-        } catch (error) {
-            console.error(error);
-            toast.error('حدث خطأ أثناء الرد على الطلب');
-        }
-    };
-
     // Analytics Calculation
     const currentMonthOps = operations.filter(op => {
         const d = new Date(op.createdAt);
@@ -244,8 +211,6 @@ const WorkerDashboard: React.FC = () => {
     const chartData = Array.from(chartDataMap.values()).sort((a, b) => parseInt(a.day.split(' ')[1]) - parseInt(b.day.split(' ')[1]));
 
     const todayOperations = operations.filter(op => new Date(op.createdAt).toDateString() === new Date().toDateString());
-
-    const pendingRequests = operations.filter(op => op.pendingEditRequest && op.pendingEditRequest.status === 'pending');
 
     if (!worker) return <div style={{ padding: '1rem', textAlign: 'center' }}>جاري التحميل...</div>;
 
@@ -289,32 +254,6 @@ const WorkerDashboard: React.FC = () => {
                         <button onClick={() => setShowInstallBanner(false)} style={{ padding: '8px 12px', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px' }}>
                             تخطي
                         </button>
-                    </div>
-                </div>
-            )}
-
-            {pendingRequests.length > 0 && (
-                <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid var(--accent-orange)', borderRadius: '16px', padding: '1rem', marginBottom: '2rem' }}>
-                    <h3 style={{ margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#b45309' }}>
-                        <AlertCircle size={20} /> طلبات تعديل معلقة من الإدارة ({pendingRequests.length})
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {pendingRequests.map(op => (
-                            <div key={op.id} style={{ background: 'white', padding: '1rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                                <div>
-                                    <div style={{ fontWeight: 700, marginBottom: '4px' }}>تعديل على عملية: {op.serviceType} (التاريخ: {new Date(op.createdAt).toLocaleDateString('ar-SA')})</div>
-                                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                                        الإدارة تطلب تعديل:
-                                        {op.pendingEditRequest?.price !== undefined && ` السعر إلى ${op.pendingEditRequest.price} ريال`}
-                                        {op.pendingEditRequest?.expenseAmount !== undefined && ` الخرج إلى ${op.pendingEditRequest.expenseAmount} ريال`}
-                                    </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button onClick={() => handleResolveEdit(op, 'approved')} style={{ padding: '8px 16px', background: 'var(--success)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 }}>موافقة</button>
-                                    <button onClick={() => handleResolveEdit(op, 'rejected')} style={{ padding: '8px 16px', background: 'var(--error)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 }}>رفض</button>
-                                </div>
-                            </div>
-                        ))}
                     </div>
                 </div>
             )}

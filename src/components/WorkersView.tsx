@@ -102,19 +102,20 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         
         try {
             const updatedOp = { ...editingOp };
-            updatedOp.pendingEditRequest = {
-                requestedAt: Date.now(),
-                status: 'pending',
-                price: editPrice ? Number(editPrice) : editingOp.price,
-                expenseAmount: editExpense ? Number(editExpense) : editingOp.expenseAmount
-            };
+            if (editPrice !== '') updatedOp.price = Number(editPrice);
+            if (editExpense !== '') updatedOp.expenseAmount = Number(editExpense);
+            
+            // Remove any pending edits if they exist since admin overrides
+            if (updatedOp.pendingEditRequest) {
+                delete updatedOp.pendingEditRequest;
+            }
             
             await updateWorkerOperation(updatedOp);
-            toast.success('تم إرسال طلب التعديل للعامل بنجاح');
+            toast.success('تم تعديل العملية بنجاح');
             setEditingOp(null);
         } catch (error) {
             console.error(error);
-            toast.error('فشل في إرسال التعديل');
+            toast.error('فشل في تعديل العملية');
         }
     };
 
@@ -367,11 +368,11 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                 </div>
             </div>
 
-            {/* Edit Proposal Modal */}
+            {/* Edit Modal */}
             {editingOp && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ background: 'white', padding: '24px', borderRadius: '24px', width: '90%', maxWidth: '400px' }}>
-                        <h3 style={{ margin: '0 0 16px' }}>اقتراح تعديل على ({editingOp.workerName})</h3>
+                        <h3 style={{ margin: '0 0 16px' }}>تعديل عملية ({editingOp.workerName})</h3>
                         <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>قم بتعديل الإيراد أو الخرج للعملية وسيطبق فوراً.</p>
                         
                         <form onSubmit={handleProposeEdit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -385,7 +386,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                             </div>
                             
                             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                                <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إرسال التعديل</button>
+                                <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>حفظ التعديل</button>
                                 <button type="button" onClick={() => setEditingOp(null)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
                             </div>
                         </form>
