@@ -42,6 +42,8 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [isAddingOp, setIsAddingOp] = useState(false);
     const [newOpData, setNewOpData] = useState({ workerId: '', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: false, expenseAmount: '', expenseReason: '' });
 
+    const [actualCash, setActualCash] = useState<string>('');
+
     const [role, setRole] = useState<'worker' | 'supervisor'>('worker');
 
     useEffect(() => {
@@ -242,7 +244,11 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
             }).join('\n');
         }
 
-        const shareText = `📊 جرد (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخصم والخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*`;
+        const actual = Number(actualCash) || 0;
+        const diff = actual - expectedCash;
+        const diffText = actualCash === '' ? 'لم يتم إدخاله' : (diff === 0 ? 'مطابق ✅' : (diff < 0 ? `عجز (${Math.abs(diff)} ريال) ❌` : `زيادة (${diff} ريال) ⚠️`));
+
+        const shareText = `📊 جرد (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخصم والخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*\n💵 الكاش الفعلي المتوفر: *${actualCash === '' ? '؟' : actual} ريال*\n⚖️ الفارق: *${diffText}*`;
         const encodedText = encodeURIComponent(shareText);
         window.open(`https://wa.me/?text=${encodedText}`, '_blank');
     };
@@ -376,8 +382,24 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         </div>
 
                         <div className="balance-card" style={{ background: 'rgba(16,185,129,0.1)', padding: '1rem', borderRadius: '12px', border: '2px solid rgba(16,185,129,0.5)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <div className="balance-title" style={{ color: 'var(--success)', fontSize: '14px', fontWeight: 800, marginBottom: '4px' }}>الكاش المفترض في الدرج</div>
-                            <div className="balance-value" style={{ fontSize: '28px', fontWeight: 900, color: 'var(--success)' }}>{expectedCash} <span style={{ fontSize: '14px', fontWeight: 700 }}>ريال</span></div>
+                            <div className="balance-title" style={{ color: 'var(--success)', fontSize: '14px', fontWeight: 800, marginBottom: '4px' }}>الكاش المفترض بالدرج</div>
+                            <div className="balance-value" style={{ fontSize: '24px', fontWeight: 900, color: 'var(--success)' }}>{expectedCash} <span style={{ fontSize: '14px', fontWeight: 700 }}>ريال</span></div>
+                        </div>
+
+                        <div className="balance-card" style={{ background: 'white', padding: '1rem', borderRadius: '12px', border: '2px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <div className="balance-title" style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>أدخل الكاش الفعلي للمطابقة</div>
+                            <input 
+                                type="number" 
+                                placeholder="الكاش الفعلي..."
+                                value={actualCash}
+                                onChange={e => setActualCash(e.target.value)}
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', fontSize: '16px', fontWeight: 800 }}
+                            />
+                            {actualCash !== '' && (
+                                <div style={{ marginTop: '8px', fontSize: '13px', fontWeight: 800, color: (Number(actualCash) - expectedCash) === 0 ? 'var(--success)' : (Number(actualCash) - expectedCash) < 0 ? 'var(--error)' : 'var(--accent-orange)' }}>
+                                    {(Number(actualCash) - expectedCash) === 0 ? '✅ الصندوق مطابق' : (Number(actualCash) - expectedCash) < 0 ? `❌ عجز: ${Math.abs(Number(actualCash) - expectedCash)} ريال` : `⚠️ زيادة: ${Number(actualCash) - expectedCash} ريال`}
+                                </div>
+                            )}
                         </div>
 
                     </div>

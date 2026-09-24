@@ -4,7 +4,7 @@ import { LogOut, Plus, Wallet, CheckCircle, TrendingUp, TrendingDown, CreditCard
 import toast from 'react-hot-toast';
 import type { Worker, WorkerOperation } from '../types';
 import { db } from '../services/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { subscribeToWorkerOperationsByWorker, addWorkerOperation } from '../services/storage';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import SupervisorBranchView from '../components/SupervisorBranchView';
@@ -100,29 +100,31 @@ const WorkerDashboard: React.FC = () => {
             return;
         }
 
-        // Verify and load worker
-        const fetchWorker = async () => {
-            try {
-                const docRef = doc(db, 'workers', workerId);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    setWorker({ id: docSnap.id, ...docSnap.data() } as Worker);
-                } else {
+        const unsubWorkerDoc = onSnapshot(doc(db, 'workers', workerId), (docSnap) => {
+            if (docSnap.exists()) {
+                const w = { id: docSnap.id, ...docSnap.data() } as Worker;
+                if (w.isActive === false) {
+                    toast.error('تم أرشفة هذا الحساب ولا يمكن استخدامه');
                     handleLogout();
+                    return;
                 }
-            } catch (error) {
-                console.error("Error loading worker:", error);
+                setWorker(w);
+            } else {
+                handleLogout();
             }
-        };
+        }, (error) => {
+            console.error("Error loading worker:", error);
+        });
 
-        fetchWorker();
-        
         // Subscribe to operations
         const unsubscribe = subscribeToWorkerOperationsByWorker(workerId, (ops) => {
             setOperations(ops);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubWorkerDoc();
+            unsubscribe();
+        };
     }, [navigate]);
 
     const handleLogout = () => {
