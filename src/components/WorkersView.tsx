@@ -191,7 +191,9 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     });
 
     const totalIncome = filteredOperations.reduce((sum, op) => sum + (op.isCashLoan ? 0 : (op.price || 0)), 0);
-    const totalExpenses = filteredOperations.reduce((sum, op) => sum + (op.expenseAmount || 0) + (op.tipAmount || 0), 0);
+    const totalNormalExpenses = filteredOperations.reduce((sum, op) => sum + (!op.isCashLoan ? ((op.expenseAmount || 0) + (op.tipAmount || 0)) : 0), 0);
+    const totalCashLoans = filteredOperations.reduce((sum, op) => sum + (op.isCashLoan ? (op.expenseAmount || 0) : 0), 0);
+    const totalExpenses = totalNormalExpenses + totalCashLoans;
     const totalNetwork = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'network' && !op.isCashLoan ? (op.price || 0) : 0), 0);
     const totalCredit = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
     const totalWorkerDebt = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && !op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
@@ -411,12 +413,20 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                 <span style={{ color: 'var(--primary-color)' }}>{totalNetwork} ريال</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
-                                <span>الآجل:</span>
+                                <span title="مبيعات معتمدة بفاتورة">الآجل (فاتورة):</span>
                                 <span style={{ color: 'var(--accent-orange)' }}>{totalCredit} ريال</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
-                                <span>إجمالي الخرج:</span>
-                                <span style={{ color: 'var(--error)' }}>{totalExpenses} ريال</span>
+                                <span title="ديون سجلها العامل بدون فاتورة (تُطالب ككاش)">مبيعات آجل (بدون فاتورة):</span>
+                                <span style={{ color: 'var(--error)' }}>{totalWorkerDebt} ريال</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
+                                <span title="السلف المسحوبة يدوياً من درج الكاش">سلف من الدرج:</span>
+                                <span style={{ color: 'var(--error)' }}>{totalCashLoans} ريال</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
+                                <span>الخرج العادي:</span>
+                                <span style={{ color: 'var(--error)' }}>{totalNormalExpenses} ريال</span>
                             </div>
                         </div>
 
