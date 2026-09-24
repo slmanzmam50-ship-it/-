@@ -87,6 +87,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
     const totalNetwork = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'network' && !op.isCashLoan ? (op.price || 0) : 0), 0);
     const totalCredit = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
     const totalWorkerDebt = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && !op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
+    const totalCashSales = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'cash' && !op.isCashLoan ? (op.price || 0) : 0), 0);
     const expectedCash = totalIncome - totalNetwork - totalCredit - totalWorkerDebt - totalExpenses;
 
     const handleShareBalance = () => {
@@ -170,6 +171,10 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
+                                <span title="إجمالي المبيعات النقدية قبل خصم أي خارج أو بخشيش">الكاش (قبل خصم الخرج):</span>
+                                <span style={{ color: 'var(--success)' }}>{totalCashSales} ريال</span>
+                            </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
                                 <span>الشبكة:</span>
                                 <span style={{ color: 'var(--primary-color)' }}>{totalNetwork} ريال</span>
