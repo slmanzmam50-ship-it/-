@@ -226,7 +226,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                                         <div>{op.serviceType} {op.paymentMethod === 'network' ? '💳 (شبكة)' : (op.paymentMethod === 'credit' ? '📝 (آجل)' : '💵 (كاش)')}</div>
                                         {op.addedByAdmin && <div style={{ display: 'inline-block', marginTop: '4px', padding: '2px 6px', background: 'var(--primary-color)', color: 'white', fontSize: '10px', borderRadius: '4px', fontWeight: 700 }}>🛡️ إضافة الإدارة</div>}
                                     </td>
-                                    <td style={{ padding: '10px', color: 'var(--success)', fontWeight: 700 }}>{(op.price || 0) > 0 ? op.price : '-'}</td>
+                                    <td style={{ padding: '10px', color: (op.price || 0) < 0 ? 'var(--error)' : 'var(--success)', fontWeight: 700 }}>{(op.price || 0) !== 0 ? op.price : '-'}</td>
                                     <td style={{ padding: '10px' }}>
                                         {(op.expenseAmount || 0) > 0 && (
                                             <>
