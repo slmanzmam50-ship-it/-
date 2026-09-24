@@ -846,9 +846,10 @@ export const subscribeToWorkerOperations = (filters: OperationFilters | null, ca
 };
 
 export const subscribeToWorkerOperationsByWorker = (workerId: string, callback: (operations: WorkerOperation[]) => void) => {
-    const q = query(collection(db, 'worker_operations'), where('workerId', '==', workerId), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'worker_operations'), where('workerId', '==', workerId));
     return onSnapshot(q, (snapshot) => {
-        const operations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkerOperation));
+        let operations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkerOperation));
+        operations.sort((a, b) => b.createdAt - a.createdAt);
         callback(operations);
     });
 };
