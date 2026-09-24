@@ -24,6 +24,7 @@ import type { Branch, Category, CompanyAccount, ServiceRequest } from '../types'
 import BranchForm from '../components/BranchForm';
 import OperatingCompaniesView from '../components/OperatingCompaniesView';
 import WorkersView from '../components/WorkersView';
+import ExpensesReportView from '../components/ExpensesReportView';
 import ExportPreviewModal from '../components/ExportPreviewModal';
 import type { ColumnDef } from '../components/ExportPreviewModal';
 import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown, Building2, Users } from 'lucide-react';
@@ -42,7 +43,7 @@ const AdminDashboard: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
-    const [activeTab, setActiveTab] = useState<'branches' | 'companies-op' | 'categories' | 'companies' | 'requests' | 'settings' | 'workers'>('branches');
+    const [activeTab, setActiveTab] = useState<'branches' | 'companies-op' | 'categories' | 'companies' | 'requests' | 'settings' | 'workers' | 'expenses'>('branches');
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [categoryEditName, setCategoryEditName] = useState('');
     const [newCategoryImageUrl, setNewCategoryImageUrl] = useState('');
@@ -785,6 +786,12 @@ const AdminDashboard: React.FC = () => {
                         <Users size={20} /> العمال
                     </button>
                     <button 
+                        onClick={() => setActiveTab('expenses')} 
+                        style={{ background: activeTab === 'expenses' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'expenses' ? 'white' : 'var(--text-secondary)', padding: '14px 16px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', textAlign: 'right' }}
+                    >
+                        <AlertCircle size={20} /> ��� �����
+                    </button>
+                    <button 
                         onClick={() => setActiveTab('requests')} 
                         style={{ background: activeTab === 'requests' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'requests' ? 'white' : 'var(--text-secondary)', padding: '14px 16px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', textAlign: 'right' }}
                     >
@@ -1307,6 +1314,10 @@ const AdminDashboard: React.FC = () => {
             
             {activeTab === 'workers' && (
                 <WorkersView branches={branches} />
+            )}
+
+            {activeTab === 'expenses' && (
+                <ExpensesReportView />
             )}
             
             {activeTab === 'requests' && (

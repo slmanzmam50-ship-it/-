@@ -34,6 +34,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [editingOp, setEditingOp] = useState<WorkerOperation | null>(null);
     const [editPrice, setEditPrice] = useState('');
     const [editExpense, setEditExpense] = useState('');
+    const [editServiceType, setEditServiceType] = useState('');
+    const [editPaymentMethod, setEditPaymentMethod] = useState<'cash'|'network'|'credit'>('cash');
+    const [editHasInvoice, setEditHasInvoice] = useState(false);
+    const [editExpenseReason, setEditExpenseReason] = useState('');
 
     const [role, setRole] = useState<'worker' | 'supervisor'>('worker');
 
@@ -104,6 +108,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
             const updatedOp = { ...editingOp };
             if (editPrice !== '') updatedOp.price = Number(editPrice);
             if (editExpense !== '') updatedOp.expenseAmount = Number(editExpense);
+            updatedOp.serviceType = editServiceType;
+            updatedOp.paymentMethod = editPaymentMethod;
+            updatedOp.hasInvoice = editHasInvoice;
+            updatedOp.expenseReason = editExpenseReason;
             
             // Remove any pending edits if they exist since admin overrides
             if (updatedOp.pendingEditRequest) {
@@ -359,7 +367,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                         {op.expenseAmount > 0 && op.expenseReason && <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({op.expenseReason})</div>}
                                     </td>
                                     <td style={{ padding: '10px' }}>
-                                        <button onClick={() => { setEditingOp(op); setEditPrice(op.price.toString()); setEditExpense(op.expenseAmount.toString()); }} style={{ padding: '6px', background: 'transparent', color: 'var(--primary-color)', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>
+                                        <button onClick={() => { setEditingOp(op); setEditPrice(op.price.toString()); setEditExpense(op.expenseAmount.toString()); setEditServiceType(op.serviceType || ''); setEditPaymentMethod(op.paymentMethod || 'cash'); setEditHasInvoice(op.hasInvoice || false); setEditExpenseReason(op.expenseReason || ''); }} style={{ padding: '6px', background: 'transparent', color: 'var(--primary-color)', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>
                                     </td>
                                 </tr>
                             ))}
@@ -377,13 +385,35 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         
                         <form onSubmit={handleProposeEdit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>نوع الخدمة (النص)</label>
+                                <input type="text" value={editServiceType} onChange={e => setEditServiceType(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                            </div>
+                            <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>تعديل السعر (الإيراد)</label>
                                 <input type="number" value={editPrice} onChange={e => setEditPrice(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>طريقة الدفع</label>
+                                <select value={editPaymentMethod} onChange={e => setEditPaymentMethod(e.target.value as any)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
+                                    <option value="cash">كاش</option>
+                                    <option value="network">شبكة</option>
+                                    <option value="credit">آجل</option>
+                                </select>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <input type="checkbox" checked={editHasInvoice} onChange={e => setEditHasInvoice(e.target.checked)} id="hasInvoiceEdit" style={{ width: '18px', height: '18px' }} />
+                                <label htmlFor="hasInvoiceEdit" style={{ fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>يوجد فاتورة</label>
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>تعديل المصروف (الخرج)</label>
                                 <input type="number" value={editExpense} onChange={e => setEditExpense(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
                             </div>
+                            {Number(editExpense) > 0 && (
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>سبب المصروف</label>
+                                    <input type="text" value={editExpenseReason} onChange={e => setEditExpenseReason(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                </div>
+                            )}
                             
                             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                                 <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>حفظ التعديل</button>
