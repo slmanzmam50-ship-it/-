@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, CheckCircle } from 'lucide-react';
 import type { WorkerOperation, Worker } from '../types';
-import { subscribeToWorkerOperations, subscribeToWorkers, updateWorkerOperation } from '../services/storage';
+import { subscribeToWorkerOperations, subscribeToWorkers, updateWorkerOperation, addWorkerOperation } from '../services/storage';
 import toast from 'react-hot-toast';
 
 const WorkersDebtsView: React.FC = () => {
@@ -11,6 +11,8 @@ const WorkersDebtsView: React.FC = () => {
     
     const [paymentModalOp, setPaymentModalOp] = useState<WorkerOperation | null>(null);
     const [paymentAmount, setPaymentAmount] = useState('');
+    const [isAddingDebt, setIsAddingDebt] = useState(false);
+    const [newDebtData, setNewDebtData] = useState({ workerId: '', price: '', serviceType: '' });
 
     useEffect(() => {
         const unsubWorkers = subscribeToWorkers(setWorkers);
@@ -60,6 +62,37 @@ const WorkersDebtsView: React.FC = () => {
         }
     };
 
+    const handleAddDebt = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newDebtData.workerId || !newDebtData.price || !newDebtData.serviceType) {
+            toast.error('الرجاء تعبئة جميع الحقول');
+            return;
+        }
+        
+        const worker = workers.find(w => w.id === newDebtData.workerId);
+        if (!worker) return;
+
+        try {
+            await addWorkerOperation({
+                workerId: worker.id,
+                workerName: worker.name,
+                branchId: worker.branchId,
+                serviceType: newDebtData.serviceType,
+                price: Number(newDebtData.price),
+                paymentMethod: 'credit',
+                hasInvoice: false,
+                tipAmount: 0,
+                expenseAmount: 0
+            });
+            toast.success('تم تسجيل الدين بنجاح');
+            setIsAddingDebt(false);
+            setNewDebtData({ workerId: '', price: '', serviceType: '' });
+        } catch (err) {
+            console.error(err);
+            toast.error('حدث خطأ أثناء التسجيل');
+        }
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
@@ -68,11 +101,16 @@ const WorkersDebtsView: React.FC = () => {
                         <DollarSign size={24} className="text-primary" /> ديون العمال (بدون فاتورة)
                     </h2>
                     
-                    <div style={{ width: '250px' }}>
-                        <select value={workerFilter} onChange={e => setWorkerFilter(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'white', outline: 'none' }}>
-                            <option value="all">جميع العمال</option>
-                            {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                        </select>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <button onClick={() => setIsAddingDebt(true)} style={{ padding: '12px 20px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 800, fontSize: '14px' }}>
+                            + تسجيل دين جديد
+                        </button>
+                        <div style={{ width: '250px' }}>
+                            <select value={workerFilter} onChange={e => setWorkerFilter(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'white', outline: 'none' }}>
+                                <option value="all">جميع العمال</option>
+                                {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -158,6 +196,36 @@ const WorkersDebtsView: React.FC = () => {
                             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                                 <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>تأكيد الدفعة</button>
                                 <button type="button" onClick={() => setPaymentModalOp(null)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Debt Modal */}
+            {isAddingDebt && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ background: 'white', padding: '24px', borderRadius: '24px', width: '90%', maxWidth: '400px' }}>
+                        <h3 style={{ margin: '0 0 16px' }}>تسجيل دين جديد على عامل</h3>
+                        <form onSubmit={handleAddDebt} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>العامل</label>
+                                <select value={newDebtData.workerId} onChange={e => setNewDebtData({...newDebtData, workerId: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
+                                    <option value="">اختر العامل...</option>
+                                    {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>قيمة الدين (ريال)</label>
+                                <input type="number" value={newDebtData.price} onChange={e => setNewDebtData({...newDebtData, price: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} placeholder="مثال: 150" />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>البيان / الوصف</label>
+                                <input type="text" value={newDebtData.serviceType} onChange={e => setNewDebtData({...newDebtData, serviceType: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} placeholder="مثال: دين قديم / عجز سابق" />
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                                <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>حفظ الدين</button>
+                                <button type="button" onClick={() => setIsAddingDebt(false)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
                             </div>
                         </form>
                     </div>
