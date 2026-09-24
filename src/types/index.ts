@@ -122,4 +122,5 @@ export interface WorkerOperation {
     expenseReason?: string;
     createdAt: number;
     pendingEditRequest?: EditRequest;
+    paidAmount?: number;
 }

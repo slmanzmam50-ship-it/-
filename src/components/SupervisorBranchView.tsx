@@ -79,8 +79,9 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
     const totalIncome = filteredOperations.reduce((sum, op) => sum + (op.price || 0), 0);
     const totalExpenses = filteredOperations.reduce((sum, op) => sum + (op.expenseAmount || 0), 0);
     const totalNetwork = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'network' ? (op.price || 0) : 0), 0);
-    const totalCredit = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' ? (op.price || 0) : 0), 0);
-    const expectedCash = totalIncome - totalNetwork - totalCredit - totalExpenses;
+    const totalCredit = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && op.hasInvoice ? (op.price || 0) : 0), 0);
+    const totalWorkerDebt = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && !op.hasInvoice ? (op.price || 0) : 0), 0);
+    const expectedCash = totalIncome - totalNetwork - totalCredit - totalWorkerDebt - totalExpenses;
 
     const handleShareBalance = () => {
         let dateLabel = dateFilter === 'today' ? 'اليوم' : dateFilter === 'yesterday' ? 'الأمس' : dateFilter === 'custom' ? customDate : 'الفترة المحددة';
@@ -92,7 +93,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
             expensesDetails = '\n\n📋 تفاصيل الخرج:\n' + expensesList.map(op => `- ${op.expenseAmount} ريال (${op.expenseReason || 'بدون سبب'})`).join('\n');
         }
 
-        const shareText = `📊 جرد الفرع (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل: ${totalCredit} ريال\n📉 إجمالي الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*`;
+        const shareText = `📊 جرد الفرع (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*`;
         const encodedText = encodeURIComponent(shareText);
         window.open(`https://wa.me/?text=${encodedText}`, '_blank');
     };
@@ -154,8 +155,12 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                                 <span style={{ color: 'var(--primary-color)' }}>{totalNetwork} ريال</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
-                                <span>الآجل:</span>
+                                <span title="مبيعات معتمدة بفاتورة">الآجل (فاتورة):</span>
                                 <span style={{ color: 'var(--accent-orange)' }}>{totalCredit} ريال</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
+                                <span title="ديون سجلها العامل بدون فاتورة (تُطالب ككاش)">ديون عمال:</span>
+                                <span style={{ color: 'var(--error)' }}>{totalWorkerDebt} ريال</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
                                 <span>إجمالي الخرج:</span>
