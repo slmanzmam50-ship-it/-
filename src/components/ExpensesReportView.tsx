@@ -54,9 +54,9 @@ const ExpensesReportView: React.FC = () => {
         return () => unsub();
     }, [dateFilter, customStartDate, customEndDate]);
 
-    // Filter only expenses
-    const expenses = operations.filter(op => op.expenseAmount > 0 && (branchFilter === 'all' || op.branchId === branchFilter));
-    const totalExpenses = expenses.reduce((sum, op) => sum + op.expenseAmount, 0);
+    // Filter only expenses and tips
+    const expenses = operations.filter(op => ((op.expenseAmount || 0) > 0 || (op.tipAmount || 0) > 0) && (branchFilter === 'all' || op.branchId === branchFilter));
+    const totalExpenses = expenses.reduce((sum, op) => sum + (op.expenseAmount || 0) + (op.tipAmount || 0), 0);
 
     const handleExportExcel = () => {
         if (expenses.length === 0) return;
@@ -65,8 +65,8 @@ const ExpensesReportView: React.FC = () => {
             'الوقت': new Date(op.createdAt).toLocaleTimeString('ar-SA'),
             'الموظف': op.workerName,
             'الفرع': branches.find(b => b.id === op.branchId)?.name || 'غير معروف',
-            'مبلغ الخرج': op.expenseAmount,
-            'السبب / التفاصيل': op.expenseReason || 'بدون تفاصيل'
+            'مبلغ الخرج / الخصم': (op.expenseAmount || 0) + (op.tipAmount || 0),
+            'السبب / التفاصيل': ((op.expenseAmount || 0) > 0 ? (op.expenseReason || 'بدون تفاصيل') : '') + ((op.tipAmount || 0) > 0 ? ' (بخشيش/خصم)' : '')
         }));
 
         const ws = XLSX.utils.json_to_sheet(data);
@@ -129,11 +129,11 @@ const ExpensesReportView: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                 <div className="glass" style={{ padding: '24px', borderRadius: '16px', background: 'white', border: '1px solid rgba(239, 68, 68, 0.2)', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, right: 0, width: '4px', height: '100%', background: 'var(--error)' }} />
-                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '8px' }}>إجمالي المصروفات</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '8px' }}>إجمالي المصروفات والخصومات</div>
                     <div style={{ fontSize: '28px', fontWeight: 900, color: 'var(--error)' }}>{totalExpenses} <span style={{ fontSize: '16px' }}>ريال</span></div>
                 </div>
                 <div className="glass" style={{ padding: '24px', borderRadius: '16px', background: 'white', border: '1px solid var(--border-color)' }}>
-                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '8px' }}>عدد العمليات (الخرج)</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '8px' }}>عدد عمليات (الخرج / الخصم)</div>
                     <div style={{ fontSize: '28px', fontWeight: 900, color: 'var(--text-primary)' }}>{expenses.length}</div>
                 </div>
             </div>
@@ -160,8 +160,14 @@ const ExpensesReportView: React.FC = () => {
                                     </td>
                                     <td style={{ padding: '16px', fontWeight: 600 }}>{branches.find(b => b.id === op.branchId)?.name || 'غير معروف'}</td>
                                     <td style={{ padding: '16px', fontWeight: 600 }}>{op.workerName}</td>
-                                    <td style={{ padding: '16px', fontWeight: 800, color: 'var(--error)' }}>{op.expenseAmount} ريال</td>
-                                    <td style={{ padding: '16px' }}>{op.expenseReason || <span style={{ color: 'var(--text-secondary)' }}>لا يوجد تفاصيل</span>}</td>
+                                    <td style={{ padding: '16px', fontWeight: 800, color: 'var(--error)' }}>
+                                        {(op.expenseAmount || 0) > 0 && <div>{op.expenseAmount} ريال</div>}
+                                        {(op.tipAmount || 0) > 0 && <div>{op.tipAmount} ريال <span style={{ fontSize: '11px' }}>(خصم)</span></div>}
+                                    </td>
+                                    <td style={{ padding: '16px' }}>
+                                        {(op.expenseAmount || 0) > 0 && <div>{op.expenseReason || <span style={{ color: 'var(--text-secondary)' }}>لا يوجد تفاصيل</span>}</div>}
+                                        {(op.tipAmount || 0) > 0 && <div style={{ color: 'var(--text-secondary)' }}>خصم/بخشيش - {op.serviceType}</div>}
+                                    </td>
                                 </tr>
                             )) : (
                                 <tr>
