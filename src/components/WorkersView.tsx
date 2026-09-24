@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Activity, Trash2, Edit2, Download, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
 import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation } from '../services/storage';

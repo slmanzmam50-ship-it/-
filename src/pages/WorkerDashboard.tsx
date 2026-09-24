@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Plus, Wallet, CheckCircle, AlertCircle, TrendingUp, TrendingDown, CreditCard, Coins, FileText, FileX, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -243,6 +243,8 @@ const WorkerDashboard: React.FC = () => {
     });
     const chartData = Array.from(chartDataMap.values()).sort((a, b) => parseInt(a.day.split(' ')[1]) - parseInt(b.day.split(' ')[1]));
 
+    const todayOperations = operations.filter(op => new Date(op.createdAt).toDateString() === new Date().toDateString());
+
     const pendingRequests = operations.filter(op => op.pendingEditRequest && op.pendingEditRequest.status === 'pending');
 
     if (!worker) return <div style={{ padding: '1rem', textAlign: 'center' }}>جاري التحميل...</div>;
@@ -467,6 +469,44 @@ const WorkerDashboard: React.FC = () => {
                         )}
                     </div>
                 </div>
+                
+                {/* Today's Operations Table */}
+                <div style={{ background: 'white', padding: '1rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginTop: '1.5rem' }}>
+                    <h3 style={{ margin: '0 0 1rem', fontSize: '16px', fontWeight: 800 }}>عملياتي اليوم</h3>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+                            <thead>
+                                <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid var(--border-color)' }}>
+                                    <th style={{ padding: '8px', fontWeight: 700, fontSize: '13px' }}>الوقت</th>
+                                    <th style={{ padding: '8px', fontWeight: 700, fontSize: '13px' }}>الخدمة</th>
+                                    <th style={{ padding: '8px', fontWeight: 700, fontSize: '13px' }}>المبلغ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {todayOperations.map(op => (
+                                    <tr key={op.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <td style={{ padding: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                            {new Date(op.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                                        </td>
+                                        <td style={{ padding: '8px', fontSize: '13px' }}>
+                                            {op.serviceType} {op.paymentMethod === 'network' ? '💳' : (op.paymentMethod === 'credit' ? '📝' : '💵')}
+                                            {op.expenseAmount > 0 && op.expenseReason && <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({op.expenseReason})</div>}
+                                        </td>
+                                        <td style={{ padding: '8px', fontSize: '13px', fontWeight: 700, color: op.expenseAmount > 0 ? 'var(--error)' : 'var(--success)' }}>
+                                            {op.expenseAmount > 0 ? op.expenseAmount : op.price} ريال
+                                        </td>
+                                    </tr>
+                                ))}
+                                {todayOperations.length === 0 && (
+                                    <tr>
+                                        <td colSpan={3} style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>لا توجد عمليات مسجلة اليوم</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
             )}
         </div>
