@@ -43,7 +43,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [editTipAmount, setEditTipAmount] = useState('');
 
     const [isAddingOp, setIsAddingOp] = useState(false);
-    const [newOpData, setNewOpData] = useState({ workerId: '', opType: 'sale' as 'sale'|'return', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: false, expenseAmount: '', expenseReason: '' });
+    const [newOpData, setNewOpData] = useState({ workerId: '', opType: 'sale' as 'sale'|'return', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: true, expenseAmount: '', expenseReason: '' });
 
     const [actualCash, setActualCash] = useState<string>('');
 
@@ -256,7 +256,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
             });
             toast.success('تم إضافة العملية بنجاح');
             setIsAddingOp(false);
-            setNewOpData({ workerId: '', opType: 'sale', price: '', serviceType: '', paymentMethod: 'cash', hasInvoice: false, expenseAmount: '', expenseReason: '' });
+            setNewOpData({ workerId: '', opType: 'sale', price: '', serviceType: '', paymentMethod: 'cash', hasInvoice: true, expenseAmount: '', expenseReason: '' });
         } catch (err) {
             console.error(err);
             toast.error('حدث خطأ أثناء الإضافة');
