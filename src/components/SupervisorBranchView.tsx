@@ -17,6 +17,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
     const [customDate, setCustomDate] = useState(new Date().toLocaleDateString('en-CA'));
     const [paymentFilter, setPaymentFilter] = useState<'all' | 'cash' | 'network' | 'credit'>('all');
     const [workerFilter, setWorkerFilter] = useState<string>('all');
+    const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'with_invoice' | 'without_invoice'>('all');
     const [actualCash, setActualCash] = useState<string>('');
 
     useEffect(() => {
@@ -74,6 +75,8 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
     const filteredOperations = operations.filter(op => {
         if (workerFilter !== 'all' && op.workerId !== workerFilter) return false;
         if (paymentFilter !== 'all' && op.paymentMethod !== paymentFilter) return false;
+        if (invoiceFilter === 'with_invoice' && !op.hasInvoice) return false;
+        if (invoiceFilter === 'without_invoice' && op.hasInvoice) return false;
         return true;
     });
 
@@ -122,10 +125,15 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                             {workers.map(w => <option key={w.id} value={w.id}>{w.name} {!w.isActive && '(مؤرشف)'}</option>)}
                         </select>
                         <select value={paymentFilter} onChange={e => setPaymentFilter(e.target.value as any)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
-                            <option value="all">الكل</option>
+                            <option value="all">الكل (طرق الدفع)</option>
                             <option value="cash">كاش فقط</option>
                             <option value="network">شبكة فقط</option>
                             <option value="credit">آجل فقط</option>
+                        </select>
+                        <select value={invoiceFilter} onChange={e => setInvoiceFilter(e.target.value as any)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
+                            <option value="all">الكل (الفواتير)</option>
+                            <option value="with_invoice">بفاتورة فقط</option>
+                            <option value="without_invoice">بدون فاتورة فقط</option>
                         </select>
                         <select value={dateFilter} onChange={e => setDateFilter(e.target.value as any)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
                             <option value="today">اليوم</option>
