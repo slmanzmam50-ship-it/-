@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Activity, Trash2, Edit2, Download, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
-import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation, addWorkerOperation } from '../services/storage';
+import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation, addWorkerOperation, deleteWorkerOperation } from '../services/storage';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { db } from '../services/firebase';
@@ -38,6 +38,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [editPaymentMethod, setEditPaymentMethod] = useState<'cash'|'network'|'credit'>('cash');
     const [editHasInvoice, setEditHasInvoice] = useState(false);
     const [editExpenseReason, setEditExpenseReason] = useState('');
+    const [editTipAmount, setEditTipAmount] = useState('');
 
     const [isAddingOp, setIsAddingOp] = useState(false);
     const [newOpData, setNewOpData] = useState({ workerId: '', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: false, expenseAmount: '', expenseReason: '' });
@@ -113,6 +114,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
             const updatedOp = { ...editingOp };
             if (editPrice !== '') updatedOp.price = Number(editPrice);
             if (editExpense !== '') updatedOp.expenseAmount = Number(editExpense);
+            if (editTipAmount !== '') updatedOp.tipAmount = Number(editTipAmount);
             updatedOp.serviceType = editServiceType;
             updatedOp.paymentMethod = editPaymentMethod;
             updatedOp.hasInvoice = editHasInvoice;
@@ -129,6 +131,18 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         } catch (error) {
             console.error(error);
             toast.error('فشل في تعديل العملية');
+        }
+    };
+
+    const handleDeleteOp = async (op: WorkerOperation) => {
+        if (window.confirm('هل أنت متأكد من حذف هذه العملية نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) {
+            try {
+                await deleteWorkerOperation(op.id);
+                toast.success('تم حذف العملية بنجاح');
+            } catch (err) {
+                console.error(err);
+                toast.error('حدث خطأ أثناء الحذف');
+            }
         }
     };
 
@@ -445,8 +459,9 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                         )}
                                         {!(op.expenseAmount || 0) && !(op.tipAmount || 0) && '-'}
                                     </td>
-                                    <td style={{ padding: '10px' }}>
-                                        <button onClick={() => { setEditingOp(op); setEditPrice(op.price.toString()); setEditExpense(op.expenseAmount.toString()); setEditServiceType(op.serviceType || ''); setEditPaymentMethod(op.paymentMethod || 'cash'); setEditHasInvoice(op.hasInvoice || false); setEditExpenseReason(op.expenseReason || ''); }} style={{ padding: '6px', background: 'transparent', color: 'var(--primary-color)', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>
+                                    <td style={{ padding: '10px', display: 'flex', gap: '8px' }}>
+                                        <button onClick={() => { setEditingOp(op); setEditPrice(op.price.toString()); setEditExpense(op.expenseAmount.toString()); setEditTipAmount(op.tipAmount?.toString() || ''); setEditServiceType(op.serviceType || ''); setEditPaymentMethod(op.paymentMethod || 'cash'); setEditHasInvoice(op.hasInvoice || false); setEditExpenseReason(op.expenseReason || ''); }} style={{ padding: '6px', background: 'transparent', color: 'var(--primary-color)', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>
+                                        <button onClick={() => handleDeleteOp(op)} style={{ padding: '6px', background: 'transparent', color: 'var(--error)', border: 'none', cursor: 'pointer' }}><Trash2 size={18} /></button>
                                     </td>
                                 </tr>
                             ))}
@@ -493,7 +508,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     <input type="text" value={editExpenseReason} onChange={e => setEditExpenseReason(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
                                 </div>
                             )}
-                            
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>تعديل الخصم (البخشيش)</label>
+                                <input type="number" value={editTipAmount} onChange={e => setEditTipAmount(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                            </div>
                             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                                 <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>حفظ التعديل</button>
                                 <button type="button" onClick={() => setEditingOp(null)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
