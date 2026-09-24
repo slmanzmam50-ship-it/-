@@ -27,6 +27,7 @@ const WorkerDashboard: React.FC = () => {
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [activeTab, setActiveTab] = useState<'register' | 'branch'>('register');
+    const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year'>('month');
 
     // PWA Install Banner
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
@@ -183,34 +184,63 @@ const WorkerDashboard: React.FC = () => {
     };
 
     // Analytics Calculation
-    const currentMonthOps = operations.filter(op => {
+    const now = new Date();
+    const currentPeriodOps = operations.filter(op => {
         const d = new Date(op.createdAt);
-        const now = new Date();
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        if (timeFilter === 'today') return d.toDateString() === now.toDateString();
+        if (timeFilter === 'week') {
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return d >= weekAgo;
+        }
+        if (timeFilter === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        if (timeFilter === 'year') return d.getFullYear() === now.getFullYear();
+        return false;
     });
 
-    const previousMonthOps = operations.filter(op => {
+    const previousPeriodOps = operations.filter(op => {
         const d = new Date(op.createdAt);
-        const now = new Date();
-        const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-        const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-        return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+        if (timeFilter === 'today') {
+            const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            return d.toDateString() === yesterday.toDateString();
+        }
+        if (timeFilter === 'week') {
+            const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return d >= twoWeeksAgo && d < weekAgo;
+        }
+        if (timeFilter === 'month') {
+            const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+            const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+            return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+        }
+        if (timeFilter === 'year') {
+            return d.getFullYear() === now.getFullYear() - 1;
+        }
+        return false;
     });
 
-    const currentTotal = currentMonthOps.reduce((sum, op) => sum + op.price - op.expenseAmount, 0);
-    const prevTotal = previousMonthOps.reduce((sum, op) => sum + op.price - op.expenseAmount, 0);
+    const currentTotal = currentPeriodOps.reduce((sum, op) => sum + (op.isCashLoan ? 0 : op.price) - op.expenseAmount, 0);
+    const prevTotal = previousPeriodOps.reduce((sum, op) => sum + (op.isCashLoan ? 0 : op.price) - op.expenseAmount, 0);
     const diff = currentTotal - prevTotal;
 
-    // Chart Data (Group by Day for current month)
+    // Chart Data
     const chartDataMap = new Map();
-    currentMonthOps.forEach(op => {
-        const day = new Date(op.createdAt).getDate();
-        if (!chartDataMap.has(day)) chartDataMap.set(day, { day: `يوم ${day}`, income: 0, expenses: 0 });
-        const d = chartDataMap.get(day);
-        d.income += op.price;
-        d.expenses += op.expenseAmount;
+    currentPeriodOps.forEach(op => {
+        let label = '';
+        const d = new Date(op.createdAt);
+        if (timeFilter === 'today') {
+            label = `${d.getHours()}:00`;
+        } else if (timeFilter === 'week' || timeFilter === 'month') {
+            label = `${d.getMonth()+1}/${d.getDate()}`;
+        } else if (timeFilter === 'year') {
+            label = `شهر ${d.getMonth()+1}`;
+        }
+        if (!chartDataMap.has(label)) chartDataMap.set(label, { day: label, income: 0, expenses: 0, sortVal: timeFilter === 'year' ? d.getMonth() : (timeFilter === 'today' ? d.getHours() : d.getTime()) });
+        const entry = chartDataMap.get(label);
+        entry.income += op.isCashLoan ? 0 : op.price;
+        entry.expenses += op.expenseAmount;
     });
-    const chartData = Array.from(chartDataMap.values()).sort((a, b) => parseInt(a.day.split(' ')[1]) - parseInt(b.day.split(' ')[1]));
+    const chartData = Array.from(chartDataMap.values()).sort((a, b) => a.sortVal - b.sortVal);
 
     const todayOperations = operations.filter(op => new Date(op.createdAt).toDateString() === new Date().toDateString());
 
@@ -369,31 +399,41 @@ const WorkerDashboard: React.FC = () => {
 
                 {/* Stats Section */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ fontSize: '18px', margin: 0, fontWeight: 800 }}>إحصائيات الأداء</h2>
+                        <select value={timeFilter} onChange={e => setTimeFilter(e.target.value as any)} style={{ padding: '8px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', outline: 'none', background: 'white', fontWeight: 700 }}>
+                            <option value="today">اليوم</option>
+                            <option value="week">هذا الأسبوع</option>
+                            <option value="month">هذا الشهر</option>
+                            <option value="year">هذه السنة</option>
+                        </select>
+                    </div>
+
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div style={{ background: 'white', padding: '1rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '14px' }}>
-                                <Wallet size={18} /> صافي الإيراد (هذا الشهر)
+                                <Wallet size={18} /> صافي الإيراد
                             </div>
                             <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-primary)' }}>
                                 {currentTotal} <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>ريال</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', fontSize: '13px', color: diff >= 0 ? 'var(--success)' : 'var(--error)', fontWeight: 700 }}>
                                 {diff >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                                {Math.abs(diff)} ريال {diff >= 0 ? 'زيادة عن الشهر الماضي' : 'نقص عن الشهر الماضي'}
+                                {Math.abs(diff)} ريال {diff >= 0 ? 'زيادة عن السابق' : 'نقص عن السابق'}
                             </div>
                         </div>
                         <div style={{ background: 'white', padding: '1rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '14px' }}>
-                                <CheckCircle size={18} /> عدد العمليات (هذا الشهر)
+                                <CheckCircle size={18} /> عدد العمليات
                             </div>
                             <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-primary)' }}>
-                                {currentMonthOps.length} <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>عملية</span>
+                                {currentPeriodOps.length} <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>عملية</span>
                             </div>
                         </div>
                     </div>
 
                     <div style={{ background: 'white', padding: '1rem', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', flex: 1, minHeight: '300px' }}>
-                        <h3 style={{ margin: '0 0 1.5rem', fontSize: '16px', fontWeight: 800 }}>الأداء اليومي (هذا الشهر)</h3>
+                        <h3 style={{ margin: '0 0 1.5rem', fontSize: '16px', fontWeight: 800 }}>الرسم البياني</h3>
                         {chartData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="85%">
                                 <BarChart data={chartData}>

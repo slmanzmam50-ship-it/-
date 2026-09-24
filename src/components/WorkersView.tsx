@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { db } from '../services/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface Props {
     branches: Branch[];
@@ -41,7 +42,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [editTipAmount, setEditTipAmount] = useState('');
 
     const [isAddingOp, setIsAddingOp] = useState(false);
-    const [newOpData, setNewOpData] = useState({ workerId: '', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: false, expenseAmount: '', expenseReason: '' });
+    const [newOpData, setNewOpData] = useState({ workerId: '', opType: 'sale' as 'sale'|'return', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: false, expenseAmount: '', expenseReason: '' });
 
     const [actualCash, setActualCash] = useState<string>('');
 
@@ -193,6 +194,18 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const totalWorkerDebt = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && !op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
     const expectedCash = totalIncome - totalNetwork - totalCredit - totalWorkerDebt - totalExpenses;
 
+    const workerStatsMap = new Map();
+    filteredOperations.forEach(op => {
+        if (op.isCashLoan) return;
+        if (!workerStatsMap.has(op.workerId)) {
+            workerStatsMap.set(op.workerId, { name: op.workerName, income: 0, operations: 0 });
+        }
+        const stat = workerStatsMap.get(op.workerId);
+        stat.income += op.price || 0;
+        stat.operations += 1;
+    });
+    const workerChartData = Array.from(workerStatsMap.values()).sort((a, b) => b.income - a.income);
+
     const handleShareWorker = (w: Worker) => {
         const shareText = `👋 مرحباً ${w.name}،\n\nإليك بيانات الدخول الخاصة بك لبوابة العمال:\n\n👤 اسم المستخدم: ${w.username}\n🔑 كلمة المرور: ${w.password}\n\nرابط الدخول:\n${window.location.origin}/worker-login`;
         const encodedText = encodeURIComponent(shareText);
@@ -221,12 +234,16 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         if (!worker) return;
 
         try {
+            const isReturn = newOpData.opType === 'return';
+            const finalPrice = Number(newOpData.price) || 0;
+            const finalServiceType = isReturn ? `(مرتجع) ${newOpData.serviceType}` : newOpData.serviceType;
+            
             await addWorkerOperation({
                 workerId: worker.id,
                 workerName: worker.name,
                 branchId: worker.branchId,
-                serviceType: newOpData.serviceType,
-                price: Number(newOpData.price) || 0,
+                serviceType: finalServiceType,
+                price: isReturn ? -finalPrice : finalPrice,
                 paymentMethod: newOpData.paymentMethod,
                 hasInvoice: newOpData.hasInvoice,
                 expenseAmount: Number(newOpData.expenseAmount) || 0,
@@ -236,7 +253,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
             });
             toast.success('تم إضافة العملية بنجاح');
             setIsAddingOp(false);
-            setNewOpData({ workerId: '', price: '', serviceType: '', paymentMethod: 'cash', hasInvoice: false, expenseAmount: '', expenseReason: '' });
+            setNewOpData({ workerId: '', opType: 'sale', price: '', serviceType: '', paymentMethod: 'cash', hasInvoice: false, expenseAmount: '', expenseReason: '' });
         } catch (err) {
             console.error(err);
             toast.error('حدث خطأ أثناء الإضافة');
@@ -419,6 +436,22 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                     </div>
                 </div>
 
+                {/* رسم بياني لأداء العمال */}
+                {workerChartData.length > 0 && (
+                    <div style={{ background: 'white', padding: '1rem', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '24px', height: '300px' }}>
+                        <h4 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 800 }}>مقارنة إيرادات العمال (حسب الفلتر)</h4>
+                        <ResponsiveContainer width="100%" height="85%">
+                            <BarChart data={workerChartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                                <Tooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
+                                <Bar dataKey="income" name="الإيرادات (ريال)" fill="var(--primary-color)" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                )}
+
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                         <thead>
@@ -535,8 +568,15 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                 </select>
                             </div>
                             <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>نوع العملية</label>
+                                <select value={newOpData.opType} onChange={e => setNewOpData({...newOpData, opType: e.target.value as any})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', background: newOpData.opType === 'return' ? 'rgba(239,68,68,0.1)' : 'white', color: newOpData.opType === 'return' ? 'var(--error)' : 'inherit', fontWeight: 700 }}>
+                                    <option value="sale">بيع وإيراد</option>
+                                    <option value="return">مرتجع مبيعات (سحب مبلغ للعميل)</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>الخدمة (البيان)</label>
-                                <input type="text" value={newOpData.serviceType} onChange={e => setNewOpData({...newOpData, serviceType: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                <input type="text" value={newOpData.serviceType} onChange={e => setNewOpData({...newOpData, serviceType: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} placeholder={newOpData.opType === 'return' ? "مثال: استرجاع مبلغ غسيل" : ""} />
                             </div>
                             <div style={{ display: 'flex', gap: '16px' }}>
                                 <div style={{ flex: 1 }}>
@@ -548,8 +588,8 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     </select>
                                 </div>
                                 <div style={{ flex: 1 }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>المبلغ (الإيراد)</label>
-                                    <input type="number" value={newOpData.price} onChange={e => setNewOpData({...newOpData, price: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>{newOpData.opType === 'return' ? 'قيمة المرتجع' : 'المبلغ (الإيراد)'}</label>
+                                    <input type="number" value={newOpData.price} onChange={e => setNewOpData({...newOpData, price: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} placeholder="أدخل القيمة كموجب" />
                                 </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
