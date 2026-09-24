@@ -124,4 +124,5 @@ export interface WorkerOperation {
     pendingEditRequest?: EditRequest;
     paidAmount?: number;
     addedByAdmin?: boolean;
+    isCashLoan?: boolean;
 }

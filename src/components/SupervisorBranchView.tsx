@@ -77,11 +77,11 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
         return true;
     });
 
-    const totalIncome = filteredOperations.reduce((sum, op) => sum + (op.price || 0), 0);
+    const totalIncome = filteredOperations.reduce((sum, op) => sum + (op.isCashLoan ? 0 : (op.price || 0)), 0);
     const totalExpenses = filteredOperations.reduce((sum, op) => sum + (op.expenseAmount || 0) + (op.tipAmount || 0), 0);
-    const totalNetwork = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'network' ? (op.price || 0) : 0), 0);
-    const totalCredit = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && op.hasInvoice ? (op.price || 0) : 0), 0);
-    const totalWorkerDebt = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && !op.hasInvoice ? (op.price || 0) : 0), 0);
+    const totalNetwork = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'network' && !op.isCashLoan ? (op.price || 0) : 0), 0);
+    const totalCredit = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
+    const totalWorkerDebt = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && !op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
     const expectedCash = totalIncome - totalNetwork - totalCredit - totalWorkerDebt - totalExpenses;
 
     const handleShareBalance = () => {

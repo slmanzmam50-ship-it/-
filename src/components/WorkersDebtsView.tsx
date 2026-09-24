@@ -12,7 +12,7 @@ const WorkersDebtsView: React.FC = () => {
     const [paymentModalOp, setPaymentModalOp] = useState<WorkerOperation | null>(null);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [isAddingDebt, setIsAddingDebt] = useState(false);
-    const [newDebtData, setNewDebtData] = useState({ workerId: '', price: '', serviceType: '' });
+    const [newDebtData, setNewDebtData] = useState({ workerId: '', price: '', serviceType: '', sourceType: 'general' as 'general' | 'drawer' });
 
     useEffect(() => {
         const unsubWorkers = subscribeToWorkers(setWorkers);
@@ -72,21 +72,26 @@ const WorkersDebtsView: React.FC = () => {
         const worker = workers.find(w => w.id === newDebtData.workerId);
         if (!worker) return;
 
+        const isFromDrawer = newDebtData.sourceType === 'drawer';
+        const priceNum = Number(newDebtData.price);
+
         try {
             await addWorkerOperation({
                 workerId: worker.id,
                 workerName: worker.name,
                 branchId: worker.branchId,
                 serviceType: newDebtData.serviceType,
-                price: Number(newDebtData.price),
+                price: priceNum,
                 paymentMethod: 'credit',
                 hasInvoice: false,
                 tipAmount: 0,
-                expenseAmount: 0
+                expenseAmount: isFromDrawer ? priceNum : 0,
+                expenseReason: isFromDrawer ? 'سلفة دين لعامل' : undefined,
+                isCashLoan: isFromDrawer
             });
             toast.success('تم تسجيل الدين بنجاح');
             setIsAddingDebt(false);
-            setNewDebtData({ workerId: '', price: '', serviceType: '' });
+            setNewDebtData({ workerId: '', price: '', serviceType: '', sourceType: 'general' });
         } catch (err) {
             console.error(err);
             toast.error('حدث خطأ أثناء التسجيل');
@@ -222,6 +227,13 @@ const WorkersDebtsView: React.FC = () => {
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>البيان / الوصف</label>
                                 <input type="text" value={newDebtData.serviceType} onChange={e => setNewDebtData({...newDebtData, serviceType: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} placeholder="مثال: دين قديم / عجز سابق" />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>مصدر المبلغ</label>
+                                <select value={newDebtData.sourceType} onChange={e => setNewDebtData({...newDebtData, sourceType: e.target.value as 'general' | 'drawer'})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
+                                    <option value="general">من الصندوق العام (خارجي - لا يخصم من إيراد اليوم)</option>
+                                    <option value="drawer">من صندوق اليوم (يُسجل كـ خرج ويخصم من الموازنة اليومية)</option>
+                                </select>
                             </div>
                             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                                 <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>حفظ الدين</button>
