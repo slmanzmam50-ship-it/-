@@ -789,7 +789,7 @@ const AdminDashboard: React.FC = () => {
                         onClick={() => setActiveTab('expenses')} 
                         style={{ background: activeTab === 'expenses' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'expenses' ? 'white' : 'var(--text-secondary)', padding: '14px 16px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', textAlign: 'right' }}
                     >
-                        <AlertCircle size={20} /> ��� �����
+                        <AlertCircle size={20} /> سجل الخرج
                     </button>
                     <button 
                         onClick={() => setActiveTab('requests')} 
