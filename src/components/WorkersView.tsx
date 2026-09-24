@@ -171,10 +171,11 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     });
 
     const totalIncome = filteredOperations.reduce((sum, op) => sum + (op.price || 0), 0);
-    const totalExpenses = filteredOperations.reduce((sum, op) => sum + (op.expenseAmount || 0), 0);
+    const totalExpenses = filteredOperations.reduce((sum, op) => sum + (op.expenseAmount || 0) + (op.tipAmount || 0), 0);
     const totalNetwork = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'network' ? (op.price || 0) : 0), 0);
-    const totalCredit = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' ? (op.price || 0) : 0), 0);
-    const expectedCash = totalIncome - totalNetwork - totalCredit - totalExpenses;
+    const totalCredit = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && op.hasInvoice ? (op.price || 0) : 0), 0);
+    const totalWorkerDebt = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && !op.hasInvoice ? (op.price || 0) : 0), 0);
+    const expectedCash = totalIncome - totalNetwork - totalCredit - totalWorkerDebt - totalExpenses;
 
     const handleShareWorker = (w: Worker) => {
         const shareText = `👋 مرحباً ${w.name}،\n\nإليك بيانات الدخول الخاصة بك لبوابة العمال:\n\n👤 اسم المستخدم: ${w.username}\n🔑 كلمة المرور: ${w.password}\n\nرابط الدخول:\n${window.location.origin}/worker-login`;
@@ -231,12 +232,17 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
         
         let expensesDetails = '';
-        const expensesList = filteredOperations.filter(op => op.expenseAmount > 0);
+        const expensesList = filteredOperations.filter(op => (op.expenseAmount || 0) > 0 || (op.tipAmount || 0) > 0);
         if (expensesList.length > 0) {
-            expensesDetails = '\n\n📋 تفاصيل الخرج:\n' + expensesList.map(op => `- ${op.expenseAmount} ريال (${op.expenseReason || 'بدون سبب'})`).join('\n');
+            expensesDetails = '\n\n📋 تفاصيل الخرج والخصومات:\n' + expensesList.map(op => {
+                let lines = [];
+                if ((op.expenseAmount || 0) > 0) lines.push(`- ${op.expenseAmount} ريال (${op.expenseReason || 'بدون سبب'})`);
+                if ((op.tipAmount || 0) > 0) lines.push(`- ${op.tipAmount} ريال (خصم/بخشيش - ${op.serviceType})`);
+                return lines.join('\n');
+            }).join('\n');
         }
 
-        const shareText = `📊 جرد (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل: ${totalCredit} ريال\n📉 إجمالي الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*`;
+        const shareText = `📊 جرد (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخصم والخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*`;
         const encodedText = encodeURIComponent(shareText);
         window.open(`https://wa.me/?text=${encodedText}`, '_blank');
     };
@@ -403,8 +409,19 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     </td>
                                     <td style={{ padding: '10px', color: 'var(--success)', fontWeight: 700 }}>{op.price > 0 ? op.price : '-'}</td>
                                     <td style={{ padding: '10px' }}>
-                                        <div style={{ color: 'var(--error)', fontWeight: 700 }}>{op.expenseAmount > 0 ? op.expenseAmount : '-'}</div>
-                                        {op.expenseAmount > 0 && op.expenseReason && <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({op.expenseReason})</div>}
+                                        {(op.expenseAmount || 0) > 0 && (
+                                            <>
+                                                <div style={{ color: 'var(--error)', fontWeight: 700 }}>{op.expenseAmount}</div>
+                                                {op.expenseReason && <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({op.expenseReason})</div>}
+                                            </>
+                                        )}
+                                        {(op.tipAmount || 0) > 0 && (
+                                            <>
+                                                <div style={{ color: 'var(--error)', fontWeight: 700 }}>{op.tipAmount}</div>
+                                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>(خصم/بخشيش)</div>
+                                            </>
+                                        )}
+                                        {!(op.expenseAmount || 0) && !(op.tipAmount || 0) && '-'}
                                     </td>
                                     <td style={{ padding: '10px' }}>
                                         <button onClick={() => { setEditingOp(op); setEditPrice(op.price.toString()); setEditExpense(op.expenseAmount.toString()); setEditServiceType(op.serviceType || ''); setEditPaymentMethod(op.paymentMethod || 'cash'); setEditHasInvoice(op.hasInvoice || false); setEditExpenseReason(op.expenseReason || ''); }} style={{ padding: '6px', background: 'transparent', color: 'var(--primary-color)', border: 'none', cursor: 'pointer' }}><Edit2 size={18} /></button>

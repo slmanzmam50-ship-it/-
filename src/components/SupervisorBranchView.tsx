@@ -78,7 +78,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
     });
 
     const totalIncome = filteredOperations.reduce((sum, op) => sum + (op.price || 0), 0);
-    const totalExpenses = filteredOperations.reduce((sum, op) => sum + (op.expenseAmount || 0), 0);
+    const totalExpenses = filteredOperations.reduce((sum, op) => sum + (op.expenseAmount || 0) + (op.tipAmount || 0), 0);
     const totalNetwork = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'network' ? (op.price || 0) : 0), 0);
     const totalCredit = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && op.hasInvoice ? (op.price || 0) : 0), 0);
     const totalWorkerDebt = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && !op.hasInvoice ? (op.price || 0) : 0), 0);
@@ -89,9 +89,14 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
         let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
         
         let expensesDetails = '';
-        const expensesList = filteredOperations.filter(op => op.expenseAmount > 0);
+        const expensesList = filteredOperations.filter(op => (op.expenseAmount || 0) > 0 || (op.tipAmount || 0) > 0);
         if (expensesList.length > 0) {
-            expensesDetails = '\n\n📋 تفاصيل الخرج:\n' + expensesList.map(op => `- ${op.expenseAmount} ريال (${op.expenseReason || 'بدون سبب'})`).join('\n');
+            expensesDetails = '\n\n📋 تفاصيل الخرج والخصومات:\n' + expensesList.map(op => {
+                let lines = [];
+                if ((op.expenseAmount || 0) > 0) lines.push(`- ${op.expenseAmount} ريال (${op.expenseReason || 'بدون سبب'})`);
+                if ((op.tipAmount || 0) > 0) lines.push(`- ${op.tipAmount} ريال (خصم/بخشيش - ${op.serviceType})`);
+                return lines.join('\n');
+            }).join('\n');
         }
 
         const actual = Number(actualCash) || 0;
@@ -223,8 +228,19 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                                     </td>
                                     <td style={{ padding: '10px', color: 'var(--success)', fontWeight: 700 }}>{(op.price || 0) > 0 ? op.price : '-'}</td>
                                     <td style={{ padding: '10px' }}>
-                                        <div style={{ color: 'var(--error)', fontWeight: 700 }}>{(op.expenseAmount || 0) > 0 ? op.expenseAmount : '-'}</div>
-                                        {(op.expenseAmount || 0) > 0 && op.expenseReason && <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({op.expenseReason})</div>}
+                                        {(op.expenseAmount || 0) > 0 && (
+                                            <>
+                                                <div style={{ color: 'var(--error)', fontWeight: 700 }}>{op.expenseAmount}</div>
+                                                {op.expenseReason && <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({op.expenseReason})</div>}
+                                            </>
+                                        )}
+                                        {(op.tipAmount || 0) > 0 && (
+                                            <>
+                                                <div style={{ color: 'var(--error)', fontWeight: 700 }}>{op.tipAmount}</div>
+                                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>(خصم/بخشيش)</div>
+                                            </>
+                                        )}
+                                        {!(op.expenseAmount || 0) && !(op.tipAmount || 0) && '-'}
                                     </td>
                                 </tr>
                             ))}
