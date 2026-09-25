@@ -19,6 +19,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
     const [workerFilter, setWorkerFilter] = useState<string>('all');
     const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'with_invoice' | 'without_invoice'>('all');
     const [actualCash, setActualCash] = useState<string>('');
+    const [actualNetwork, setActualNetwork] = useState<string>('');
 
     useEffect(() => {
         const unsub = subscribeToWorkers(allWorkers => {
@@ -109,7 +110,11 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
         const diff = actual - expectedCash;
         const diffText = actualCash === '' ? 'لم يتم إدخاله' : (diff === 0 ? 'مطابق ✅' : (diff < 0 ? `عجز (${Math.abs(diff)} ريال) ❌` : `زيادة (${diff} ريال) ⚠️`));
 
-        const shareText = `📊 جرد الفرع (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💳 شبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*\n💵 الكاش الفعلي المتوفر: *${actualCash === '' ? '؟' : actual} ريال*\n⚖️ الفارق: *${diffText}*`;
+        const actualNet = Number(actualNetwork) || 0;
+        const netDiff = actualNet - totalNetwork;
+        const netDiffText = actualNetwork === '' ? 'لم يتم إدخاله' : (netDiff === 0 ? 'مطابق ✅' : (netDiff < 0 ? `عجز (${Math.abs(netDiff)} ريال) ❌` : `زيادة (${netDiff} ريال) ⚠️`));
+
+        const shareText = `📊 جرد الفرع (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💵 مبيعات الكاش (قبل الخصم): ${totalCashSales} ريال\n💳 مبيعات الشبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخصم/الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n💳 مبيعات الشبكة المسجلة: *${totalNetwork} ريال*\n💳 الشبكة الفعلية: *${actualNetwork === '' ? '؟' : actualNet} ريال*\n⚖️ فارق الشبكة: *${netDiffText}*\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*\n💵 الكاش الفعلي المتوفر: *${actualCash === '' ? '؟' : actual} ريال*\n⚖️ فارق الكاش: *${diffText}*`;
         const encodedText = encodeURIComponent(shareText);
         window.open(`https://wa.me/?text=${encodedText}`, '_blank');
     };
@@ -213,7 +218,23 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                             />
                             {actualCash !== '' && (
                                 <div style={{ marginTop: '8px', fontSize: '13px', fontWeight: 800, color: (Number(actualCash) - expectedCash) === 0 ? 'var(--success)' : (Number(actualCash) - expectedCash) < 0 ? 'var(--error)' : 'var(--accent-orange)' }}>
-                                    {(Number(actualCash) - expectedCash) === 0 ? '✅ الصندوق مطابق' : (Number(actualCash) - expectedCash) < 0 ? `❌ عجز: ${Math.abs(Number(actualCash) - expectedCash)} ريال` : `⚠️ زيادة: ${Number(actualCash) - expectedCash} ريال`}
+                                    {(Number(actualCash) - expectedCash) === 0 ? '✅ الكاش مطابق' : (Number(actualCash) - expectedCash) < 0 ? `❌ عجز: ${Math.abs(Number(actualCash) - expectedCash)} ريال` : `⚠️ زيادة: ${Number(actualCash) - expectedCash} ريال`}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="balance-card" style={{ background: 'white', padding: '1rem', borderRadius: '12px', border: '2px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <div className="balance-title" style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 700, marginBottom: '8px' }}>أدخل الشبكة الفعلية للمطابقة</div>
+                            <input 
+                                type="number" 
+                                placeholder="الشبكة الفعلية..."
+                                value={actualNetwork}
+                                onChange={e => setActualNetwork(e.target.value)}
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', fontSize: '16px', fontWeight: 800 }}
+                            />
+                            {actualNetwork !== '' && (
+                                <div style={{ marginTop: '8px', fontSize: '13px', fontWeight: 800, color: (Number(actualNetwork) - totalNetwork) === 0 ? 'var(--success)' : (Number(actualNetwork) - totalNetwork) < 0 ? 'var(--error)' : 'var(--accent-orange)' }}>
+                                    {(Number(actualNetwork) - totalNetwork) === 0 ? '✅ الشبكة مطابقة' : (Number(actualNetwork) - totalNetwork) < 0 ? `❌ عجز: ${Math.abs(Number(actualNetwork) - totalNetwork)} ريال` : `⚠️ زيادة: ${Number(actualNetwork) - totalNetwork} ريال`}
                                 </div>
                             )}
                         </div>
