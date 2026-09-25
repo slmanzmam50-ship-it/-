@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { collection, getCountFromServer } from 'firebase/firestore';
+import { db } from '../services/firebase';
 import { 
     addBranch, 
     updateBranch, 
@@ -60,6 +62,7 @@ const AdminDashboard: React.FC = () => {
     const [isClearingRequests, setIsClearingRequests] = useState(false);
     const [isExportBranchesModalOpen, setIsExportBranchesModalOpen] = useState(false);
     const [isExportRequestsModalOpen, setIsExportRequestsModalOpen] = useState(false);
+    const [opsCount, setOpsCount] = useState<number | null>(null);
 
     // New corporate/request states
     const [companies, setCompanies] = useState<CompanyAccount[]>([]);
@@ -102,6 +105,21 @@ const AdminDashboard: React.FC = () => {
         }, 500);
         return () => clearInterval(checkLang);
     }, [lang]);
+
+    useEffect(() => {
+        if (activeTab === 'settings') {
+            const fetchOpsCount = async () => {
+                try {
+                    const coll = collection(db, 'worker_operations');
+                    const snapshot = await getCountFromServer(coll);
+                    setOpsCount(snapshot.data().count);
+                } catch (e) {
+                    console.error('Error fetching ops count', e);
+                }
+            };
+            fetchOpsCount();
+        }
+    }, [activeTab]);
 
     useEffect(() => {
         setIsLoading(true);
@@ -2136,6 +2154,57 @@ const AdminDashboard: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Database Storage Card */}
+                    <div className="glass animate-slide-up" style={{ padding: '24px', borderRadius: '16px', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+                        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
+                            <Database size={22} /> حالة قاعدة البيانات (مؤشر الاستهلاك)
+                        </h2>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '14.5px', margin: '0 0 24px', lineHeight: '1.5' }}>
+                            بسبب قيود الأمان من جوجل، لا يمكن عرض الاستهلاك المباشر بدقة 100% من داخل التطبيق. نعرض هنا <strong>مؤشراً تقريبياً</strong> يعتمد على عدد العمليات المسجلة.
+                            <br />
+                            الخطة المجانية تتيح لك 1 جيجابايت مجاناً، وهذه المساحة تتسع لما يقارب <strong>2 مليون عملية مالية</strong>.
+                        </p>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--bg-color)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14.5px' }}>الفروع المسجلة:</span>
+                                <span style={{ fontWeight: 900 }}>{branches.length}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14.5px' }}>الشركات التشغيلية:</span>
+                                <span style={{ fontWeight: 900 }}>{companies.length}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14.5px' }}>العمليات المالية المسجلة (منذ التأسيس):</span>
+                                <span style={{ fontWeight: 900, color: 'var(--accent-orange)' }}>
+                                    {opsCount === null ? 'جاري الحساب...' : opsCount.toLocaleString()} عملية
+                                </span>
+                            </div>
+                            
+                            {opsCount !== null && (
+                                <div style={{ marginTop: '16px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                                        <span>مؤشر المساحة التقريبي:</span>
+                                        <span>{((opsCount / 2000000) * 100).toFixed(4)}% من المجاني</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: '12px', background: 'var(--surface-color)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                        <div style={{ height: '100%', width: `${Math.max(1, Math.min(100, (opsCount / 2000000) * 100))}%`, background: ((opsCount / 2000000) * 100) > 80 ? 'var(--error)' : 'var(--success)' }}></div>
+                                    </div>
+                                    {((opsCount / 2000000) * 100) > 80 && (
+                                        <div style={{ marginTop: '12px', fontSize: '13px', color: 'var(--error)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <AlertCircle size={16} /> تنبيه: اقتربت من استهلاك الحد المجاني لقاعدة البيانات! يرجى المراجعة من لوحة تحكم جوجل.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '12px', background: 'var(--surface-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', fontWeight: 700, textDecoration: 'none', transition: '0.2s', cursor: 'pointer' }}>
+                                <Globe size={18} /> فتح لوحة تحكم جوجل (Firebase Console)
+                            </a>
+                        </div>
+                    </div>
+
                 </div>
             )}
             {isFormOpen && <BranchForm branch={editingBranch} onSave={handleSaveBranch} onClose={() => { setIsFormOpen(false); setEditingBranch(undefined); setTargetOperatingCompanyId(undefined); }} categories={categories} existingBranches={branches} />}
