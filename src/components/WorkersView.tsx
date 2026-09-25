@@ -43,6 +43,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [editTipAmount, setEditTipAmount] = useState('');
 
     const [isAddingOp, setIsAddingOp] = useState(false);
+    const [isSubmittingOp, setIsSubmittingOp] = useState(false);
     const [newOpData, setNewOpData] = useState({ workerId: '', opType: 'sale' as 'sale'|'return', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: true, expenseAmount: '', expenseReason: '' });
 
     const [actualCash, setActualCash] = useState<string>('');
@@ -233,6 +234,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
 
     const handleAddOpSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmittingOp) return;
         if (!newOpData.workerId || !newOpData.serviceType) {
             toast.error('يرجى تعبئة الحقول المطلوبة');
             return;
@@ -240,6 +242,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         const worker = workers.find(w => w.id === newOpData.workerId);
         if (!worker) return;
 
+        setIsSubmittingOp(true);
         try {
             const isReturn = newOpData.opType === 'return';
             const finalPrice = Number(newOpData.price) || 0;
@@ -264,6 +267,8 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         } catch (err) {
             console.error(err);
             toast.error('حدث خطأ أثناء الإضافة');
+        } finally {
+            setIsSubmittingOp(false);
         }
     };
 
@@ -653,8 +658,8 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                 )}
                             </div>
                             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                                <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>تسجيل العملية</button>
-                                <button type="button" onClick={() => setIsAddingOp(false)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
+                                <button type="submit" disabled={isSubmittingOp} style={{ flex: 1, padding: '10px', background: isSubmittingOp ? 'var(--text-secondary)' : 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: isSubmittingOp ? 'not-allowed' : 'pointer' }}>{isSubmittingOp ? 'جاري التسجيل...' : 'تسجيل العملية'}</button>
+                                <button type="button" disabled={isSubmittingOp} onClick={() => setIsAddingOp(false)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: isSubmittingOp ? 'not-allowed' : 'pointer' }}>إلغاء</button>
                             </div>
                         </form>
                     </div>
