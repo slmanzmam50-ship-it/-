@@ -2185,7 +2185,7 @@ const AdminDashboard: React.FC = () => {
                             {opsCount !== null && (
                                 <div style={{ marginTop: '16px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                                        <span>مؤشر المساحة التقريبي:</span>
+                                        <span>مؤشر مساحة النصوص (1GB مجاناً):</span>
                                         <span>{((opsCount / 2000000) * 100).toFixed(4)}% من المجاني</span>
                                     </div>
                                     <div style={{ width: '100%', height: '12px', background: 'var(--surface-color)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
@@ -2198,6 +2198,27 @@ const AdminDashboard: React.FC = () => {
                                     )}
                                 </div>
                             )}
+
+                            <div style={{ width: '100%', height: '1px', background: 'var(--border-color)', margin: '8px 0' }}></div>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14.5px' }}>الصور المرفوعة (لوجوهات وصور فروع):</span>
+                                <span style={{ fontWeight: 900, color: 'var(--accent-blue)' }}>
+                                    {branches.length + categories.length + companies.length} صورة تقريباً
+                                </span>
+                            </div>
+                            <div style={{ marginTop: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                                    <span>مؤشر مساحة الصور (5GB مجاناً):</span>
+                                    <span>{(((branches.length + categories.length + companies.length) / 50000) * 100).toFixed(4)}% من المجاني</span>
+                                </div>
+                                <div style={{ width: '100%', height: '12px', background: 'var(--surface-color)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                    <div style={{ height: '100%', width: `${Math.max(1, Math.min(100, (((branches.length + categories.length + companies.length) / 50000) * 100)))}%`, background: (((branches.length + categories.length + companies.length) / 50000) * 100) > 80 ? 'var(--error)' : 'var(--accent-blue)' }}></div>
+                                </div>
+                                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px', lineHeight: '1.4' }}>
+                                    مساحة 5GB المجانية تتسع لما يقارب <strong>50,000 صورة مضغوطة</strong>. أنت بعيد جداً عن الحد الأقصى.
+                                </p>
+                            </div>
 
                             <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '12px', background: 'var(--surface-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', fontWeight: 700, textDecoration: 'none', transition: '0.2s', cursor: 'pointer' }}>
                                 <Globe size={18} /> فتح لوحة تحكم جوجل (Firebase Console)
