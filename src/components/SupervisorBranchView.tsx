@@ -93,7 +93,18 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
     const expectedCash = totalIncome - totalNetwork - totalCredit - totalWorkerDebt - totalExpenses;
 
     const handleShareBalance = () => {
-        let dateLabel = dateFilter === 'today' ? 'اليوم' : dateFilter === 'yesterday' ? 'الأمس' : dateFilter === 'custom' ? customDate : 'الفترة المحددة';
+        let dateStr = '';
+        if (dateFilter === 'today') {
+            dateStr = new Date().toLocaleDateString('en-GB');
+        } else if (dateFilter === 'yesterday') {
+            const y = new Date();
+            y.setDate(y.getDate() - 1);
+            dateStr = y.toLocaleDateString('en-GB');
+        } else if (dateFilter === 'custom') {
+            dateStr = customDate;
+        }
+
+        let dateLabel = dateFilter === 'today' ? `اليوم (${dateStr})` : dateFilter === 'yesterday' ? `الأمس (${dateStr})` : dateFilter === 'custom' ? customDate : 'الفترة المحددة';
         let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
         
         let expensesDetails = '';
