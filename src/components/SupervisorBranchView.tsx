@@ -104,7 +104,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
             dateStr = customDate;
         }
 
-        let dateLabel = dateFilter === 'today' ? `اليوم (${dateStr})` : dateFilter === 'yesterday' ? `الأمس (${dateStr})` : dateFilter === 'custom' ? customDate : 'الفترة المحددة';
+        let dateLabel = dateStr || 'الفترة المحددة';
         let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
         
         let expensesDetails = '';
@@ -128,8 +128,8 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
 
         const totalDiff = diff + netDiff;
         const totalDiffText = (actualCash === '' || actualNetwork === '') ? 'يرجى إدخال الجرد الفعلي' : 
-            (totalDiff === 0 ? 'مطابق تماماً ✅ (لا يوجد فقدان أموال)' : 
-            (totalDiff < 0 ? `عجز إجمالي (${Math.abs(totalDiff)} ريال) ❌` : `زيادة إجمالية (${totalDiff} ريال) ⚠️`));
+            (totalDiff === 0 ? 'مطابقة في اليوم كامل ✅' : 
+            (totalDiff < 0 ? `عجز في اليوم كامل (${Math.abs(totalDiff)} ريال) ❌` : `زيادة في اليوم كامل (${totalDiff} ريال) ⚠️`));
 
         const shareText = `📊 جرد الفرع (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💵 مبيعات الكاش (قبل الخصم): ${totalCashSales} ريال\n💳 مبيعات الشبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخصم/الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n💳 مبيعات الشبكة المسجلة: *${totalNetwork} ريال*\n💳 الشبكة الفعلية: *${actualNetwork === '' ? '؟' : actualNet} ريال*\n⚖️ فارق الشبكة: *${netDiffText}*\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*\n💵 الكاش الفعلي المتوفر: *${actualCash === '' ? '؟' : actual} ريال*\n⚖️ فارق الكاش: *${diffText}*\n-----------------------\n🎯 نتيجة المطابقة الذكية:\n*${totalDiffText}*`;
         const encodedText = encodeURIComponent(shareText);
@@ -264,7 +264,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                                         🎯 النتيجة النهائية للمطابقة (التقييم الذكي)
                                     </div>
                                     <div style={{ fontSize: '16px', fontWeight: 800, color: diffValue === 0 ? 'var(--success)' : (diffValue < 0 ? 'var(--error)' : 'var(--accent-orange)') }}>
-                                        {diffValue === 0 ? '✅ مطابق تماماً (العمال أخطأوا في تحديد طريقة الدفع فقط، ولا يوجد فقدان أموال)' : (diffValue < 0 ? `❌ يوجد عجز مالي حقيقي بـ (${Math.abs(diffValue)} ريال)` : `⚠️ توجد زيادة مالية حقيقية بـ (${diffValue} ريال)`)}
+                                        {diffValue === 0 ? 'مطابقة في اليوم كامل ✅' : (diffValue < 0 ? `عجز في اليوم كامل بـ (${Math.abs(diffValue)} ريال) ❌` : `زيادة في اليوم كامل بـ (${diffValue} ريال) ⚠️`)}
                                     </div>
                                 </div>
                             );
