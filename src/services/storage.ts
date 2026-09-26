@@ -775,14 +775,15 @@ export const loginWorkerAccount = async (username: string, password: string): Pr
         const q = query(collection(db, 'workers'), where('username', '==', username), where('password', '==', password));
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
-            const doc = snapshot.docs[0];
-            const data = doc.data() as Worker;
+            // Find the active one if there are duplicates
+            const activeDoc = snapshot.docs.find(d => d.data().isActive !== false) || snapshot.docs[0];
+            const data = activeDoc.data() as Worker;
             if (!data.isActive) return null;
             const token = generateSecureId('w-sess-', 32);
             // Removed lastLoginTime update to prevent permission-denied errors if Firebase Rules are strict
             
             // Note: In a real secure app we wouldn't store sessions in localStorage purely, but following this app's existing logic
-            return { id: doc.id, token, name: data.name, branchId: data.branchId };
+            return { id: activeDoc.id, token, name: data.name, branchId: data.branchId };
         }
         return null;
     } catch (e) {

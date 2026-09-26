@@ -27,7 +27,7 @@ const WorkerDashboard: React.FC = () => {
     const [expenseReason, setExpenseReason] = useState<string>('');
     
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [activeTab, setActiveTab] = useState<'register' | 'branch'>('register');
+    const [activeTab, setActiveTab] = useState<'register' | 'branch' | 'safe'>('register');
     const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year'>('month');
 
     // PWA Install Banner
@@ -291,19 +291,30 @@ const WorkerDashboard: React.FC = () => {
                 </div>
             )}
 
-            {worker?.role === 'supervisor' && (
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--bg-color)', padding: '6px', borderRadius: '16px' }}>
-                    <button onClick={() => setActiveTab('register')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'register' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'register' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s' }}>
+            {(worker?.role === 'supervisor' || worker?.canManageSafe) && (
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--bg-color)', padding: '6px', borderRadius: '16px', flexWrap: 'wrap' }}>
+                    <button onClick={() => setActiveTab('register')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'register' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'register' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px' }}>
                         تسجيل فواتيري
                     </button>
-                    <button onClick={() => setActiveTab('branch')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'branch' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'branch' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s' }}>
-                        إدارة وموازنة الفرع
-                    </button>
+                    {worker?.role === 'supervisor' && (
+                        <button onClick={() => setActiveTab('branch')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'branch' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'branch' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px' }}>
+                            موازنة الفرع
+                        </button>
+                    )}
+                    {worker?.canManageSafe && (
+                        <button onClick={() => setActiveTab('safe')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'safe' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'safe' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px' }}>
+                            الصندوق
+                        </button>
+                    )}
                 </div>
             )}
 
             {activeTab === 'branch' && worker?.role === 'supervisor' ? (
                 <SupervisorBranchView branchId={worker.branchId} />
+            ) : activeTab === 'safe' && worker?.canManageSafe ? (
+                <div style={{ background: 'var(--surface-color)', borderRadius: '16px' }}>
+                    <SafeView branchId={worker.branchId} role="supervisor" branches={[]} />
+                </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                 
@@ -490,12 +501,6 @@ const WorkerDashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
-            )}
-            
-            {activeTab !== 'branch' && worker?.canManageSafe && (
-                <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-                    <SafeView branchId={worker.branchId} role="supervisor" branches={[]} />
-                </div>
             )}
         </div>
     );
