@@ -15,6 +15,8 @@ interface Props {
 const WorkersView: React.FC<Props> = ({ branches }) => {
     const [workers, setWorkers] = useState<Worker[]>([]);
     const [operations, setOperations] = useState<WorkerOperation[]>([]);
+    const [showArchived, setShowArchived] = useState(false);
+    const displayedWorkers = showArchived ? workers : workers.filter(w => w.isActive !== false);
     
     // Add Worker State
     const [name, setName] = useState('');
@@ -333,6 +335,11 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         إضافة عامل
                     </button>
                 </form>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                    <button onClick={() => setShowArchived(!showArchived)} style={{ padding: '8px 16px', background: showArchived ? 'rgba(239,68,68,0.1)' : 'var(--bg-color)', color: showArchived ? 'var(--error)' : 'var(--text-secondary)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>
+                        {showArchived ? 'إخفاء العمال المؤرشفين' : 'عرض العمال المؤرشفين'}
+                    </button>
+                </div>
 
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
@@ -347,7 +354,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {workers.map(w => (
+                            {displayedWorkers.map(w => (
                                 <tr key={w.id} style={{ borderBottom: '1px solid var(--border-color)', opacity: w.isActive === false ? 0.6 : 1 }}>
                                     <td style={{ padding: '10px' }}>{w.name} {w.isActive === false && <span style={{ color: 'var(--error)', fontSize: '11px', marginRight: '6px', fontWeight: 700 }}>(مؤرشف)</span>}</td>
                                     <td style={{ padding: '10px' }}><code style={{ background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '4px' }}>{w.username}</code></td>
@@ -376,7 +383,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     </td>
                                 </tr>
                             ))}
-                            {workers.length === 0 && <tr><td colSpan={6} style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>لا يوجد عمال</td></tr>}
+                            {displayedWorkers.length === 0 && <tr><td colSpan={6} style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>لا يوجد عمال</td></tr>}
                         </tbody>
                     </table>
                 </div>

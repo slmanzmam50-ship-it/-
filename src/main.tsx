@@ -1,5 +1,5 @@
 // Force clear old PWA caches and reload once
-const FORCE_UPDATE_VERSION = 'clear_cache_v20';
+const FORCE_UPDATE_VERSION = 'clear_cache_v21';
 if (localStorage.getItem('pwa_cache_ver') !== FORCE_UPDATE_VERSION) {
   localStorage.setItem('pwa_cache_ver', FORCE_UPDATE_VERSION);
   if ('serviceWorker' in navigator) {
