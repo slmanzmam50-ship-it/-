@@ -341,7 +341,8 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                 <th style={{ padding: '10px', fontWeight: 700 }}>اسم العامل</th>
                                 <th style={{ padding: '10px', fontWeight: 700 }}>اسم المستخدم</th>
                                 <th style={{ padding: '10px', fontWeight: 700 }}>الفرع</th>
-                                <th style={{ padding: '10px', fontWeight: 700 }}>الصلاحية</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>المنصب</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>إدارة الصندوق</th>
                                 <th style={{ padding: '10px', fontWeight: 700 }}>الإجراءات</th>
                             </tr>
                         </thead>
@@ -352,26 +353,30 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     <td style={{ padding: '10px' }}><code style={{ background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '4px' }}>{w.username}</code></td>
                                     <td style={{ padding: '10px' }}>{branches.find(b => b.id === w.branchId)?.name || 'غير محدد'}</td>
                                     <td style={{ padding: '10px' }}>
-                                        {w.role === 'supervisor' ? <span style={{ background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700 }}>مشرف فرع</span> : 'عامل'}<button onClick={() => updateWorkerRole(w)} style={{ marginRight: '8px', padding: '4px 8px', fontSize: '10px', borderRadius: '4px', background: 'transparent', border: '1px solid var(--border-color)', cursor: 'pointer' }}>ترقية/تنزيل</button>
-                                        
-                                        <div style={{ marginTop: '8px', fontSize: '11px' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                                <input type="checkbox" checked={w.canManageSafe || false} onChange={async (e) => {
-                                                    const checked = e.target.checked;
-                                                    await updateWorker({ ...w, canManageSafe: checked });
-                                                    toast.success('تم تحديث صلاحية الصندوق');
-                                                }} style={{ width: '14px', height: '14px' }} />
-                                                إدارة الصندوق
-                                            </label>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {w.role === 'supervisor' ? <span style={{ background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700 }}>مشرف فرع</span> : <span style={{ background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>عامل</span>}
+                                            <button onClick={() => updateWorkerRole(w)} style={{ padding: '4px 8px', fontSize: '10px', borderRadius: '4px', background: 'transparent', border: '1px solid var(--border-color)', cursor: 'pointer' }}>تغيير المنصب</button>
                                         </div>
                                     </td>
                                     <td style={{ padding: '10px' }}>
-                                        {w.isActive !== false && <button onClick={() => handleShareWorker(w)} style={{ padding: '6px', background: 'transparent', color: 'var(--success)', border: 'none', cursor: 'pointer', marginRight: '8px' }} title="مشاركة عبر الواتساب"><Share2 size={18} /></button>}
-                                        <button onClick={() => handleDeleteWorker(w.id)} style={{ padding: '6px', background: 'transparent', color: w.isActive === false ? 'var(--text-secondary)' : 'var(--error)', border: 'none', cursor: w.isActive === false ? 'not-allowed' : 'pointer' }} disabled={w.isActive === false} title={w.isActive === false ? 'مؤرشف مسبقاً' : 'أرشفة العامل'}><Trash2 size={18} /></button>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: w.canManageSafe ? 'rgba(16,185,129,0.1)' : 'var(--bg-color)', color: w.canManageSafe ? 'var(--success)' : 'var(--text-secondary)', padding: '6px 10px', borderRadius: '8px', width: 'fit-content', border: '1px solid', borderColor: w.canManageSafe ? 'rgba(16,185,129,0.3)' : 'var(--border-color)', transition: '0.2s' }}>
+                                            <input type="checkbox" checked={w.canManageSafe || false} onChange={async (e) => {
+                                                const checked = e.target.checked;
+                                                await updateWorker({ ...w, canManageSafe: checked });
+                                                toast.success('تم تحديث صلاحية الصندوق');
+                                            }} style={{ width: '16px', height: '16px' }} />
+                                            <span style={{ fontSize: '12px', fontWeight: 700 }}>صلاحية الصندوق</span>
+                                        </label>
+                                    </td>
+                                    <td style={{ padding: '10px' }}>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            {w.isActive !== false && <button onClick={() => handleShareWorker(w)} style={{ padding: '6px', background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: 'none', borderRadius: '6px', cursor: 'pointer' }} title="مشاركة عبر الواتساب"><Share2 size={16} /></button>}
+                                            <button onClick={() => handleDeleteWorker(w.id)} style={{ padding: '6px', background: w.isActive === false ? 'transparent' : 'rgba(239,68,68,0.1)', color: w.isActive === false ? 'var(--text-secondary)' : 'var(--error)', border: 'none', borderRadius: '6px', cursor: w.isActive === false ? 'not-allowed' : 'pointer' }} disabled={w.isActive === false} title={w.isActive === false ? 'مؤرشف مسبقاً' : 'أرشفة العامل'}><Trash2 size={16} /></button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
-                            {workers.length === 0 && <tr><td colSpan={4} style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>لا يوجد عمال</td></tr>}
+                            {workers.length === 0 && <tr><td colSpan={6} style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>لا يوجد عمال</td></tr>}
                         </tbody>
                     </table>
                 </div>
