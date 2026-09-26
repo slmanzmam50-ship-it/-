@@ -126,3 +126,13 @@ export interface WorkerOperation {
     addedByAdmin?: boolean;
     isCashLoan?: boolean;
 }
+
+export interface SafeTransaction {
+    id: string;
+    branchId: string;
+    type: 'income' | 'expense';
+    amount: number;
+    description: string;
+    addedBy: 'admin' | 'supervisor';
+    createdAt: number;
+}

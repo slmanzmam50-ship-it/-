@@ -4,6 +4,7 @@ import type { WorkerOperation, Worker } from '../types';
 import { subscribeToWorkerOperations, subscribeToWorkers } from '../services/storage';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
+import SafeView from './SafeView';
 
 interface Props {
     branchId: string;
@@ -288,6 +289,11 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            {/* Safe / Treasury section */}
+            <div style={{ marginTop: '24px' }}>
+                <SafeView branchId={branchId} role="supervisor" branches={[]} />
             </div>
         </div>
     );

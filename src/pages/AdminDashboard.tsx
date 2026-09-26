@@ -30,7 +30,8 @@ import ExpensesReportView from '../components/ExpensesReportView';
 import WorkersDebtsView from '../components/WorkersDebtsView';
 import ExportPreviewModal from '../components/ExportPreviewModal';
 import type { ColumnDef } from '../components/ExportPreviewModal';
-import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown, Building2, Users } from 'lucide-react';
+import SafeView from '../components/SafeView';
+import { Plus, Edit2, Trash2, Loader2, Search, Check, X as CloseIcon, AlertCircle, FileDown, Layers, Database, Image as ImageIcon, FileText, Car, Wrench, MapPin, Globe, Flame, Settings, PlusCircle, ChevronDown, Building2, Users, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { utils, writeFile } from 'xlsx';
 
@@ -46,7 +47,7 @@ const AdminDashboard: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [isAddingCategory, setIsAddingCategory] = useState(false);
-    const [activeTab, setActiveTab] = useState<'branches' | 'companies-op' | 'categories' | 'companies' | 'requests' | 'settings' | 'workers' | 'expenses' | 'debts'>('branches');
+    const [activeTab, setActiveTab] = useState<'branches' | 'companies-op' | 'categories' | 'companies' | 'requests' | 'settings' | 'workers' | 'expenses' | 'debts' | 'safes'>('branches');
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [categoryEditName, setCategoryEditName] = useState('');
     const [newCategoryImageUrl, setNewCategoryImageUrl] = useState('');
@@ -817,6 +818,12 @@ const AdminDashboard: React.FC = () => {
                         <Database size={20} /> ديون العمال
                     </button>
                     <button 
+                        onClick={() => setActiveTab('safes')} 
+                        style={{ background: activeTab === 'safes' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'safes' ? 'white' : 'var(--text-secondary)', padding: '14px 16px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', textAlign: 'right' }}
+                    >
+                        <Wallet size={20} /> صناديق الفروع
+                    </button>
+                    <button 
                         onClick={() => setActiveTab('requests')} 
                         style={{ background: activeTab === 'requests' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'requests' ? 'white' : 'var(--text-secondary)', padding: '14px 16px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s', textAlign: 'right' }}
                     >
@@ -1346,6 +1353,10 @@ const AdminDashboard: React.FC = () => {
             )}
             {activeTab === 'debts' && (
                 <WorkersDebtsView />
+            )}
+            
+            {activeTab === 'safes' && (
+                <SafeView role="admin" branches={branches} />
             )}
             
             {activeTab === 'requests' && (
