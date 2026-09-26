@@ -162,10 +162,16 @@ const SafeView: React.FC<Props> = ({ branchId, role, branches }) => {
                             )}
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>نوع العملية</label>
-                                <select value={type} onChange={e => setType(e.target.value as 'income'|'expense')} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', background: type === 'income' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: type === 'income' ? 'var(--success)' : 'var(--error)', fontWeight: 700 }}>
-                                    <option value="income">وارد (دخل اليوم / إيداع)</option>
-                                    <option value="expense">صادر (سداد / سلفية / مسحوبات)</option>
-                                </select>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button type="button" onClick={() => setType('income')} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '12px', border: '2px solid', borderColor: type === 'income' ? 'var(--success)' : 'var(--border-color)', background: type === 'income' ? 'rgba(16,185,129,0.1)' : 'transparent', color: type === 'income' ? 'var(--success)' : 'var(--text-secondary)', fontWeight: 800, cursor: 'pointer', transition: '0.2s', fontSize: '13px' }}>
+                                        <TrendingUp size={24} />
+                                        إيراد (دخل)
+                                    </button>
+                                    <button type="button" onClick={() => setType('expense')} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '12px', border: '2px solid', borderColor: type === 'expense' ? 'var(--error)' : 'var(--border-color)', background: type === 'expense' ? 'rgba(239,68,68,0.1)' : 'transparent', color: type === 'expense' ? 'var(--error)' : 'var(--text-secondary)', fontWeight: 800, cursor: 'pointer', transition: '0.2s', fontSize: '13px' }}>
+                                        <TrendingDown size={24} />
+                                        مصروف (خرج)
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>المبلغ</label>
