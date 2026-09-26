@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Activity, Trash2, Edit2, Download, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Worker, WorkerOperation, Branch } from '../types';
-import { subscribeToWorkers, addWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation, addWorkerOperation, deleteWorkerOperation } from '../services/storage';
+import { subscribeToWorkers, addWorker, updateWorker, deleteWorker, subscribeToWorkerOperations, updateWorkerOperation, addWorkerOperation, deleteWorkerOperation } from '../services/storage';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { db } from '../services/firebase';
@@ -358,7 +358,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                             <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
                                                 <input type="checkbox" checked={w.canManageSafe || false} onChange={async (e) => {
                                                     const checked = e.target.checked;
-                                                    await addWorker({ ...w, canManageSafe: checked });
+                                                    await updateWorker({ ...w, canManageSafe: checked });
                                                     toast.success('تم تحديث صلاحية الصندوق');
                                                 }} style={{ width: '14px', height: '14px' }} />
                                                 إدارة الصندوق
