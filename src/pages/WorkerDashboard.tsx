@@ -8,6 +8,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { subscribeToWorkerOperationsByWorker, addWorkerOperation } from '../services/storage';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import SupervisorBranchView from '../components/SupervisorBranchView';
+import SafeView from '../components/SafeView';
 
 const WorkerDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -488,8 +489,13 @@ const WorkerDashboard: React.FC = () => {
                         </table>
                     </div>
                 </div>
-
             </div>
+            )}
+            
+            {activeTab !== 'branch' && worker?.canManageSafe && (
+                <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+                    <SafeView branchId={worker.branchId} role="supervisor" branches={[]} />
+                </div>
             )}
         </div>
     );

@@ -94,6 +94,7 @@ export interface Worker {
     email?: string;
     isActive: boolean;
     role?: 'worker' | 'supervisor';
+    canManageSafe?: boolean;
     createdAt: number;
 }
 

@@ -21,6 +21,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [branchId, setBranchId] = useState('');
+    const [canManageSafe, setCanManageSafe] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
 
     const [isWorkersOpen, setIsWorkersOpen] = useState(false);
@@ -98,10 +99,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         setIsAdding(true);
         try {
             await addWorker({
-                name, username, password, branchId, role, isActive: true
+                name, username, password, branchId, role, canManageSafe, isActive: true
             });
             toast.success('تمت إضافة العامل بنجاح');
-            setName(''); setUsername(''); setPassword(''); setBranchId(''); setRole('worker');
+            setName(''); setUsername(''); setPassword(''); setBranchId(''); setRole('worker'); setCanManageSafe(false);
         } catch (error) {
             console.error(error);
             toast.error('فشل في إضافة العامل');
@@ -324,6 +325,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         <option value="">-- اختر الفرع --</option>
                         {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, padding: '10px', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={canManageSafe} onChange={e => setCanManageSafe(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                        صلاحية إدارة صندوق الفرع
+                    </label>
                     <button type="submit" disabled={isAdding} style={{ padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: isAdding ? 'not-allowed' : 'pointer' }}>
                         إضافة عامل
                     </button>
@@ -346,7 +351,20 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     <td style={{ padding: '10px' }}>{w.name} {w.isActive === false && <span style={{ color: 'var(--error)', fontSize: '11px', marginRight: '6px', fontWeight: 700 }}>(مؤرشف)</span>}</td>
                                     <td style={{ padding: '10px' }}><code style={{ background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '4px' }}>{w.username}</code></td>
                                     <td style={{ padding: '10px' }}>{branches.find(b => b.id === w.branchId)?.name || 'غير محدد'}</td>
-                                    <td style={{ padding: '10px' }}>{w.role === 'supervisor' ? <span style={{ background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700 }}>مشرف فرع</span> : 'عامل'}<button onClick={() => updateWorkerRole(w)} style={{ marginRight: '8px', padding: '4px 8px', fontSize: '10px', borderRadius: '4px', background: 'transparent', border: '1px solid var(--border-color)', cursor: 'pointer' }}>ترقية/تنزيل</button></td>
+                                    <td style={{ padding: '10px' }}>
+                                        {w.role === 'supervisor' ? <span style={{ background: 'var(--primary-color)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700 }}>مشرف فرع</span> : 'عامل'}<button onClick={() => updateWorkerRole(w)} style={{ marginRight: '8px', padding: '4px 8px', fontSize: '10px', borderRadius: '4px', background: 'transparent', border: '1px solid var(--border-color)', cursor: 'pointer' }}>ترقية/تنزيل</button>
+                                        
+                                        <div style={{ marginTop: '8px', fontSize: '11px' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                                <input type="checkbox" checked={w.canManageSafe || false} onChange={async (e) => {
+                                                    const checked = e.target.checked;
+                                                    await addWorker({ ...w, canManageSafe: checked });
+                                                    toast.success('تم تحديث صلاحية الصندوق');
+                                                }} style={{ width: '14px', height: '14px' }} />
+                                                إدارة الصندوق
+                                            </label>
+                                        </div>
+                                    </td>
                                     <td style={{ padding: '10px' }}>
                                         {w.isActive !== false && <button onClick={() => handleShareWorker(w)} style={{ padding: '6px', background: 'transparent', color: 'var(--success)', border: 'none', cursor: 'pointer', marginRight: '8px' }} title="مشاركة عبر الواتساب"><Share2 size={18} /></button>}
                                         <button onClick={() => handleDeleteWorker(w.id)} style={{ padding: '6px', background: 'transparent', color: w.isActive === false ? 'var(--text-secondary)' : 'var(--error)', border: 'none', cursor: w.isActive === false ? 'not-allowed' : 'pointer' }} disabled={w.isActive === false} title={w.isActive === false ? 'مؤرشف مسبقاً' : 'أرشفة العامل'}><Trash2 size={18} /></button>
