@@ -126,7 +126,12 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
         const netDiff = actualNet - totalNetwork;
         const netDiffText = actualNetwork === '' ? 'لم يتم إدخاله' : (netDiff === 0 ? 'مطابق ✅' : (netDiff < 0 ? `عجز (${Math.abs(netDiff)} ريال) ❌` : `زيادة (${netDiff} ريال) ⚠️`));
 
-        const shareText = `📊 جرد الفرع (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💵 مبيعات الكاش (قبل الخصم): ${totalCashSales} ريال\n💳 مبيعات الشبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخصم/الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n💳 مبيعات الشبكة المسجلة: *${totalNetwork} ريال*\n💳 الشبكة الفعلية: *${actualNetwork === '' ? '؟' : actualNet} ريال*\n⚖️ فارق الشبكة: *${netDiffText}*\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*\n💵 الكاش الفعلي المتوفر: *${actualCash === '' ? '؟' : actual} ريال*\n⚖️ فارق الكاش: *${diffText}*`;
+        const totalDiff = diff + netDiff;
+        const totalDiffText = (actualCash === '' || actualNetwork === '') ? 'يرجى إدخال الجرد الفعلي' : 
+            (totalDiff === 0 ? 'مطابق تماماً ✅ (لا يوجد فقدان أموال)' : 
+            (totalDiff < 0 ? `عجز إجمالي (${Math.abs(totalDiff)} ريال) ❌` : `زيادة إجمالية (${totalDiff} ريال) ⚠️`));
+
+        const shareText = `📊 جرد الفرع (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💵 مبيعات الكاش (قبل الخصم): ${totalCashSales} ريال\n💳 مبيعات الشبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخصم/الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n💳 مبيعات الشبكة المسجلة: *${totalNetwork} ريال*\n💳 الشبكة الفعلية: *${actualNetwork === '' ? '؟' : actualNet} ريال*\n⚖️ فارق الشبكة: *${netDiffText}*\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*\n💵 الكاش الفعلي المتوفر: *${actualCash === '' ? '؟' : actual} ريال*\n⚖️ فارق الكاش: *${diffText}*\n-----------------------\n🎯 نتيجة المطابقة الذكية:\n*${totalDiffText}*`;
         const encodedText = encodeURIComponent(shareText);
         window.open(`https://wa.me/?text=${encodedText}`, '_blank');
     };
@@ -251,6 +256,19 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                             )}
                         </div>
 
+                        {(actualCash !== '' && actualNetwork !== '') && (() => {
+                            const diffValue = (Number(actualCash) - expectedCash) + (Number(actualNetwork) - totalNetwork);
+                            return (
+                                <div className="balance-card" style={{ background: diffValue === 0 ? 'rgba(16,185,129,0.1)' : (diffValue < 0 ? 'rgba(239,68,68,0.1)' : 'rgba(249,115,22,0.1)'), padding: '1rem', borderRadius: '12px', border: '2px solid', borderColor: diffValue === 0 ? 'var(--success)' : (diffValue < 0 ? 'var(--error)' : 'var(--accent-orange)'), display: 'flex', flexDirection: 'column', justifyContent: 'center', gridColumn: '1 / -1' }}>
+                                    <div style={{ color: diffValue === 0 ? 'var(--success)' : (diffValue < 0 ? 'var(--error)' : 'var(--accent-orange)'), fontSize: '13px', fontWeight: 800, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        🎯 النتيجة النهائية للمطابقة (التقييم الذكي)
+                                    </div>
+                                    <div style={{ fontSize: '16px', fontWeight: 800, color: diffValue === 0 ? 'var(--success)' : (diffValue < 0 ? 'var(--error)' : 'var(--accent-orange)') }}>
+                                        {diffValue === 0 ? '✅ مطابق تماماً (العمال أخطأوا في تحديد طريقة الدفع فقط، ولا يوجد فقدان أموال)' : (diffValue < 0 ? `❌ يوجد عجز مالي حقيقي بـ (${Math.abs(diffValue)} ريال)` : `⚠️ توجد زيادة مالية حقيقية بـ (${diffValue} ريال)`)}
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                     </div>
                 </div>
