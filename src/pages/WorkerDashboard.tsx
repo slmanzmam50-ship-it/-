@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Plus, Wallet, CheckCircle, TrendingUp, TrendingDown, CreditCard, Coins, FileText, FileX, BookOpen } from 'lucide-react';
+import { LogOut, Plus, Wallet, CheckCircle, TrendingUp, TrendingDown, CreditCard, Coins, FileText, FileX, BookOpen, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Worker, WorkerOperation } from '../types';
 import { db } from '../services/firebase';
@@ -293,16 +293,19 @@ const WorkerDashboard: React.FC = () => {
 
             {(worker?.role === 'supervisor' || worker?.canManageSafe) && (
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--bg-color)', padding: '6px', borderRadius: '16px', flexWrap: 'wrap' }}>
-                    <button onClick={() => setActiveTab('register')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'register' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'register' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px' }}>
+                    <button onClick={() => setActiveTab('register')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'register' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'register' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <FileText size={20} />
                         تسجيل فواتيري
                     </button>
                     {worker?.role === 'supervisor' && (
-                        <button onClick={() => setActiveTab('branch')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'branch' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'branch' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px' }}>
+                        <button onClick={() => setActiveTab('branch')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'branch' ? '#8b5cf6' : 'transparent', color: activeTab === 'branch' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                            <Activity size={20} />
                             موازنة الفرع
                         </button>
                     )}
                     {worker?.canManageSafe && (
-                        <button onClick={() => setActiveTab('safe')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'safe' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'safe' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px' }}>
+                        <button onClick={() => setActiveTab('safe')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'safe' ? '#f97316' : 'transparent', color: activeTab === 'safe' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                            <Wallet size={20} />
                             الصندوق
                         </button>
                     )}
