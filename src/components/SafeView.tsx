@@ -67,8 +67,9 @@ const SafeView: React.FC<Props> = ({ branchId, role, branches, canEditSafe }) =>
             setIsEditing(null);
             setAmount('');
             setDescription('');
-        } catch (e) {
-            toast.error('حدث خطأ أثناء حفظ البيانات');
+        } catch (e: any) {
+            console.error('Save error:', e);
+            toast.error(e.message || 'حدث خطأ أثناء حفظ البيانات');
         }
     };
 
