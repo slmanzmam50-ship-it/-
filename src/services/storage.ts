@@ -878,10 +878,11 @@ export const deleteWorkerOperation = async (id: string): Promise<void> => {
 export const subscribeToSafeTransactions = (branchId: string | undefined, callback: (transactions: any[]) => void) => {
     const constraints: any[] = [];
     if (branchId) constraints.push(where('branchId', '==', branchId));
-    constraints.push(orderBy('createdAt', 'desc'));
+    
     const q = query(collection(db, 'safe_transactions'), ...constraints);
     return onSnapshot(q, (snapshot) => {
-        const txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        txs.sort((a: any, b: any) => b.createdAt - a.createdAt);
         callback(txs);
     });
 };

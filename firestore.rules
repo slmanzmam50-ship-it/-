@@ -49,5 +49,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true; // Operations can be added by workers who are not firebase auth users
     }
+
+    // Safe Transactions
+    match /safe_transactions/{transactionId} {
+      allow read: if true;
+      allow write: if true; // Transactions can be added/edited by workers
+    }
   }
 }
