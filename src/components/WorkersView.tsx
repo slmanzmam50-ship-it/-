@@ -24,6 +24,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [password, setPassword] = useState('');
     const [branchId, setBranchId] = useState('');
     const [canManageSafe, setCanManageSafe] = useState(false);
+    const [canEditSafe, setCanEditSafe] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
 
     const [isWorkersOpen, setIsWorkersOpen] = useState(false);
@@ -101,10 +102,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         setIsAdding(true);
         try {
             await addWorker({
-                name, username, password, branchId, role, canManageSafe, isActive: true
+                name, username, password, branchId, role, canManageSafe, canEditSafe, isActive: true
             });
             toast.success('تمت إضافة العامل بنجاح');
-            setName(''); setUsername(''); setPassword(''); setBranchId(''); setRole('worker'); setCanManageSafe(false);
+            setName(''); setUsername(''); setPassword(''); setBranchId(''); setRole('worker'); setCanManageSafe(false); setCanEditSafe(false);
         } catch (error) {
             console.error(error);
             toast.error('فشل في إضافة العامل');
@@ -331,6 +332,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         <input type="checkbox" checked={canManageSafe} onChange={e => setCanManageSafe(e.target.checked)} style={{ width: '16px', height: '16px' }} />
                         صلاحية إدارة صندوق الفرع
                     </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, padding: '10px', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={canEditSafe} onChange={e => setCanEditSafe(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                        تعديل وحذف من الصندوق
+                    </label>
                     <button type="submit" disabled={isAdding} style={{ padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: isAdding ? 'not-allowed' : 'pointer' }}>
                         إضافة عامل
                     </button>
@@ -350,6 +355,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                 <th style={{ padding: '10px', fontWeight: 700 }}>الفرع</th>
                                 <th style={{ padding: '10px', fontWeight: 700 }}>المنصب</th>
                                 <th style={{ padding: '10px', fontWeight: 700 }}>إدارة الصندوق</th>
+                                <th style={{ padding: '10px', fontWeight: 700 }}>الحذف والتعديل</th>
                                 <th style={{ padding: '10px', fontWeight: 700 }}>الإجراءات</th>
                             </tr>
                         </thead>
@@ -373,6 +379,16 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                                 toast.success('تم تحديث صلاحية الصندوق');
                                             }} style={{ width: '16px', height: '16px' }} />
                                             <span style={{ fontSize: '12px', fontWeight: 700 }}>صلاحية الصندوق</span>
+                                        </label>
+                                    </td>
+                                    <td style={{ padding: '10px' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: w.canEditSafe ? 'rgba(249,115,22,0.1)' : 'var(--bg-color)', color: w.canEditSafe ? 'var(--accent-orange)' : 'var(--text-secondary)', padding: '6px 10px', borderRadius: '8px', width: 'fit-content', border: '1px solid', borderColor: w.canEditSafe ? 'rgba(249,115,22,0.3)' : 'var(--border-color)', transition: '0.2s' }}>
+                                            <input type="checkbox" checked={w.canEditSafe || false} onChange={async (e) => {
+                                                const checked = e.target.checked;
+                                                await updateWorker({ ...w, canEditSafe: checked });
+                                                toast.success('تم تحديث صلاحية الحذف والتعديل');
+                                            }} style={{ width: '16px', height: '16px' }} />
+                                            <span style={{ fontSize: '12px', fontWeight: 700 }}>حذف / تعديل</span>
                                         </label>
                                     </td>
                                     <td style={{ padding: '10px' }}>

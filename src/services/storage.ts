@@ -897,3 +897,7 @@ export const deleteSafeTransaction = async (id: string): Promise<void> => {
     await deleteDoc(doc(db, 'safe_transactions', id));
 };
 
+export const updateSafeTransaction = async (id: string, updates: any): Promise<void> => {
+    await setDoc(doc(db, 'safe_transactions', id), updates, { merge: true });
+};
+

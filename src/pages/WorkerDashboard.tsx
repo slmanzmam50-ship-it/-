@@ -316,7 +316,7 @@ const WorkerDashboard: React.FC = () => {
                 <SupervisorBranchView branchId={worker.branchId} />
             ) : activeTab === 'safe' && worker?.canManageSafe ? (
                 <div style={{ background: 'var(--surface-color)', borderRadius: '16px' }}>
-                    <SafeView branchId={worker.branchId} role="supervisor" branches={[]} />
+                    <SafeView branchId={worker.branchId} role="supervisor" branches={[]} canEditSafe={worker.canEditSafe} />
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>

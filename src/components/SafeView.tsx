@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { subscribeToSafeTransactions, addSafeTransaction, deleteSafeTransaction } from '../services/storage';
+import { subscribeToSafeTransactions, addSafeTransaction, deleteSafeTransaction, updateSafeTransaction } from '../services/storage';
 import type { SafeTransaction, Branch } from '../types';
-import { Plus, Trash2, TrendingUp, TrendingDown, Wallet, BarChart2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, TrendingUp, TrendingDown, Wallet, BarChart2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Props {
     branchId?: string;
     role: 'admin' | 'supervisor';
     branches: Branch[];
+    canEditSafe?: boolean;
 }
 
-const SafeView: React.FC<Props> = ({ branchId, role, branches }) => {
+const SafeView: React.FC<Props> = ({ branchId, role, branches, canEditSafe }) => {
     const [transactions, setTransactions] = useState<SafeTransaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -20,6 +21,7 @@ const SafeView: React.FC<Props> = ({ branchId, role, branches }) => {
 
     // Add Form
     const [isAdding, setIsAdding] = useState(false);
+    const [isEditing, setIsEditing] = useState<string | null>(null);
     const [type, setType] = useState<'income' | 'expense'>('income');
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
@@ -34,7 +36,7 @@ const SafeView: React.FC<Props> = ({ branchId, role, branches }) => {
         return () => unsub();
     }, [branchId, role]);
 
-    const handleAdd = async (e: React.FormEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         const bId = role === 'supervisor' ? branchId : selectedBranchId;
         if (!amount || !description || !bId) {
@@ -43,20 +45,40 @@ const SafeView: React.FC<Props> = ({ branchId, role, branches }) => {
         }
 
         try {
-            await addSafeTransaction({
-                branchId: bId,
-                type,
-                amount: Number(amount),
-                description,
-                addedBy: role
-            });
-            toast.success('تمت الإضافة بنجاح');
+            if (isEditing) {
+                await updateSafeTransaction(isEditing, {
+                    branchId: bId,
+                    type,
+                    amount: Number(amount),
+                    description
+                });
+                toast.success('تم التعديل بنجاح');
+            } else {
+                await addSafeTransaction({
+                    branchId: bId,
+                    type,
+                    amount: Number(amount),
+                    description,
+                    addedBy: role
+                });
+                toast.success('تمت الإضافة بنجاح');
+            }
             setIsAdding(false);
+            setIsEditing(null);
             setAmount('');
             setDescription('');
         } catch (e) {
-            toast.error('حدث خطأ أثناء الإضافة');
+            toast.error('حدث خطأ أثناء حفظ البيانات');
         }
+    };
+
+    const startEdit = (tx: SafeTransaction) => {
+        setIsEditing(tx.id);
+        setType(tx.type);
+        setAmount(tx.amount.toString());
+        setDescription(tx.description);
+        setSelectedBranchId(tx.branchId);
+        setIsAdding(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -149,8 +171,8 @@ const SafeView: React.FC<Props> = ({ branchId, role, branches }) => {
             {isAdding && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div className="glass animate-scale-up" style={{ padding: '24px', borderRadius: '20px', width: '90%', maxWidth: '400px', background: 'var(--surface-color)' }}>
-                        <h3 style={{ margin: '0 0 16px', fontWeight: 800 }}>تسجيل حركة في الصندوق</h3>
-                        <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <h3 style={{ margin: '0 0 16px', fontWeight: 800 }}>{isEditing ? 'تعديل الحركة' : 'تسجيل حركة في الصندوق'}</h3>
+                        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {role === 'admin' && (
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>الفرع</label>
@@ -182,8 +204,10 @@ const SafeView: React.FC<Props> = ({ branchId, role, branches }) => {
                                 <input type="text" value={description} onChange={e => setDescription(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} placeholder="مثال: إيراد يوم الخميس / سداد ديون مناديب" />
                             </div>
                             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                                <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>تسجيل</button>
-                                <button type="button" onClick={() => setIsAdding(false)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
+                                <button type="submit" style={{ flex: 1, padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
+                                    {isEditing ? 'حفظ التعديلات' : 'تسجيل'}
+                                </button>
+                                <button type="button" onClick={() => { setIsAdding(false); setIsEditing(null); setAmount(''); setDescription(''); }} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>إلغاء</button>
                             </div>
                         </form>
                     </div>
@@ -223,10 +247,15 @@ const SafeView: React.FC<Props> = ({ branchId, role, branches }) => {
                                         {tx.type === 'income' ? '+' : '-'}{tx.amount}
                                     </td>
                                     <td style={{ padding: '12px' }}>
-                                        {(role === 'admin' || tx.addedBy === 'supervisor') && (
-                                            <button onClick={() => handleDelete(tx.id)} style={{ background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '6px' }}>
-                                                <Trash2 size={18} />
-                                            </button>
+                                        {(role === 'admin' || canEditSafe) && (
+                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                <button onClick={() => startEdit(tx)} style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', padding: '6px' }} title="تعديل">
+                                                    <Edit2 size={18} />
+                                                </button>
+                                                <button onClick={() => handleDelete(tx.id)} style={{ background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '6px' }} title="حذف">
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
                                         )}
                                     </td>
                                 </tr>
