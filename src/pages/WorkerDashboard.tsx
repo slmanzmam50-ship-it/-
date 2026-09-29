@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Plus, Wallet, CheckCircle, TrendingUp, TrendingDown, CreditCard, Coins, FileText, FileX, BookOpen, Activity } from 'lucide-react';
+import { LogOut, Plus, Wallet, Bus, CheckCircle, TrendingUp, TrendingDown, CreditCard, Coins, FileText, FileX, BookOpen, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Worker, WorkerOperation } from '../types';
 import { db } from '../services/firebase';
@@ -9,6 +9,7 @@ import { subscribeToWorkerOperationsByWorker, addWorkerOperation } from '../serv
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import SupervisorBranchView from '../components/SupervisorBranchView';
 import SafeView from '../components/SafeView';
+import BusSafeView from '../components/BusSafeView';
 
 const WorkerDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -27,7 +28,7 @@ const WorkerDashboard: React.FC = () => {
     const [expenseReason, setExpenseReason] = useState<string>('');
     
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [activeTab, setActiveTab] = useState<'register' | 'branch' | 'safe'>('register');
+    const [activeTab, setActiveTab] = useState<'register' | 'branch' | 'safe' | 'bus_safe'>('register');
     const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year'>('month');
 
     // PWA Install Banner
@@ -291,7 +292,7 @@ const WorkerDashboard: React.FC = () => {
                 </div>
             )}
 
-            {(worker?.role === 'supervisor' || worker?.canManageSafe) && (
+            {(worker?.role === 'supervisor' || worker?.canManageSafe || worker?.canManageBusSafe) && (
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--bg-color)', padding: '6px', borderRadius: '16px', flexWrap: 'wrap' }}>
                     <button onClick={() => setActiveTab('register')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'register' ? 'var(--primary-color)' : 'transparent', color: activeTab === 'register' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                         <FileText size={20} />
@@ -309,6 +310,12 @@ const WorkerDashboard: React.FC = () => {
                             الصندوق
                         </button>
                     )}
+                    {worker?.canManageBusSafe && (
+                        <button onClick={() => setActiveTab('bus_safe')} style={{ flex: 1, minWidth: '100px', padding: '12px', borderRadius: '12px', border: 'none', background: activeTab === 'bus_safe' ? 'var(--accent-orange)' : 'transparent', color: activeTab === 'bus_safe' ? 'white' : 'var(--text-secondary)', fontWeight: 700, cursor: 'pointer', transition: '0.2s', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                            <Bus size={20} />
+                            الباص
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -317,6 +324,10 @@ const WorkerDashboard: React.FC = () => {
             ) : activeTab === 'safe' && worker?.canManageSafe ? (
                 <div style={{ background: 'var(--surface-color)', borderRadius: '16px' }}>
                     <SafeView branchId={worker.branchId} role="supervisor" branches={[]} canEditSafe={worker.canEditSafe} />
+                </div>
+            ) : activeTab === 'bus_safe' && worker?.canManageBusSafe ? (
+                <div style={{ background: 'var(--surface-color)', borderRadius: '16px' }}>
+                    <BusSafeView branchId={worker.branchId} role="supervisor" branches={[]} canEditSafe={worker.canEditSafe} />
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>

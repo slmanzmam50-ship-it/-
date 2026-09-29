@@ -96,6 +96,7 @@ export interface Worker {
     role?: 'worker' | 'supervisor';
     canManageSafe?: boolean;
     canEditSafe?: boolean;
+    canManageBusSafe?: boolean;
     createdAt: number;
 }
 

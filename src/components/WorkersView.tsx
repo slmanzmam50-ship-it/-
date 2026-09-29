@@ -25,6 +25,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [branchId, setBranchId] = useState('');
     const [canManageSafe, setCanManageSafe] = useState(false);
     const [canEditSafe, setCanEditSafe] = useState(false);
+    const [canManageBusSafe, setCanManageBusSafe] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
 
     const [isWorkersOpen, setIsWorkersOpen] = useState(false);
@@ -102,10 +103,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         setIsAdding(true);
         try {
             await addWorker({
-                name, username, password, branchId, role, canManageSafe, canEditSafe, isActive: true
+                name, username, password, branchId, role, canManageSafe, canEditSafe, canManageBusSafe, isActive: true
             });
             toast.success('تمت إضافة العامل بنجاح');
-            setName(''); setUsername(''); setPassword(''); setBranchId(''); setRole('worker'); setCanManageSafe(false); setCanEditSafe(false);
+            setName(''); setUsername(''); setPassword(''); setBranchId(''); setRole('worker'); setCanManageSafe(false); setCanEditSafe(false); setCanManageBusSafe(false);
         } catch (error) {
             console.error(error);
             toast.error('فشل في إضافة العامل');
@@ -336,6 +337,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         <input type="checkbox" checked={canEditSafe} onChange={e => setCanEditSafe(e.target.checked)} style={{ width: '16px', height: '16px' }} />
                         تعديل وحذف من الصندوق
                     </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, padding: '10px', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={canManageBusSafe} onChange={e => setCanManageBusSafe(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                        صلاحية صندوق الباص
+                    </label>
                     <button type="submit" disabled={isAdding} style={{ padding: '10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: isAdding ? 'not-allowed' : 'pointer' }}>
                         إضافة عامل
                     </button>
@@ -389,6 +394,16 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                                 toast.success('تم تحديث صلاحية الحذف والتعديل');
                                             }} style={{ width: '16px', height: '16px' }} />
                                             <span style={{ fontSize: '12px', fontWeight: 700 }}>حذف / تعديل</span>
+                                        </label>
+                                    </td>
+                                    <td style={{ padding: '10px' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: w.canManageBusSafe ? 'rgba(249,115,22,0.1)' : 'var(--bg-color)', color: w.canManageBusSafe ? 'var(--accent-orange)' : 'var(--text-secondary)', padding: '6px 10px', borderRadius: '8px', width: 'fit-content', border: '1px solid', borderColor: w.canManageBusSafe ? 'rgba(249,115,22,0.3)' : 'var(--border-color)', transition: '0.2s' }}>
+                                            <input type="checkbox" checked={w.canManageBusSafe || false} onChange={async (e) => {
+                                                const checked = e.target.checked;
+                                                await updateWorker({ ...w, canManageBusSafe: checked });
+                                                toast.success('تم تحديث صلاحية الباص');
+                                            }} style={{ width: '16px', height: '16px' }} />
+                                            <span style={{ fontSize: '12px', fontWeight: 700 }}>الباص</span>
                                         </label>
                                     </td>
                                     <td style={{ padding: '10px' }}>

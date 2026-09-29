@@ -902,3 +902,31 @@ export const updateSafeTransaction = async (id: string, updates: any): Promise<v
     await setDoc(doc(db, 'safe_transactions', id), updates, { merge: true });
 };
 
+// --- Bus Safe Transactions ---
+export const subscribeToBusSafeTransactions = (branchId: string | undefined, callback: (transactions: any[]) => void) => {
+    const constraints: any[] = [];
+    if (branchId) constraints.push(where('branchId', '==', branchId));
+    
+    const q = query(collection(db, 'bus_safe_transactions'), ...constraints);
+    return onSnapshot(q, (snapshot) => {
+        let txs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        txs.sort((a: any, b: any) => b.createdAt - a.createdAt);
+        callback(txs);
+    });
+};
+
+export const addBusSafeTransaction = async (tx: any): Promise<any> => {
+    const newTx = { ...tx, createdAt: Date.now() };
+    const docRef = doc(collection(db, 'bus_safe_transactions'));
+    await setDoc(docRef, newTx);
+    return { id: docRef.id, ...newTx };
+};
+
+export const deleteBusSafeTransaction = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, 'bus_safe_transactions', id));
+};
+
+export const updateBusSafeTransaction = async (id: string, updates: any): Promise<void> => {
+    await setDoc(doc(db, 'bus_safe_transactions', id), updates, { merge: true });
+};
+

@@ -55,5 +55,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true; // Transactions can be added/edited by workers
     }
+    
+    // Bus Safe Transactions
+    match /bus_safe_transactions/{transactionId} {
+      allow read: if true;
+      allow write: if true; // Transactions can be added/edited by workers
+    }
   }
 }
