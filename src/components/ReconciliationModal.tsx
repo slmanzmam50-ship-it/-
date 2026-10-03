@@ -164,7 +164,7 @@ const ReconciliationModal: React.FC<Props> = ({ branchId, workerId, workerName, 
                 </div>
                 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', justifyContent: 'center' }}>
-                    <div ref={tableRef} style={{ background: 'white', padding: '30px', borderRadius: '16px', width: '100%', maxWidth: '400px', border: '1px solid #e2e8f0', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    <div ref={tableRef} style={{ background: 'white', padding: '30px', borderRadius: '16px', width: '100%', maxWidth: '450px', border: '1px solid #e2e8f0', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                             <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: 900, color: '#1e293b' }}>مطابقة الجرد</h2>
                             <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>التاريخ: {dateLabel}</div>
@@ -179,15 +179,15 @@ const ReconciliationModal: React.FC<Props> = ({ branchId, workerId, workerName, 
                             <tbody>
                                 <tr style={{ background: '#f8fafc' }}>
                                     <td style={{ padding: '8px 12px', fontWeight: 700, color: '#334155' }}>مبيعات (بفاتورة)</td>
-                                    <td style={{ padding: '8px 12px', fontWeight: 800, color: '#334155', textAlign: 'left' }}>{totalWithInvoice} ريال</td>
+                                    <td style={{ padding: '8px 12px', fontWeight: 800, color: '#334155', textAlign: 'left', whiteSpace: 'nowrap' }}>{totalWithInvoice} ريال</td>
                                 </tr>
                                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                     <td style={{ padding: '8px 12px', fontWeight: 700, color: '#334155' }}>خدمات (بدون فاتورة)</td>
-                                    <td style={{ padding: '8px 12px', fontWeight: 800, color: '#334155', textAlign: 'left' }}>{totalWithoutInvoice} ريال</td>
+                                    <td style={{ padding: '8px 12px', fontWeight: 800, color: '#334155', textAlign: 'left', whiteSpace: 'nowrap' }}>{totalWithoutInvoice} ريال</td>
                                 </tr>
                                 <tr>
                                     <td style={{ padding: '12px', fontWeight: 900, color: '#0f172a' }}>إجمالي الدخل</td>
-                                    <td style={{ padding: '12px', fontWeight: 900, color: '#2563eb', textAlign: 'left' }}>{totalIncome} ريال</td>
+                                    <td style={{ padding: '12px', fontWeight: 900, color: '#2563eb', textAlign: 'left', whiteSpace: 'nowrap' }}>{totalIncome} ريال</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -200,18 +200,18 @@ const ReconciliationModal: React.FC<Props> = ({ branchId, workerId, workerName, 
                             <tbody>
                                 <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                                     <td style={{ padding: '8px 12px', fontWeight: 700, color: '#0f172a' }}>الشبكة</td>
-                                    <td style={{ padding: '8px 12px', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>{totalNetwork} ريال</td>
+                                    <td style={{ padding: '8px 12px', fontWeight: 800, color: '#0f172a', textAlign: 'left', whiteSpace: 'nowrap' }}>{totalNetwork} ريال</td>
                                 </tr>
                                 {totalCredit > 0 && (
                                     <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                                         <td style={{ padding: '8px 12px', fontWeight: 700, color: '#0f172a' }}>الآجل والديون</td>
-                                        <td style={{ padding: '8px 12px', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>{totalCredit} ريال</td>
+                                        <td style={{ padding: '8px 12px', fontWeight: 800, color: '#0f172a', textAlign: 'left', whiteSpace: 'nowrap' }}>{totalCredit} ريال</td>
                                     </tr>
                                 )}
                                 {totalExpenses > 0 && (
                                     <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                                         <td style={{ padding: '8px 12px', fontWeight: 700, color: '#ef4444' }}>إجمالي الخرج</td>
-                                        <td style={{ padding: '8px 12px', fontWeight: 800, color: '#ef4444', textAlign: 'left' }}>{totalExpenses} ريال</td>
+                                        <td style={{ padding: '8px 12px', fontWeight: 800, color: '#ef4444', textAlign: 'left', whiteSpace: 'nowrap' }}>{totalExpenses} ريال</td>
                                     </tr>
                                 )}
                                 
@@ -219,19 +219,19 @@ const ReconciliationModal: React.FC<Props> = ({ branchId, workerId, workerName, 
                                     <>
                                         {expensesList.map((exp, i) => (
                                             <tr key={i} style={{ borderBottom: '1px dashed #e2e8f0', background: '#fef2f2' }}>
-                                                <td style={{ padding: '4px 24px 4px 12px', color: '#ef4444', fontSize: '12px' }}>- {exp.reason} {exp.hasInvoice ? '(فاتورة)' : ''}</td>
-                                                <td style={{ padding: '4px 12px', color: '#ef4444', textAlign: 'left', fontWeight: 700, fontSize: '12px' }}>{exp.amount} ريال</td>
+                                                <td style={{ padding: '8px 24px 8px 12px', color: '#ef4444', fontSize: '13px', lineHeight: '1.5', wordBreak: 'break-word', width: '65%' }}>- {exp.reason} {exp.hasInvoice ? '(فاتورة)' : ''}</td>
+                                                <td style={{ padding: '4px 12px', color: '#ef4444', textAlign: 'left', whiteSpace: 'nowrap', fontWeight: 700, fontSize: '12px' }}>{exp.amount} ريال</td>
                                             </tr>
                                         ))}
                                     </>
                                 )}
                                 <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
                                     <td style={{ padding: '12px', fontWeight: 900, color: '#10b981' }}>الكاش المفترض توفره</td>
-                                    <td style={{ padding: '12px', fontWeight: 900, color: '#10b981', textAlign: 'left' }}>{expectedCash} ريال</td>
+                                    <td style={{ padding: '12px', fontWeight: 900, color: '#10b981', textAlign: 'left', whiteSpace: 'nowrap' }}>{expectedCash} ريال</td>
                                 </tr>
                                 <tr style={{ background: '#f8fafc' }}>
                                     <td style={{ padding: '12px', fontWeight: 900, color: '#0f172a' }}>الإجمالي</td>
-                                    <td style={{ padding: '12px', fontWeight: 900, color: '#2563eb', textAlign: 'left' }}>{totalNetwork + totalCredit + totalExpenses + expectedCash} ريال</td>
+                                    <td style={{ padding: '12px', fontWeight: 900, color: '#2563eb', textAlign: 'left', whiteSpace: 'nowrap' }}>{totalNetwork + totalCredit + totalExpenses + expectedCash} ريال</td>
                                 </tr>
                             </tbody>
                         </table>
