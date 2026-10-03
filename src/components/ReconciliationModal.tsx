@@ -37,8 +37,8 @@ const ReconciliationModal: React.FC<Props> = ({ branchId, workerId, workerName, 
 
     const expensesList = operations.filter(op => (op.expenseAmount || 0) > 0 || (op.tipAmount || 0) > 0).map(op => {
         let lines = [];
-        if ((op.expenseAmount || 0) > 0) lines.push({ reason: op.expenseReason || 'بدون سبب', amount: op.expenseAmount || 0, hasInvoice: op.hasInvoice });
-        if ((op.tipAmount || 0) > 0) lines.push({ reason: 'خصم/بخشيش (' + op.serviceType + ')', amount: op.tipAmount || 0, hasInvoice: false });
+        if ((op.expenseAmount || 0) > 0) lines.push({ reason: op.expenseReason || 'بدون سبب', amount: op.expenseAmount || 0, hasInvoice: op.hasInvoice, workerName: op.workerName });
+        if ((op.tipAmount || 0) > 0) lines.push({ reason: 'خصم/بخشيش (' + op.serviceType + ')', amount: op.tipAmount || 0, hasInvoice: false, workerName: op.workerName });
         return lines;
     }).flat();
 
@@ -219,7 +219,7 @@ const ReconciliationModal: React.FC<Props> = ({ branchId, workerId, workerName, 
                                     <>
                                         {expensesList.map((exp, i) => (
                                             <tr key={i} style={{ borderBottom: '1px dashed #e2e8f0', background: '#fef2f2' }}>
-                                                <td style={{ padding: '8px 24px 8px 12px', color: '#ef4444', fontSize: '13px', lineHeight: '1.5', wordBreak: 'break-word', width: '65%' }}>- {exp.reason} {exp.hasInvoice ? '(فاتورة)' : ''}</td>
+                                                <td style={{ padding: '8px 24px 8px 12px', color: '#ef4444', fontSize: '13px', lineHeight: '1.5', wordBreak: 'break-word', width: '65%' }}>- {exp.reason} {exp.hasInvoice ? '(فاتورة)' : ''} <span style={{ fontSize: '11px', color: '#94a3b8', display: 'inline-block', marginRight: '4px' }}>[{exp.workerName}]</span></td>
                                                 <td style={{ padding: '4px 12px', color: '#ef4444', textAlign: 'left', whiteSpace: 'nowrap', fontWeight: 700, fontSize: '12px' }}>{exp.amount} ريال</td>
                                             </tr>
                                         ))}
