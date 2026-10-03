@@ -24,13 +24,17 @@ const ReconciliationModal: React.FC<Props> = ({ branchId, workerId, workerName, 
 
     // Calculations
     const totalIncome = operations.reduce((sum, op) => sum + (op.isCashLoan ? 0 : (op.price || 0)), 0);
-    const networkWithInvoice = operations.reduce((sum, op) => sum + (op.paymentMethod === 'network' && op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
-    const networkWithoutInvoice = operations.reduce((sum, op) => sum + (op.paymentMethod === 'network' && !op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
     
+    // Split total income into invoice vs no invoice
+    const totalWithInvoice = operations.reduce((sum, op) => sum + (op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
+    const totalWithoutInvoice = operations.reduce((sum, op) => sum + (!op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
+    
+
     const cashSales = operations.reduce((sum, op) => sum + (op.paymentMethod === 'cash' && !op.isCashLoan ? (op.price || 0) : 0), 0);
     const creditSales = operations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
+    const workerDebt = operations.reduce((sum, op) => sum + (op.paymentMethod === 'credit' && !op.hasInvoice && !op.isCashLoan ? (op.price || 0) : 0), 0);
+    const totalCredit = creditSales + workerDebt;
 
-    
     const expensesList = operations.filter(op => (op.expenseAmount || 0) > 0 || (op.tipAmount || 0) > 0).map(op => {
         let lines = [];
         if ((op.expenseAmount || 0) > 0) lines.push({ reason: op.expenseReason || 'بدون سبب', amount: op.expenseAmount || 0, hasInvoice: op.hasInvoice });
@@ -59,12 +63,12 @@ const ReconciliationModal: React.FC<Props> = ({ branchId, workerId, workerName, 
                 branchId,
                 workerId,
                 date: dateLabel,
-                salesWithInvoice: networkWithInvoice,
-                salesWithoutInvoice: networkWithoutInvoice,
+                salesWithInvoice: totalWithInvoice,
+                salesWithoutInvoice: totalWithoutInvoice,
                 totalSales: totalIncome,
                 totalNetwork: totalNetwork,
                 totalCashSales: cashSales,
-                totalCredit: creditSales,
+                totalCredit: totalCredit,
                 expensesList,
                 totalExpenses,
                 expectedCash,
@@ -135,41 +139,72 @@ const ReconciliationModal: React.FC<Props> = ({ branchId, workerId, workerName, 
                             <div style={{ fontSize: '14px', color: '#64748b', fontWeight: 600 }}>العامل: {workerName}</div>
                         </div>
 
+                        {/* إجمالي المبيعات (الدخل) */}
+                        <div style={{ marginBottom: '8px', fontWeight: 900, color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '4px' }}>
+                            إجمالي الإيرادات (المبيعات)
+                        </div>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', marginBottom: '24px' }}>
                             <tbody>
-                                <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
-                                    <td style={{ padding: '12px', fontWeight: 800, color: '#334155' }}>خدمة (بدون فاتورة)</td>
-                                    <td style={{ padding: '12px', fontWeight: 800, color: '#334155', textAlign: 'left' }}>{networkWithoutInvoice} ريال</td>
+                                <tr style={{ background: '#f8fafc' }}>
+                                    <td style={{ padding: '8px 12px', fontWeight: 700, color: '#334155' }}>مبيعات (بفاتورة)</td>
+                                    <td style={{ padding: '8px 12px', fontWeight: 800, color: '#334155', textAlign: 'left' }}>{totalWithInvoice} ريال</td>
                                 </tr>
-                                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                                    <td style={{ padding: '12px', fontWeight: 800, color: '#334155' }}>مبيعات الجهاز (بفاتورة)</td>
-                                    <td style={{ padding: '12px', fontWeight: 800, color: '#334155', textAlign: 'left' }}>{networkWithInvoice} ريال</td>
+                                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                    <td style={{ padding: '8px 12px', fontWeight: 700, color: '#334155' }}>خدمات (بدون فاتورة)</td>
+                                    <td style={{ padding: '8px 12px', fontWeight: 800, color: '#334155', textAlign: 'left' }}>{totalWithoutInvoice} ريال</td>
                                 </tr>
+                                <tr>
+                                    <td style={{ padding: '12px', fontWeight: 900, color: '#0f172a' }}>إجمالي الدخل</td>
+                                    <td style={{ padding: '12px', fontWeight: 900, color: '#2563eb', textAlign: 'left' }}>{totalIncome} ريال</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        {/* تفصيل أين ذهبت المبالغ */}
+                        <div style={{ marginBottom: '8px', fontWeight: 900, color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '4px' }}>
+                            تفصيل المبالغ (طرق الدفع والخرج)
+                        </div>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', marginBottom: '24px' }}>
+                            <tbody>
                                 <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                    <td style={{ padding: '12px', fontWeight: 800, color: '#0f172a' }}>إجمالي الشبكة (الجهاز)</td>
-                                    <td style={{ padding: '12px', fontWeight: 900, color: '#2563eb', textAlign: 'left' }}>{totalNetwork} ريال</td>
+                                    <td style={{ padding: '8px 12px', fontWeight: 700, color: '#0f172a' }}>الشبكة</td>
+                                    <td style={{ padding: '8px 12px', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>{totalNetwork} ريال</td>
                                 </tr>
-                                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                    <td style={{ padding: '12px', fontWeight: 800, color: '#0f172a' }}>الكاش الإجمالي</td>
-                                    <td style={{ padding: '12px', fontWeight: 900, color: '#10b981', textAlign: 'left' }}>{cashSales} ريال</td>
-                                </tr>
+                                {totalCredit > 0 && (
+                                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                        <td style={{ padding: '8px 12px', fontWeight: 700, color: '#0f172a' }}>الآجل والديون</td>
+                                        <td style={{ padding: '8px 12px', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>{totalCredit} ريال</td>
+                                    </tr>
+                                )}
+                                {totalExpenses > 0 && (
+                                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                        <td style={{ padding: '8px 12px', fontWeight: 700, color: '#ef4444' }}>إجمالي الخرج</td>
+                                        <td style={{ padding: '8px 12px', fontWeight: 800, color: '#ef4444', textAlign: 'left' }}>{totalExpenses} ريال</td>
+                                    </tr>
+                                )}
                                 
                                 {expensesList.length > 0 && (
                                     <>
-                                        <tr>
-                                            <td colSpan={2} style={{ padding: '16px 12px 8px', fontWeight: 900, color: '#ef4444' }}>تفاصيل الخرج:</td>
-                                        </tr>
                                         {expensesList.map((exp, i) => (
-                                            <tr key={i} style={{ borderBottom: '1px dashed #e2e8f0' }}>
-                                                <td style={{ padding: '8px 12px', color: '#64748b' }}>- {exp.reason} {exp.hasInvoice ? '(فاتورة)' : ''}</td>
-                                                <td style={{ padding: '8px 12px', color: '#ef4444', textAlign: 'left', fontWeight: 700 }}>{exp.amount} ريال</td>
+                                            <tr key={i} style={{ borderBottom: '1px dashed #e2e8f0', background: '#fef2f2' }}>
+                                                <td style={{ padding: '4px 24px 4px 12px', color: '#ef4444', fontSize: '12px' }}>- {exp.reason} {exp.hasInvoice ? '(فاتورة)' : ''}</td>
+                                                <td style={{ padding: '4px 12px', color: '#ef4444', textAlign: 'left', fontWeight: 700, fontSize: '12px' }}>{exp.amount} ريال</td>
                                             </tr>
                                         ))}
                                     </>
                                 )}
+                                <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                                    <td style={{ padding: '12px', fontWeight: 900, color: '#10b981' }}>الكاش المفترض توفره</td>
+                                    <td style={{ padding: '12px', fontWeight: 900, color: '#10b981', textAlign: 'left' }}>{expectedCash} ريال</td>
+                                </tr>
+                                <tr style={{ background: '#f8fafc' }}>
+                                    <td style={{ padding: '12px', fontWeight: 900, color: '#0f172a' }}>الإجمالي</td>
+                                    <td style={{ padding: '12px', fontWeight: 900, color: '#2563eb', textAlign: 'left' }}>{totalNetwork + totalCredit + totalExpenses + expectedCash} ريال</td>
+                                </tr>
                             </tbody>
                         </table>
 
+                        {/* المطابقة الفعلية */}
                         <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '15px' }}>
                                 <span style={{ fontWeight: 800, color: '#334155' }}>الشبكة (مطابقة):</span>

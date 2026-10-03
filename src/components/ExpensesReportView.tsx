@@ -9,7 +9,8 @@ const ExpensesReportView: React.FC = () => {
     const [branches, setBranches] = useState<Branch[]>([]);
     
     // Filters
-    const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('today');
+    const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'week' | 'month' | 'year' | 'custom'>('today');
+    const [searchTerm, setSearchTerm] = useState('');
     const [customStartDate, setCustomStartDate] = useState('');
     const [customEndDate, setCustomEndDate] = useState('');
     const [branchFilter, setBranchFilter] = useState('all');
@@ -28,6 +29,9 @@ const ExpensesReportView: React.FC = () => {
         
         if (dateFilter === 'today') {
             startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            endTime = startTime + 86400000 - 1;
+        } else if (dateFilter === 'yesterday') {
+            startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).getTime();
             endTime = startTime + 86400000 - 1;
         } else if (dateFilter === 'week') {
             const day = now.getDay();
@@ -55,7 +59,7 @@ const ExpensesReportView: React.FC = () => {
     }, [dateFilter, customStartDate, customEndDate]);
 
     // Filter only expenses and tips
-    const expenses = operations.filter(op => ((op.expenseAmount || 0) > 0 || (op.tipAmount || 0) > 0) && (branchFilter === 'all' || op.branchId === branchFilter));
+    const expenses = operations.filter(op => ((op.expenseAmount || 0) > 0 || (op.tipAmount || 0) > 0) && (branchFilter === 'all' || op.branchId === branchFilter) && (searchTerm === '' || (op.expenseReason || '').toLowerCase().includes(searchTerm.toLowerCase()) || (op.serviceType || '').toLowerCase().includes(searchTerm.toLowerCase())));
     const totalExpenses = expenses.reduce((sum, op) => sum + (op.expenseAmount || 0) + (op.tipAmount || 0), 0);
 
     const handleExportExcel = () => {
@@ -92,9 +96,15 @@ const ExpensesReportView: React.FC = () => {
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
                     <div style={{ flex: '1 1 200px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 700, color: 'var(--text-secondary)' }}>بحث عن مصروف (كلمة مفتاحية)</label>
+                        <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="مثال: بنزين، فطور..." style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'white', outline: 'none' }} />
+                    </div>
+                    
+                    <div style={{ flex: '1 1 200px' }}>
                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 700, color: 'var(--text-secondary)' }}>الفترة الزمنية</label>
                         <select value={dateFilter} onChange={e => setDateFilter(e.target.value as any)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'white', outline: 'none' }}>
                             <option value="today">اليوم</option>
+                            <option value="yesterday">الأمس</option>
                             <option value="week">هذا الأسبوع</option>
                             <option value="month">هذا الشهر</option>
                             <option value="year">هذه السنة</option>
