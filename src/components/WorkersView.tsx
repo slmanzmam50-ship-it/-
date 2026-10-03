@@ -49,7 +49,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
 
     const [isAddingOp, setIsAddingOp] = useState(false);
     const [isSubmittingOp, setIsSubmittingOp] = useState(false);
-    const [newOpData, setNewOpData] = useState({ workerId: '', opType: 'sale' as 'sale'|'return'|'expense', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: true, expenseAmount: '', expenseReason: '' });
+    const [newOpData, setNewOpData] = useState({ workerId: '', opType: 'sale' as 'sale'|'return'|'expense', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: true, expenseAmount: '', expenseReason: '', tipAmount: '' });
 
     const [actualCash, setActualCash] = useState<string>('');
     const [actualNetwork, setActualNetwork] = useState<string>('');
@@ -271,12 +271,12 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                 hasInvoice: newOpData.hasInvoice,
                 expenseAmount: isExpense ? Number(newOpData.expenseAmount) : (Number(newOpData.expenseAmount) || 0),
                 expenseReason: isExpense ? newOpData.expenseReason : newOpData.expenseReason,
-                tipAmount: 0,
+                tipAmount: Number(newOpData.tipAmount) || 0,
                 addedByAdmin: true
             });
             toast.success('تم إضافة العملية بنجاح');
             setIsAddingOp(false);
-            setNewOpData({ workerId: '', opType: 'sale', price: '', serviceType: '', paymentMethod: 'cash', hasInvoice: true, expenseAmount: '', expenseReason: '' });
+            setNewOpData({ workerId: '', opType: 'sale', price: '', serviceType: '', paymentMethod: 'cash', hasInvoice: true, expenseAmount: '', expenseReason: '', tipAmount: '' });
         } catch (err) {
             console.error(err);
             toast.error('حدث خطأ أثناء الإضافة');
@@ -724,13 +724,19 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     </div>
                                     <div style={{ display: 'flex', gap: '16px' }}>
                                         <div style={{ flex: 1 }}>
-                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>مصروف مع العملية (اختياري)</label>
-                                            <input type="number" value={newOpData.expenseAmount} onChange={e => setNewOpData({...newOpData, expenseAmount: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px', color: '#f59e0b' }}>خصم / بخشيش (يتحمله العامل)</label>
+                                            <input type="number" value={newOpData.tipAmount} onChange={e => setNewOpData({...newOpData, tipAmount: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #fcd34d', outline: 'none' }} placeholder="اختياري" />
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '16px' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px', color: '#ef4444' }}>مصروف تم سحبه من هذه العملية (اختياري)</label>
+                                            <input type="number" value={newOpData.expenseAmount} onChange={e => setNewOpData({...newOpData, expenseAmount: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #fca5a5', outline: 'none' }} placeholder="مثال: قيمة فلتر" />
                                         </div>
                                         {Number(newOpData.expenseAmount) > 0 && (
                                             <div style={{ flex: 1 }}>
-                                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>السبب</label>
-                                                <input type="text" value={newOpData.expenseReason} onChange={e => setNewOpData({...newOpData, expenseReason: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px', color: '#ef4444' }}>سبب المصروف</label>
+                                                <input type="text" value={newOpData.expenseReason} onChange={e => setNewOpData({...newOpData, expenseReason: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #fca5a5', outline: 'none' }} placeholder="مثال: شراء فلتر زيت" />
                                             </div>
                                         )}
                                     </div>
