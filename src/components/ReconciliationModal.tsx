@@ -83,7 +83,39 @@ const ReconciliationModal: React.FC<Props> = ({ branchId, workerId, workerName, 
             });
             toast.success('تم الحفظ في النظام بنجاح');
 
-            const canvas = await html2canvas(tableRef.current, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+            // --- Fix for image cropping in html2canvas ---
+            const scrollParent = tableRef.current.parentElement;
+            const modalParent = scrollParent?.parentElement;
+            
+            let oldScrollY = 0;
+            let oldOverflow = '';
+            let oldMaxHeight = '';
+            
+            if (scrollParent && modalParent) {
+                oldScrollY = scrollParent.scrollTop;
+                
+                oldOverflow = scrollParent.style.overflowY;
+                oldMaxHeight = modalParent.style.maxHeight;
+                
+                scrollParent.style.overflowY = 'visible';
+                modalParent.style.maxHeight = 'none';
+            }
+
+            const canvas = await html2canvas(tableRef.current, { 
+                scale: 2, 
+                backgroundColor: '#ffffff', 
+                useCORS: true,
+                windowWidth: tableRef.current.scrollWidth,
+                windowHeight: tableRef.current.scrollHeight
+            });
+
+            if (scrollParent && modalParent) {
+                scrollParent.style.overflowY = oldOverflow;
+                modalParent.style.maxHeight = oldMaxHeight;
+                scrollParent.scrollTop = oldScrollY;
+            }
+            // ---------------------------------------------
+
             const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
             
             if (blob) {
