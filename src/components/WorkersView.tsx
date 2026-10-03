@@ -49,7 +49,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
 
     const [isAddingOp, setIsAddingOp] = useState(false);
     const [isSubmittingOp, setIsSubmittingOp] = useState(false);
-    const [newOpData, setNewOpData] = useState({ workerId: '', opType: 'sale' as 'sale'|'return', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: true, expenseAmount: '', expenseReason: '' });
+    const [newOpData, setNewOpData] = useState({ workerId: '', opType: 'sale' as 'sale'|'return'|'expense', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: true, expenseAmount: '', expenseReason: '' });
 
     const [actualCash, setActualCash] = useState<string>('');
     const [actualNetwork, setActualNetwork] = useState<string>('');
@@ -240,18 +240,26 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const handleAddOpSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isSubmittingOp) return;
-        if (!newOpData.workerId || !newOpData.serviceType) {
+        
+        const isExpense = newOpData.opType === 'expense';
+        
+        if (!newOpData.workerId || (!isExpense && !newOpData.serviceType)) {
             toast.error('يرجى تعبئة الحقول المطلوبة');
             return;
         }
+        if (isExpense && (!newOpData.expenseAmount || !newOpData.expenseReason)) {
+            toast.error('يرجى تحديد مبلغ وسبب الخرج');
+            return;
+        }
+
         const worker = workers.find(w => w.id === newOpData.workerId);
         if (!worker) return;
 
         setIsSubmittingOp(true);
         try {
             const isReturn = newOpData.opType === 'return';
-            const finalPrice = Number(newOpData.price) || 0;
-            const finalServiceType = isReturn ? `(مرتجع) ${newOpData.serviceType}` : newOpData.serviceType;
+            const finalPrice = isExpense ? 0 : (Number(newOpData.price) || 0);
+            const finalServiceType = isExpense ? 'خرج من الإدارة' : (isReturn ? `(مرتجع) ${newOpData.serviceType}` : newOpData.serviceType);
             
             await addWorkerOperation({
                 workerId: worker.id,
@@ -259,10 +267,10 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                 branchId: worker.branchId,
                 serviceType: finalServiceType,
                 price: isReturn ? -finalPrice : finalPrice,
-                paymentMethod: newOpData.paymentMethod,
+                paymentMethod: isExpense ? 'cash' : newOpData.paymentMethod,
                 hasInvoice: newOpData.hasInvoice,
-                expenseAmount: Number(newOpData.expenseAmount) || 0,
-                expenseReason: newOpData.expenseReason,
+                expenseAmount: isExpense ? Number(newOpData.expenseAmount) : (Number(newOpData.expenseAmount) || 0),
+                expenseReason: isExpense ? newOpData.expenseReason : newOpData.expenseReason,
                 tipAmount: 0,
                 addedByAdmin: true
             });
@@ -685,39 +693,69 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                 </select>
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>الخدمة (البيان)</label>
-                                <input type="text" value={newOpData.serviceType} onChange={e => setNewOpData({...newOpData, serviceType: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} placeholder={newOpData.opType === 'return' ? "مثال: استرجاع مبلغ غسيل" : ""} />
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>نوع العملية</label>
+                                <select value={newOpData.opType} onChange={e => setNewOpData({...newOpData, opType: e.target.value as any})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', background: newOpData.opType === 'expense' ? 'rgba(239,68,68,0.1)' : 'white', color: newOpData.opType === 'expense' ? 'var(--error)' : 'inherit', fontWeight: 700 }}>
+                                    <option value="sale">بيع وإيراد</option>
+                                    <option value="return">مرتجع مبيعات (سحب مبلغ للعميل)</option>
+                                    <option value="expense">مصروف (خرج)</option>
+                                </select>
                             </div>
-                            <div style={{ display: 'flex', gap: '16px' }}>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>طريقة الدفع</label>
-                                    <select value={newOpData.paymentMethod} onChange={e => setNewOpData({...newOpData, paymentMethod: e.target.value as any})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
-                                        <option value="cash">كاش</option>
-                                        <option value="network">شبكة</option>
-                                        <option value="credit">آجل</option>
-                                    </select>
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>{newOpData.opType === 'return' ? 'قيمة المرتجع' : 'المبلغ (الإيراد)'}</label>
-                                    <input type="number" value={newOpData.price} onChange={e => setNewOpData({...newOpData, price: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} placeholder="أدخل القيمة كموجب" />
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input type="checkbox" checked={newOpData.hasInvoice} onChange={e => setNewOpData({...newOpData, hasInvoice: e.target.checked})} id="hasInvoiceAdd" style={{ width: '18px', height: '18px' }} />
-                                <label htmlFor="hasInvoiceAdd" style={{ fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>يوجد فاتورة</label>
-                            </div>
-                            <div style={{ display: 'flex', gap: '16px' }}>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>مصروف / خرج</label>
-                                    <input type="number" value={newOpData.expenseAmount} onChange={e => setNewOpData({...newOpData, expenseAmount: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
-                                </div>
-                                {Number(newOpData.expenseAmount) > 0 && (
-                                    <div style={{ flex: 1 }}>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>سبب الخرج</label>
-                                        <input type="text" value={newOpData.expenseReason} onChange={e => setNewOpData({...newOpData, expenseReason: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                            
+                            {newOpData.opType !== 'expense' ? (
+                                <>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>الخدمة (البيان)</label>
+                                        <input type="text" value={newOpData.serviceType} onChange={e => setNewOpData({...newOpData, serviceType: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} placeholder={newOpData.opType === 'return' ? "مثال: استرجاع مبلغ غسيل" : ""} />
                                     </div>
-                                )}
-                            </div>
+                                    <div style={{ display: 'flex', gap: '16px' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>طريقة الدفع</label>
+                                            <select value={newOpData.paymentMethod} onChange={e => setNewOpData({...newOpData, paymentMethod: e.target.value as any})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }}>
+                                                <option value="cash">كاش</option>
+                                                <option value="network">شبكة</option>
+                                                <option value="credit">آجل</option>
+                                            </select>
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>{newOpData.opType === 'return' ? 'قيمة المرتجع' : 'المبلغ (الإيراد)'}</label>
+                                            <input type="number" value={newOpData.price} onChange={e => setNewOpData({...newOpData, price: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} placeholder="أدخل القيمة كموجب" />
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <input type="checkbox" checked={newOpData.hasInvoice} onChange={e => setNewOpData({...newOpData, hasInvoice: e.target.checked})} id="hasInvoiceAdd" style={{ width: '18px', height: '18px' }} />
+                                        <label htmlFor="hasInvoiceAdd" style={{ fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>يوجد فاتورة</label>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '16px' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>مصروف مع العملية (اختياري)</label>
+                                            <input type="number" value={newOpData.expenseAmount} onChange={e => setNewOpData({...newOpData, expenseAmount: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                        </div>
+                                        {Number(newOpData.expenseAmount) > 0 && (
+                                            <div style={{ flex: 1 }}>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>السبب</label>
+                                                <input type="text" value={newOpData.expenseReason} onChange={e => setNewOpData({...newOpData, expenseReason: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none' }} />
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div style={{ background: 'rgba(239,68,68,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
+                                        <div style={{ marginBottom: '16px' }}>
+                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px', color: 'var(--error)' }}>مبلغ الخرج</label>
+                                            <input type="number" value={newOpData.expenseAmount} onChange={e => setNewOpData({...newOpData, expenseAmount: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', outline: 'none' }} placeholder="أدخل مبلغ الخرج" />
+                                        </div>
+                                        <div style={{ marginBottom: '16px' }}>
+                                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px', color: 'var(--error)' }}>سبب الخرج</label>
+                                            <input type="text" value={newOpData.expenseReason} onChange={e => setNewOpData({...newOpData, expenseReason: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', outline: 'none' }} placeholder="مثال: شراء أدوات، سلفة..." />
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <input type="checkbox" checked={newOpData.hasInvoice} onChange={e => setNewOpData({...newOpData, hasInvoice: e.target.checked})} id="hasInvoiceAddExp" style={{ width: '18px', height: '18px' }} />
+                                            <label htmlFor="hasInvoiceAddExp" style={{ fontWeight: 700, fontSize: '14px', cursor: 'pointer', color: 'var(--error)' }}>يوجد فاتورة للخرج</label>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                                 <button type="submit" disabled={isSubmittingOp} style={{ flex: 1, padding: '10px', background: isSubmittingOp ? 'var(--text-secondary)' : 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: isSubmittingOp ? 'not-allowed' : 'pointer' }}>{isSubmittingOp ? 'جاري التسجيل...' : 'تسجيل العملية'}</button>
                                 <button type="button" disabled={isSubmittingOp} onClick={() => setIsAddingOp(false)} style={{ flex: 1, padding: '10px', background: 'var(--bg-color)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: isSubmittingOp ? 'not-allowed' : 'pointer' }}>إلغاء</button>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Download, Share2 } from 'lucide-react';
+import { Activity, Download } from 'lucide-react';
 import type { WorkerOperation, Worker } from '../types';
 import { subscribeToWorkerOperations, subscribeToWorkers } from '../services/storage';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import SafeView from './SafeView';
+import ReconciliationModal from './ReconciliationModal';
 
 interface Props {
     branchId: string;
@@ -13,6 +14,7 @@ interface Props {
 const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
     const [operations, setOperations] = useState<WorkerOperation[]>([]);
     const [workers, setWorkers] = useState<Worker[]>([]);
+    const [showReconModal, setShowReconModal] = useState(false);
     
     const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'week' | 'month' | 'all' | 'custom'>('today');
     const [customDate, setCustomDate] = useState(new Date().toLocaleDateString('en-CA'));
@@ -92,49 +94,7 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
     const totalCashSales = filteredOperations.reduce((sum, op) => sum + (op.paymentMethod === 'cash' && !op.isCashLoan ? (op.price || 0) : 0), 0);
     const expectedCash = totalIncome - totalNetwork - totalCredit - totalWorkerDebt - totalExpenses;
 
-    const handleShareBalance = () => {
-        let dateStr = '';
-        if (dateFilter === 'today') {
-            dateStr = new Date().toLocaleDateString('en-GB');
-        } else if (dateFilter === 'yesterday') {
-            const y = new Date();
-            y.setDate(y.getDate() - 1);
-            dateStr = y.toLocaleDateString('en-GB');
-        } else if (dateFilter === 'custom') {
-            dateStr = customDate;
-        }
 
-        let dateLabel = dateStr || 'الفترة المحددة';
-        let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
-        
-        let expensesDetails = '';
-        const expensesList = filteredOperations.filter(op => (op.expenseAmount || 0) > 0 || (op.tipAmount || 0) > 0);
-        if (expensesList.length > 0) {
-            expensesDetails = '\n\n📋 تفاصيل الخرج والخصومات:\n' + expensesList.map(op => {
-                let lines = [];
-                if ((op.expenseAmount || 0) > 0) lines.push(`- ${op.expenseAmount} ريال (${op.expenseReason || 'بدون سبب'})`);
-                if ((op.tipAmount || 0) > 0) lines.push(`- ${op.tipAmount} ريال (خصم/بخشيش - ${op.serviceType})`);
-                return lines.join('\n');
-            }).join('\n');
-        }
-
-        const actual = Number(actualCash) || 0;
-        const diff = actual - expectedCash;
-        const diffText = actualCash === '' ? 'لم يتم إدخاله' : (diff === 0 ? 'مطابق ✅' : (diff < 0 ? `عجز (${Math.abs(diff)} ريال) ❌` : `زيادة (${diff} ريال) ⚠️`));
-
-        const actualNet = Number(actualNetwork) || 0;
-        const netDiff = actualNet - totalNetwork;
-        const netDiffText = actualNetwork === '' ? 'لم يتم إدخاله' : (netDiff === 0 ? 'مطابق ✅' : (netDiff < 0 ? `عجز (${Math.abs(netDiff)} ريال) ❌` : `زيادة (${netDiff} ريال) ⚠️`));
-
-        const totalDiff = diff + netDiff;
-        const totalDiffText = (actualCash === '' || actualNetwork === '') ? 'يرجى إدخال الجرد الفعلي' : 
-            (totalDiff === 0 ? 'مطابقة في اليوم كامل ✅' : 
-            (totalDiff < 0 ? `عجز في اليوم كامل (${Math.abs(totalDiff)} ريال) ❌` : `زيادة في اليوم كامل (${totalDiff} ريال) ⚠️`));
-
-        const shareText = `📊 جرد الفرع (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💵 مبيعات الكاش (قبل الخصم): ${totalCashSales} ريال\n💳 مبيعات الشبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخصم/الخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n💳 مبيعات الشبكة المسجلة: *${totalNetwork} ريال*\n💳 الشبكة الفعلية: *${actualNetwork === '' ? '؟' : actualNet} ريال*\n⚖️ فارق الشبكة: *${netDiffText}*\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*\n💵 الكاش الفعلي المتوفر: *${actualCash === '' ? '؟' : actual} ريال*\n⚖️ فارق الكاش: *${diffText}*\n-----------------------\n🎯 نتيجة المطابقة الذكية:\n*${totalDiffText}*`;
-        const encodedText = encodeURIComponent(shareText);
-        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-    };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '24px' }}>
@@ -181,8 +141,8 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
                 <div style={{ background: 'rgba(59,130,246,0.05)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(59,130,246,0.1)', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-color)' }}>الموازنة اليومية للفرع</h4>
-                        <button onClick={handleShareBalance} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
-                            <Share2 size={16} /> مشاركة الجرد
+                        <button onClick={() => setShowReconModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
+                            <Activity size={16} /> مطابقة الجرد (صورة)
                         </button>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
@@ -324,6 +284,21 @@ const SupervisorBranchView: React.FC<Props> = ({ branchId }) => {
             <div style={{ marginTop: '24px' }}>
                 <SafeView branchId={branchId} role="supervisor" branches={[]} />
             </div>
+
+            {showReconModal && (
+                <ReconciliationModal
+                    branchId={branchId}
+                    workerId={workerFilter}
+                    workerName={workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || ''}
+                    dateLabel={dateFilter === 'custom' ? customDate : (dateFilter === 'today' ? new Date().toLocaleDateString('en-GB') : (dateFilter === 'yesterday' ? new Date(Date.now() - 86400000).toLocaleDateString('en-GB') : 'الفترة المحددة'))}
+                    operations={filteredOperations}
+                    actualCash={actualCash}
+                    actualNetwork={actualNetwork}
+                    expectedCash={expectedCash}
+                    totalNetwork={totalNetwork}
+                    onClose={() => setShowReconModal(false)}
+                />
+            )}
         </div>
     );
 };

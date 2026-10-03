@@ -1,7 +1,7 @@
 import type { Branch, NavigationIntent, Category, ServiceRequest, CompanyAccount, OperatingCompany, Worker, WorkerOperation } from '../types';
 import { db, storage, auth, secondaryAuth } from './firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { collection, onSnapshot, query, where, orderBy, limit, getDocs, updateDoc, deleteDoc, doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, limit, getDocs, updateDoc, deleteDoc, doc, setDoc, getDoc, writeBatch, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const COLLECTION_NAME = 'branches';
@@ -900,6 +900,56 @@ export const deleteSafeTransaction = async (id: string): Promise<void> => {
 
 export const updateSafeTransaction = async (id: string, updates: any): Promise<void> => {
     await setDoc(doc(db, 'safe_transactions', id), updates, { merge: true });
+};
+
+export interface Reconciliation {
+    id?: string;
+    branchId: string;
+    workerId: string;
+    date: string;
+    createdAt: number;
+    salesWithInvoice: number;
+    salesWithoutInvoice: number;
+    totalSales: number;
+    totalNetwork: number;
+    totalCashSales: number;
+    totalCredit: number;
+    expensesList: { reason: string, amount: number, hasInvoice?: boolean }[];
+    totalExpenses: number;
+    expectedCash: number;
+    actualCash: number;
+    cashDiff: number;
+    cashStatus: 'matched' | 'shortage' | 'excess';
+    actualNetwork: number;
+    networkDiff: number;
+    networkStatus: 'matched' | 'shortage' | 'excess';
+    totalDiff: number;
+    status: 'matched' | 'shortage' | 'excess';
+    note?: string;
+}
+
+export const saveReconciliation = async (rec: Omit<Reconciliation, 'id' | 'createdAt'>): Promise<string> => {
+    const docRef = await addDoc(collection(db, 'reconciliations'), {
+        ...rec,
+        createdAt: Date.now()
+    });
+    return docRef.id;
+};
+
+export const updateReconciliation = async (id: string, updates: Partial<Reconciliation>): Promise<void> => {
+    await setDoc(doc(db, 'reconciliations', id), updates, { merge: true });
+};
+
+export const subscribeToReconciliations = (branchId: string, callback: (recs: Reconciliation[]) => void) => {
+    const q = query(
+        collection(db, 'reconciliations'),
+        where('branchId', '==', branchId)
+    );
+    return onSnapshot(q, (snapshot) => {
+        const recs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Reconciliation));
+        recs.sort((a, b) => b.createdAt - a.createdAt);
+        callback(recs);
+    });
 };
 
 // --- Bus Safe Transactions ---
