@@ -685,13 +685,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                     {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                 </select>
                             </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>نوع العملية</label>
-                                <select value={newOpData.opType} onChange={e => setNewOpData({...newOpData, opType: e.target.value as any})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', background: newOpData.opType === 'return' ? 'rgba(239,68,68,0.1)' : 'white', color: newOpData.opType === 'return' ? 'var(--error)' : 'inherit', fontWeight: 700 }}>
-                                    <option value="sale">بيع وإيراد</option>
-                                    <option value="return">مرتجع مبيعات (سحب مبلغ للعميل)</option>
-                                </select>
-                            </div>
+
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>نوع العملية</label>
                                 <select value={newOpData.opType} onChange={e => setNewOpData({...newOpData, opType: e.target.value as any})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', background: newOpData.opType === 'expense' ? 'rgba(239,68,68,0.1)' : 'white', color: newOpData.opType === 'expense' ? 'var(--error)' : 'inherit', fontWeight: 700 }}>
