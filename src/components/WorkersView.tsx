@@ -686,13 +686,16 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                                 </select>
                             </div>
 
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 700, fontSize: '14px' }}>نوع العملية</label>
-                                <select value={newOpData.opType} onChange={e => setNewOpData({...newOpData, opType: e.target.value as any})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', background: newOpData.opType === 'expense' ? 'rgba(239,68,68,0.1)' : 'white', color: newOpData.opType === 'expense' ? 'var(--error)' : 'inherit', fontWeight: 700 }}>
-                                    <option value="sale">بيع وإيراد</option>
-                                    <option value="return">مرتجع مبيعات (سحب مبلغ للعميل)</option>
-                                    <option value="expense">مصروف (خرج)</option>
-                                </select>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                                <button type="button" onClick={() => setNewOpData({...newOpData, opType: 'sale'})} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: newOpData.opType === 'sale' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', background: newOpData.opType === 'sale' ? 'rgba(59,130,246,0.1)' : 'white', color: newOpData.opType === 'sale' ? 'var(--primary-color)' : 'var(--text-primary)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                                    بيع وإيراد
+                                </button>
+                                <button type="button" onClick={() => setNewOpData({...newOpData, opType: 'expense'})} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: newOpData.opType === 'expense' ? '2px solid var(--error)' : '1px solid var(--border-color)', background: newOpData.opType === 'expense' ? 'rgba(239,68,68,0.1)' : 'white', color: newOpData.opType === 'expense' ? 'var(--error)' : 'var(--text-primary)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                                    تسجيل خرج
+                                </button>
+                                <button type="button" onClick={() => setNewOpData({...newOpData, opType: 'return'})} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: newOpData.opType === 'return' ? '2px solid var(--error)' : '1px solid var(--border-color)', background: newOpData.opType === 'return' ? 'rgba(239,68,68,0.1)' : 'white', color: newOpData.opType === 'return' ? 'var(--error)' : 'var(--text-primary)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                                    مرتجع
+                                </button>
                             </div>
                             
                             {newOpData.opType !== 'expense' ? (
