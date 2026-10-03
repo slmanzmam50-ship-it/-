@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 import { db } from '../services/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import ReconciliationModal from './ReconciliationModal';
 
 interface Props {
     branches: Branch[];
@@ -48,6 +49,7 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
     const [editTipAmount, setEditTipAmount] = useState('');
 
     const [isAddingOp, setIsAddingOp] = useState(false);
+    const [showReconModal, setShowReconModal] = useState(false);
     const [isSubmittingOp, setIsSubmittingOp] = useState(false);
     const [newOpData, setNewOpData] = useState({ workerId: '', opType: 'sale' as 'sale'|'return'|'expense', price: '', serviceType: '', paymentMethod: 'cash' as 'cash'|'network'|'credit', hasInvoice: true, expenseAmount: '', expenseReason: '', tipAmount: '' });
 
@@ -285,34 +287,6 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
         }
     };
 
-    const handleShareBalance = () => {
-        let dateLabel = dateFilter === 'today' ? 'اليوم' : dateFilter === 'yesterday' ? 'الأمس' : dateFilter === 'custom' ? customDate : 'الفترة المحددة';
-        let workerLabel = workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || '';
-        
-        let expensesDetails = '';
-        const expensesList = filteredOperations.filter(op => (op.expenseAmount || 0) > 0 || (op.tipAmount || 0) > 0);
-        if (expensesList.length > 0) {
-            expensesDetails = '\n\n📋 تفاصيل الخرج والخصومات:\n' + expensesList.map(op => {
-                let lines = [];
-                if ((op.expenseAmount || 0) > 0) lines.push(`- ${op.expenseAmount} ريال (${op.expenseReason || 'بدون سبب'})`);
-                if ((op.tipAmount || 0) > 0) lines.push(`- ${op.tipAmount} ريال (خصم/بخشيش - ${op.serviceType})`);
-                return lines.join('\n');
-            }).join('\n');
-        }
-
-        const actual = Number(actualCash) || 0;
-        const diff = actual - expectedCash;
-        const diffText = actualCash === '' ? 'لم يتم إدخاله' : (diff === 0 ? 'مطابق ✅' : (diff < 0 ? `عجز (${Math.abs(diff)} ريال) ❌` : `زيادة (${diff} ريال) ⚠️`));
-
-        const actualNet = Number(actualNetwork) || 0;
-        const netDiff = actualNet - totalNetwork;
-        const netDiffText = actualNetwork === '' ? 'لم يتم إدخاله' : (netDiff === 0 ? 'مطابق ✅' : (netDiff < 0 ? `عجز (${Math.abs(netDiff)} ريال) ❌` : `زيادة (${netDiff} ريال) ⚠️`));
-
-        const shareText = `📊 جرد (${dateLabel})\n👤 العامل: ${workerLabel}\n\n💰 إجمالي المبيعات: ${totalIncome} ريال\n💵 مبيعات الكاش (قبل الخصم): ${totalCashSales} ريال\n💳 مبيعات الشبكة: ${totalNetwork} ريال\n📝 آجل (بفاتورة): ${totalCredit} ريال\n⚠️ ديون عمال: ${totalWorkerDebt} ريال\n📉 إجمالي الخصم والخرج: ${totalExpenses} ريال${expensesDetails}\n-----------------------\n💳 مبيعات الشبكة المسجلة: *${totalNetwork} ريال*\n💳 الشبكة الفعلية: *${actualNetwork === '' ? '؟' : actualNet} ريال*\n⚖️ فارق الشبكة: *${netDiffText}*\n-----------------------\n✅ الكاش المفترض بالدرج: *${expectedCash} ريال*\n💵 الكاش الفعلي المتوفر: *${actualCash === '' ? '؟' : actual} ريال*\n⚖️ فارق الكاش: *${diffText}*`;
-        const encodedText = encodeURIComponent(shareText);
-        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-    };
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Workers Management */}
@@ -476,8 +450,8 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                 <div style={{ background: 'rgba(59,130,246,0.05)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(59,130,246,0.1)', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-color)' }}>الموازنة اليومية (تفصيل الإيرادات)</h4>
-                        <button onClick={handleShareBalance} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
-                            <Share2 size={16} /> مشاركة الجرد
+                        <button onClick={() => setShowReconModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
+                            <Activity size={16} /> مطابقة الجرد (صورة)
                         </button>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
@@ -766,6 +740,20 @@ const WorkersView: React.FC<Props> = ({ branches }) => {
                         </form>
                     </div>
                 </div>
+            )}
+            {showReconModal && (
+                <ReconciliationModal
+                    branchId={branches[0]?.id || ''}
+                    workerId={workerFilter}
+                    workerName={workerFilter === 'all' ? 'جميع العمال' : workers.find(w => w.id === workerFilter)?.name || ''}
+                    dateLabel={dateFilter === 'custom' ? customDate : (dateFilter === 'today' ? new Date().toLocaleDateString('en-GB') : (dateFilter === 'yesterday' ? new Date(Date.now() - 86400000).toLocaleDateString('en-GB') : 'الفترة المحددة'))}
+                    operations={filteredOperations}
+                    actualCash={actualCash}
+                    actualNetwork={actualNetwork}
+                    expectedCash={expectedCash}
+                    totalNetwork={totalNetwork}
+                    onClose={() => setShowReconModal(false)}
+                />
             )}
         </div>
     );
